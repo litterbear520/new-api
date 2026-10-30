@@ -1,0 +1,231 @@
+---
+name: white-background
+description: 把商品照片做成平台合规的白底图（纯白 #FFFFFF、无字、无水印、商品完整居中），也可以同时出一张透明底 PNG 方便以后合成。用户提到「白底图」「白底主图」「抠图」「去背景」「透明底」「换成白底」，或者要上传淘宝/天猫/京东/拼多多/抖店的白底位时使用。Turns product photos into marketplace-compliant pure-white or transparent cutouts without changing the product.
+---
+
+# 白底商品图
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 已有商品实拍图，要一张能直接上传的白底图，或者一张透明底 PNG。
+- 一次处理多张：同一商品的正面、侧面、45° 等，每个角度一张实拍对应一张白底。
+- 不适用：没有实拍图却要「白底实物图」。白底位放的是商品本身，不能用 AI 想象出来的商品冒充实物；没有照片就先请用户补拍。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 用在哪个平台、哪个位置（淘宝白底位、京东主图、拼多多轮播首张、抖店主图…）。
+   - 要不要投影：默认无投影；用户要「有质感」再加一版很淡的接地阴影。
+   - 要不要同时出透明底 PNG。
+2. **列交付清单**，一张实拍对应一行，确认后再做：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 白底主图 | 1:1 | 800×800 | gpt-image-2.5-sunburst | 纯白 #FFFFFF，商品完整居中，四周留白均匀 |
+   | 2 | 透明底 PNG | 1:1 | 1024×1024 | gpt-image-2.5-flare | 透明背景，边缘干净，无光晕 |
+   | 3 | 3:4 白底（服饰鞋包类，可选） | 3:4 | 750×1000 | gpt-image-2.5-sunburst | 同 1，竖版构图 |
+
+3. **写提示词**：编辑模式，Image 1 = 商品实拍。按标签结构写，Constraints 里写清「只换背景，商品和边缘不变，标签文字不变」。照下面原文的保真指令和 background-extraction 写法。
+4. **一张图调用一次**（`edit_image`）。透明底那张调用时带 `background=transparent`、`output_format=png`，提示词里也写「fully transparent background」。
+5. **检查后交付**
+   - 背景：四个角和边缘取色应是纯白 #FFFFFF；有灰边、渐变、倒影就重出这一张。
+   - 商品：颜色、Logo、标签文字、零件和实拍一致；被裁掉一角、多出零件都算失败。
+   - 画面里不能有任何文字、水印、贴纸、道具、拼接。
+   - 对照 `data/platform-specs.json` 里对应平台的白底条目。
+
+## 最佳实践原文
+
+### 抠图与透明底
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › background-extraction · Apache-2.0 (verbatim)
+
+````text
+### background-extraction
+```
+Use case: background-extraction
+Input images: Image 1: product photo
+Primary request: isolate the product on a clean transparent background
+Constraints: crisp silhouette; no halos or fringing; preserve label text exactly; no restyling
+```
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.4 Product Mockups · MIT (verbatim)
+
+````text
+Product extraction and mockup prep is commonly used for catalogs, marketplaces, and design systems. Success depends on edge quality (clean silhouette, no fringing/halos) and label integrity (text stays sharp and unchanged). Transparent backgrounds are available in preview for `gpt-image-2`; request `background="transparent"` with `output_format="png"` (the default) or `output_format="webp"` to create a reusable product cutout directly. `jpeg` does not support transparent backgrounds. Ask for an isolated subject, preserve the existing product geometry and label, and omit solid backdrops, checkerboards, and unnecessary shadows. Omit `output_compression` for PNG output; WebP supports optional compression.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.4 Product Mockups (prompt) · MIT (verbatim)
+
+````text
+Extract the product from the input image and isolate it on a fully transparent background.
+Output: centered product, crisp silhouette, no halos/fringing.
+Preserve product geometry and label legibility exactly.
+Add only light polishing. Do not add a solid backdrop, checkerboard, scenery, or shadow.
+Do not restyle the product; remove the background and preserve clean alpha transparency.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 1.1 Model parameters · MIT (verbatim)
+
+````text
+### Transparent backgrounds with `gpt-image-2` (preview)
+
+Transparent backgrounds are available in preview for `gpt-image-2`. To generate or edit an image with a transparent background:
+
+- Set `background="transparent"`.
+- Set `output_format="png"` (the default) or `output_format="webp"`. Both support transparency; `jpeg` does not.
+- Omit `output_compression` for PNG output. WebP supports optional compression.
+- Explicitly request an isolated subject on a fully transparent background, with no scenery, solid backdrop, checkerboard, or unwanted shadows.
+- For edits, explicitly preserve the transparent background in each prompt so later steps do not introduce a new background.
+- Keep the returned image as a PNG or WebP file and preserve its alpha channel throughout downstream processing.
+````
+
+### 换背景时锁住商品
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – fidelity lock · Apache-2.0 (verbatim)
+
+````text
+Every prompt must include this product fidelity instruction near the top:
+
+```text
+Preserve the exact product identity from the reference image: shape,
+silhouette, color, material, logo/label placement, visible construction
+details, and proportions. Do not redesign the product. Do not add, remove,
+or relocate product features.
+```
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – slot prompts · Apache-2.0 (verbatim)
+
+````text
+#### Main image prompt
+
+- Product centered and fully visible.
+- White, off-white, or very light grey background.
+- Soft studio lighting with clean shadow.
+- No props unless the user asked for them.
+- No in-frame marketing text.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Examples · Apache-2.0 (verbatim)
+
+````text
+## Examples
+
+### Generation example (hero image)
+```text
+Use case: product-mockup
+Asset type: landing page hero
+Primary request: a minimal hero image of a ceramic coffee mug
+Style/medium: clean product photography
+Composition/framing: wide composition with usable negative space for page copy if needed
+Lighting/mood: soft studio lighting
+Constraints: no logos, no text, no watermark
+```
+
+### Edit example (invariants)
+```text
+Use case: precise-object-edit
+Asset type: product photo background replacement
+Primary request: replace only the background with a warm sunset gradient
+Constraints: change only the background; keep the product and its edges unchanged; no text; no watermark
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Constraints and invariants · Apache-2.0 (verbatim)
+
+````text
+## Constraints and invariants
+- State what must not change (`keep background unchanged`).
+- For edits, say `change only X; keep Y unchanged` and repeat invariants on every iteration to reduce drift.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Use-case tips · Apache-2.0 (verbatim)
+
+````text
+- product-mockup: Describe the product/packaging and materials; ensure clean silhouette and label clarity; if in-image text is needed, require verbatim rendering and specify typography.
+````
+
+### 标签结构与执行规则
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Workflow steps 12–13 · Apache-2.0 (verbatim)
+
+````text
+12. Inspect outputs and validate: subject, style, composition, text accuracy, and invariants/avoid items.
+13. Iterate with a single targeted change, then re-check.
+````
+
+### 交付前检查
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/references/checklist.md › Checklist P0 · Apache-2.0 (verbatim)
+
+````text
+- [ ] **No fabricated claims.** The feature image does not invent
+  certifications, measurements, materials, ingredients, performance numbers,
+  awards, or compliance promises.
+- [ ] **No tiny rendered text dependency.** Prompts avoid relying on small
+  in-image text for selling points; they leave clean label space when copy will
+  be added later.
+````
+
+## 本站调整
+
+- **白底要纯白**：原文 main image 写「white, off-white, or very light grey」。国内平台的白底位要纯白，我们收紧成只用 #FFFFFF，不用米白、浅灰。
+- **默认无投影**：原文写「soft studio lighting with clean shadow」。部分类目的白底图要求不带阴影，所以我们默认出无投影版；用户要质感时另出一版极淡的接地阴影，不放进白底位。
+- **商品占比**：常见做法是商品完整居中，占画面 70%–85%，四周留白均匀。各平台的具体要求以 `data/platform-specs.json` 和商家后台提示为准（表里标了 `verify` 的要再核对）。
+- **只做编辑，不做生成**：白底位放的必须是真实商品，所以这个技能只接受实拍图做编辑。用户只有文字描述时，改用 `taobao-main-set` 出概念图，并说明不能放进白底位。
+- **模型**：白底精修用 gpt-image-2.5-sunburst；透明底用 gpt-image-2.5-flare（快，支持透明背景）；只要快速预览时可用 gpt-image-2。
+- **尺寸**：比例写进提示词。本站出图接口不保证按 size 参数出图，结果由页面缩放到 800×800（拼多多 750×750）。透明底 PNG 保留原尺寸和 alpha 通道，不要转成 JPG。
+- **文件**：白底图导出 JPG，单张 ≤3MB；透明底导出 PNG。ZIP 里按 `淘宝-白底-正面.jpg`、`透明底-正面.png` 命名。
+- **示例**：原文的洗发水、咖啡杯只是示意；我们的示例用虚构品牌「声屿」头戴耳机。
+
+### 示例（虚构品牌「声屿」耳机，白底主图）
+
+```text
+Use case: background-extraction
+Asset type: marketplace white-background main image, square 1:1
+Input images: Image 1: product photo of the SHENGYU over-ear headphones (edit target)
+Primary request: replace only the background with pure white #FFFFFF
+Subject: the headphones exactly as in Image 1, headband up, ear cups facing slightly left
+Composition/framing: square 1:1, product centered and fully visible, about 80% of the frame width, even white margin on all sides
+Lighting/mood: neutral, even studio light; keep the original highlights on the metal sliders
+Constraints: change only the background; keep the product, its edges, color, logo and label text unchanged; no shadow; no reflection; no text; no watermark
+Avoid: grey gradient, halo or fringing around the edges, cropped ear cups, extra cables or props
+```

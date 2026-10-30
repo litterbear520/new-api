@@ -18,9 +18,9 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import type { TFunction } from 'i18next'
 import { Bell, Megaphone } from 'lucide-react'
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { RichContent } from '@/components/rich-content'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -51,6 +51,11 @@ interface AnnouncementItem {
   extra?: string
   publishDate?: string | Date
 }
+
+// Markdown, math and HTML sanitising are heavy: load them when the popover opens.
+const RichContent = lazy(() =>
+  import('@/components/rich-content').then((m) => ({ default: m.RichContent }))
+)
 
 interface NotificationPopoverProps {
   open: boolean
@@ -302,6 +307,7 @@ export function NotificationPopover({
   className,
 }: NotificationPopoverProps) {
   const { t } = useTranslation()
+  const count = unreadCount > 99 ? '99+' : unreadCount
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
@@ -320,12 +326,13 @@ export function NotificationPopover({
             variant='destructive'
             className='absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center px-1 text-[10px] font-semibold tabular-nums'
           >
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {count}
           </Badge>
         ) : null}
       </PopoverTrigger>
 
       <PopoverContent
+        side='bottom'
         align='end'
         sideOffset={8}
         className='w-[min(26rem,calc(100vw-1rem))] gap-3 p-3'
@@ -352,17 +359,21 @@ export function NotificationPopover({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value='notice' className='mt-2'>
-            <NoticeContent notice={notice} loading={loading} t={t} />
-          </TabsContent>
+          <Suspense
+            fallback={<EmptyState icon={<Bell />} title={t('Loading...')} />}
+          >
+            <TabsContent value='notice' className='mt-2'>
+              <NoticeContent notice={notice} loading={loading} t={t} />
+            </TabsContent>
 
-          <TabsContent value='announcements' className='mt-2'>
-            <AnnouncementsContent
-              announcements={announcements}
-              loading={loading}
-              t={t}
-            />
-          </TabsContent>
+            <TabsContent value='announcements' className='mt-2'>
+              <AnnouncementsContent
+                announcements={announcements}
+                loading={loading}
+                t={t}
+              />
+            </TabsContent>
+          </Suspense>
         </Tabs>
 
         <div className='flex justify-end'>

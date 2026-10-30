@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import type { SuccessRatePoint } from '@/features/performance-metrics/types'
 // ----------------------------------------------------------------------------
 // Pricing Types
 // ----------------------------------------------------------------------------
@@ -133,6 +134,18 @@ export type PricingData = {
 }
 
 export type TokenUnit = 'M' | 'K'
+
+/** A model's last-day numbers from /api/perf-metrics/summary */
+export type ModelPerfData = {
+  window_start?: number
+  window_end?: number
+  avg_latency_ms: number
+  success_rate: number
+  avg_tps: number
+  recent_success_series?: SuccessRatePoint[]
+}
+
+export type { PricingSearch } from './lib/search-schema'
 export type PriceType =
   | 'input'
   | 'output'

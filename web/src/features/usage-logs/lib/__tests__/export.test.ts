@@ -72,6 +72,13 @@ async function chineseTranslator() {
 }
 
 describe('usage log CSV export', () => {
+  test('names the key column Key, as the log table does', () => {
+    const header = getLogCsvHeader(false, (key) => key)
+
+    expect(header).toContain('Key')
+    expect(header).not.toContain('Token')
+  })
+
   test('header in the user view has no user or channel column', async () => {
     const t = await chineseTranslator()
 

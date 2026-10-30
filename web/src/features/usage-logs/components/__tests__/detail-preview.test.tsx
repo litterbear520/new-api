@@ -37,6 +37,7 @@ import {
 import type { UsageLog } from '../../data/schema'
 import type { LogOtherData } from '../../types'
 import { useCommonLogsColumns } from '../columns/common-logs-columns'
+import { DetailsDialog } from '../dialogs/details-dialog'
 
 vi.mock('@lobehub/icons', () => ({}))
 vi.hoisted(() => {
@@ -78,6 +79,7 @@ function DetailPreview(props: {
   other: LogOtherData
   isAdmin: boolean
   type?: number
+  columnId?: string
 }) {
   const table = useReactTable({
     data: [makeLog(props.other, props.type)],
@@ -87,7 +89,7 @@ function DetailPreview(props: {
   const cell = table
     .getRowModel()
     .rows[0].getAllCells()
-    .find((item) => item.column.id === 'content')
+    .find((item) => item.column.id === (props.columnId ?? 'content'))
   if (!cell) throw new Error('The log must have a content column')
   return flexRender(cell.column.columnDef.cell, cell.getContext())
 }
@@ -294,21 +296,29 @@ test('top-up content_parts render in the viewer language', async () => {
       '在线充值成功，充值额度：{{quota}}，支付金额：{{amount}}',
   })
   await i18n.changeLanguage('zh')
-  const preview = renderPreview(
-    {
-      content_parts: [
-        {
-          key: 'Online top-up succeeded, amount added: {{quota}}, payment amount: {{amount}}',
-          params: { quota: '$10.000000', amount: '10.00' },
-        },
-      ],
-    },
-    false,
-    1
+  // A top-up has no model, so users read what happened in the model column.
+  render(
+    <I18nextProvider i18n={i18n}>
+      <QueryClientProvider client={client}>
+        <DetailPreview
+          other={{
+            content_parts: [
+              {
+                key: 'Online top-up succeeded, amount added: {{quota}}, payment amount: {{amount}}',
+                params: { quota: '$10.000000', amount: '10.00' },
+              },
+            ],
+          }}
+          isAdmin={false}
+          type={1}
+          columnId='model_name'
+        />
+      </QueryClientProvider>
+    </I18nextProvider>
   )
-  expect(preview.textContent).toBe(
-    '在线充值成功，充值额度：$10.000000，支付金额：10.00'
-  )
+  expect(
+    screen.getByText('在线充值成功，充值额度：$10.000000，支付金额：10.00')
+  ).toBeInTheDocument()
 })
 
 test('quota saturation remains first and only billing adds to the counter', () => {
@@ -330,12 +340,27 @@ test('quota saturation remains first and only billing adds to the counter', () =
 test.each([true, false])(
   'plugin information in the opened dialog respects admin=%s',
   async (isAdmin) => {
-    const preview = renderPreview(
-      { model_price: 0.25, admin_info: { task_plugin: plugin } },
-      isAdmin
-    )
-    expect(preview.textContent).toBe('Per-call · $0.25')
-    fireEvent.click(preview)
+    const other = { model_price: 0.25, admin_info: { task_plugin: plugin } }
+    if (isAdmin) {
+      const preview = renderPreview(other, true)
+      expect(preview.textContent).toBe('Per-call · $0.25')
+      fireEvent.click(preview)
+    } else {
+      // Users have no price column; they open a log from its table row.
+      render(
+        <I18nextProvider i18n={i18n}>
+          <QueryClientProvider client={client}>
+            <DetailsDialog
+              log={makeLog(other)}
+              isAdmin={false}
+              isRoot={false}
+              open
+              onOpenChange={() => undefined}
+            />
+          </QueryClientProvider>
+        </I18nextProvider>
+      )
+    }
     const dialog = within(await screen.findByRole('dialog'))
     if (isAdmin) {
       expect(dialog.getByText('Incho')).toBeVisible()

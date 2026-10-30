@@ -113,6 +113,12 @@ export type DataTablePageProps<TData> = {
   emptyAction?: React.ReactNode
 
   /**
+   * Replaces the whole desktop empty state (title, description, icon and
+   * action) with custom content.
+   */
+  emptyContent?: React.ReactNode
+
+  /**
    * Custom toolbar node — fully replaces the default {@link DataTableToolbar}.
    * Useful for layouts like "primary buttons + toolbar" or feature-specific filter cards.
    * If provided, `toolbarProps` is ignored.
@@ -537,6 +543,8 @@ function renderDesktop<TData>(
       emptyDescription={props.emptyDescription}
       emptyIcon={props.emptyIcon}
       emptyAction={props.emptyAction}
+      emptyContent={props.emptyContent}
+      emptyCellClassName={props.emptyContent ? 'p-0' : undefined}
       skeletonKeyPrefix={props.skeletonKeyPrefix}
       renderRow={props.renderRow}
       applyHeaderSize={props.applyHeaderSize}

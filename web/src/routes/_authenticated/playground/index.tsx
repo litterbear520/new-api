@@ -17,12 +17,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useEffect } from 'react'
+import z from 'zod'
 
 import { Main } from '@/components/layout'
-import { Playground } from '@/features/playground'
+import { BearChat } from '@/features/bear-chat'
 import { isSidebarModuleEnabled } from '@/lib/nav-modules'
+import { useBearChatStore } from '@/stores/bear-chat-store'
 
 export const Route = createFileRoute('/_authenticated/playground/')({
+  validateSearch: z.object({
+    model: z.string().optional().catch(undefined),
+  }),
   beforeLoad: () => {
     if (!isSidebarModuleEnabled('chat', 'playground')) {
       throw redirect({ to: '/dashboard' })
@@ -32,9 +38,19 @@ export const Route = createFileRoute('/_authenticated/playground/')({
 })
 
 function PlaygroundPage() {
+  const { model } = Route.useSearch()
+  const navigate = Route.useNavigate()
+
+  // 「在聊天里试试」 on the model square: pick that model once, then tidy the URL
+  useEffect(() => {
+    if (!model) return
+    useBearChatStore.getState().setSettings({ model })
+    void navigate({ search: {}, replace: true })
+  }, [model, navigate])
+
   return (
     <Main className='p-0'>
-      <Playground />
+      <BearChat />
     </Main>
   )
 }

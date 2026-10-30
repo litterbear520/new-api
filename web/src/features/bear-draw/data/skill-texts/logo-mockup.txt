@@ -1,0 +1,309 @@
+---
+name: logo-mockup
+description: 先出 3 个不同思路的 Logo 方向（透明底），用户选定后再放到名片、门头、App 图标、纸杯/帆布袋等样机上看效果。用户提到「Logo」「标志」「店标」「品牌标识」「图标设计」「Logo 样机」「Logo 效果图」时使用。Explores three distinct logo concepts, then shows the chosen one on realistic mockups.
+---
+
+# Logo 与样机
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。更多 Logo 和样机提示词见 `references/logo-prompts.md`。
+
+## 适用
+
+- 新店、新品牌、新产品线要找 Logo 方向。
+- 已有 Logo，想看它放在名片、招牌、包装、App 图标上的效果（把 Logo 图上传，跳过第 2 步）。
+- 不适用：完整的品牌规范板（用 `brand-vi`）；整套包装（用 `packaging-system`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 品牌名（中文、英文或拼音，逐字给出）和做什么的。
+   - 想要什么感觉：亲切 / 专业 / 高级 / 年轻，有没有不喜欢的风格。
+   - Logo 主要用在哪里：门头、包装、App、线上头像。
+2. **出 3 个方向**：照下面原文的 5 种构思法挑 3 种（每个方向一种方法），各出一张透明底 Logo。先说清每个方向的想法，再出图。
+3. **列交付清单**，用户选定方向后再出样机：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 方向 A | 1:1 | 1024×1024 | gpt-image-2.5-flare | 透明底，图形 + 字标，扁平 |
+   | 2 | 方向 B | 1:1 | 1024×1024 | gpt-image-2.5-flare | 换一种构思法 |
+   | 3 | 方向 C | 1:1 | 1024×1024 | gpt-image-2.5-flare | 换一种构思法 |
+   | 4 | 名片样机 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 选定 Logo 做 Image 1 |
+   | 5 | 门头/招牌样机 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 真实街景或店内 |
+   | 6 | App 图标/头像 | 1:1 | 1024×1024 | gpt-image-2.5-sunburst | 圆角方形和圆形两种裁切 |
+   | 7 | 周边样机（可选） | 3:2 | 1536×1024 | gpt-image-2 | 纸杯、帆布袋、贴纸 |
+
+4. **一张图调用一次**：方向图用 `generate_image` 并带 `background=transparent`、`output_format=png`；样机用 `edit_image`，Image 1 = 选定的 Logo，写「Logo 的形状、颜色、文字不变，只放到样机上」。
+5. **检查**：品牌名逐字核对，字母和笔画不能多也不能少；缩到 32px 还认不认得出；单色版是否成立；不能像任何已知品牌的 Logo。
+
+## 最佳实践原文
+
+### 好 Logo 的标准与 5 种构思法
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › LOGO GENERATION STANDARD · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# LOGO GENERATION STANDARD
+
+The logo must be professional.
+
+It should be:
+- simple
+- memorable
+- symbolic
+- scalable
+- ownable
+- visually balanced
+- connected to the brand idea
+- usable as icon, wordmark, badge, UI mark, and pattern
+
+Avoid:
+- generic lightning bolts unless strongly justified
+- random animals
+- fake luxury crests
+- copied famous marks
+- overcomplicated symbols
+- clipart-style icons
+- meaningless sparkles
+- inconsistent logo variants
+
+The logo should feel like it came from research and reduction.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › LOGO CONCEPT METHODS · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# LOGO CONCEPT METHODS
+
+Use one or combine two maximum.
+
+## 1. Monogram + Meaning
+
+Combine the brand initial with a metaphor.
+
+Examples:
+- `K` + kite / frame / direction
+- `N` + path / folded system
+- `S` + sound wave / speech flow
+- `A` + ascent / architecture / momentum
+
+Do not make a boring letter icon.
+Use negative space, cuts, folds, or geometry.
+
+---
+
+## 2. Product Action
+
+Turn the product's main action into a symbol.
+
+Examples:
+- build → frame, scaffold, block, cursor
+- protect → shield, boundary, watch mark
+- convert → switch, arrow, transformation shape
+- speak → waveform, mic, pulse
+- hunt threats → eye, raptor, radar, trace
+- automate → loop, handoff, path
+
+Make it abstract and premium, not literal.
+
+---
+
+## 3. Metaphor Fusion
+
+Combine two meaningful ideas into one reduced mark.
+
+Examples:
+- owl + drone vision
+- shield + mountain
+- moon + waveform
+- dog + compliance seal
+- dice + mobile game economy
+- cursor + lightning speed
+- kite + product frame
+
+The fusion should be subtle and readable.
+
+---
+
+## 4. Negative Space
+
+Use empty space to create intelligence.
+
+Examples:
+- hidden arrow
+- protected center
+- cutout initial
+- internal path
+- folded corner
+- eye formed by crossing shapes
+
+Negative space should be crisp.
+
+---
+
+## 5. Construction Geometry
+
+Create a mark from a clear system.
+
+Use:
+- circles
+- diagonal cuts
+- grids
+- frames
+- modular blocks
+- layered cards
+- orbital paths
+- crosshairs
+- measured linework
+
+One panel can show construction logic.
+````
+
+### Logo 提示词
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Use-case tips · Apache-2.0 (verbatim)
+
+````text
+- logo-brand: Keep it simple and scalable; ask for a strong silhouette and balanced negative space; avoid decorative flourishes unless requested.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Logo template · Apache-2.0 (verbatim)
+
+````text
+### Logo template
+```
+Use case: logo-brand
+Asset type: logo concept
+Primary request: <brand idea or symbol concept>
+Style/medium: vector logo mark; flat colors; minimal
+Composition/framing: centered mark; clear silhouette; generous margin
+Color palette: <1-2 colors; high contrast>
+Text (verbatim): "<exact name>" (only if needed)
+Constraints: no gradients; no mockups; no 3D; no watermark
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Generate › logo-brand · Apache-2.0 (verbatim)
+
+````text
+### logo-brand
+```
+Use case: logo-brand
+Primary request: original logo for "Field & Flour", a local bakery
+Style/medium: vector logo mark; flat colors; minimal
+Composition/framing: single centered logo on a plain background with generous padding
+Constraints: strong silhouette, balanced negative space; original design only; no gradients unless essential; no trademarks; no watermark
+```
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 4.5 Logo Generation · MIT (verbatim)
+
+````text
+## 4.5 Logo Generation
+
+Strong logo generation comes from clear brand constraints and simplicity. Describe the brand’s personality and use case, then ask for a clean, original mark with strong shape, balanced negative space, and scalability across sizes. Use a transparent-background PNG or WebP file when the logo needs to be reused across different website, campaign, or presentation backgrounds.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 4.5 Logo Generation (prompt) · MIT (verbatim)
+
+````text
+Create an original, non-infringing logo for a company called Field & Flour, a local bakery. 
+The logo should feel warm, simple, and timeless. Use clean, vector-like shapes, a strong silhouette, and balanced negative space. 
+Favor simplicity over detail so it reads clearly at small and large sizes. Flat design, minimal strokes, no gradients unless essential. 
+Fully transparent background. Deliver a single centered logo with generous padding, clean alpha edges, and no solid backdrop, scenery, checkerboard, or watermark.
+````
+
+### 样机
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/cip-prompt-engineering.md › Base Prompt Structure · MIT (verbatim)
+
+````text
+## Base Prompt Structure
+
+```
+Professional corporate identity mockup photograph showing [DELIVERABLE] for brand '[BRAND_NAME]', [STYLE] design style, using colors [COLORS], [TYPOGRAPHY] typography, logo placement: [PLACEMENT], [MATERIALS] materials with [FINISHES] finish, [CONTEXT] setting, [MOOD] mood, photorealistic product photography, soft natural lighting, high quality professional shot, 8k resolution detailed
+```
+
+## Deliverable-Specific Modifiers
+
+### Business Card
+```
+business card on marble surface, stack of cards, premium paper texture, soft shadows, 45 degree angle
+```
+
+### Letterhead
+```
+letterhead flat lay with envelope and pen, velvet fabric background, brand stationery set, overhead view
+```
+
+### Office Signage
+```
+3D logo signage on office wall, modern lobby interior, backlit LED, brushed metal finish, architectural photography
+```
+
+### Vehicle Branding
+```
+branded vehicle on urban street, 3/4 front angle view, professional car wrap, motion blur background optional
+```
+
+### Apparel (Polo/T-Shirt)
+```
+folded polo shirt on clean background, embroidered logo on chest, premium fabric texture, product photography
+```
+````
+
+### AI 做 Logo 的边界
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/image/SKILL.md › Marketing Image Workflows · MIT (verbatim)
+
+````text
+### Brand Assets
+
+Logos, icons, and illustrations. AI generation has limits here.
+
+| Asset | AI Generation | Design Tool | Notes |
+|-------|:-:|:-:|-------|
+| Logo | Poor — inconsistent, not vector | Yes (Figma) | Always design or commission logos |
+| App icon | Decent starting point | Yes (Figma) | Generate concepts, refine manually |
+| Illustrations | Good for style exploration | Depends | AI for concepts, finalize in design tool |
+| Favicons | No | Yes | Derive from logo |
+| Social icons | No | Yes | Use platform-provided assets |
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/logo-prompt-engineering.md › Common Pitfalls · MIT (verbatim)
+
+````text
+## Common Pitfalls
+
+1. **Too detailed** - AI generates complexity; request "simple"
+2. **Unclear background** - Specify "plain white background"
+3. **Text issues** - AI struggles with text; generate mark separately
+4. **Wrong aspect** - Specify "1:1 square" or "horizontal"
+5. **Realistic style** - Add "illustration, vector-style, not photorealistic"
+````
+
+## 本站调整
+
+- **3 个方向、3 种方法**：原文 brandkit 说一个 Logo 最多结合两种构思法；我们让 3 个方向各用一种不同的方法，方便用户比较。
+- **透明底**：Cookbook 原文建议 Logo 用透明底 PNG。本站透明底走 gpt-image-2.5-flare；样机用 gpt-image-2.5-sunburst 做编辑。原文的 `n=4` 一次出多张，本站改成一张图调用一次。
+- **AI Logo 只是方向**：marketingskills 原文说 AI 做 Logo「不一致、不是矢量」，这点我们照实告诉用户。选定方向后，要找设计师重绘成矢量稿；上线前到商标局网站查一下近似商标。
+- **原文样机提示词里的「8k resolution」等质量词**：对 gpt-image 系列作用不大，可以删；「no watermark」「clear legible logo」要保留。
+- **不像别人**：不参考、不模仿任何已知品牌的 Logo，不用名人、IP 角色做图形。
+- **字**：中文品牌名笔画多，容易出错。字标出错时先出纯图形版，字标单独再出一次，或建议用户用现成可商用字体排字。
+- **广告法**：Logo 和标语里不放「第一」「顶级」「国家级」这类词。
+- **尺寸**：本站出图通常是 1024×1024 或 1536×1024，比例写进提示词。
+- **导出**：ZIP 里按 `Logo-方向A.png`、`样机-名片.jpg` … 命名。
+- **示例**：原文的 Field & Flour 面包店、Studio North 都是虚构名；我们的示例用虚构品牌「小麦岛」社区面包店。
+
+### 示例（虚构品牌「小麦岛」，方向 A：字母 + 寓意）
+
+```text
+Use case: logo-brand
+Asset type: logo concept, direction A (monogram + meaning)
+Primary request: original logo for "小麦岛 WHEAT ISLE", a neighborhood bakery
+Style/medium: vector logo mark; flat colors; minimal
+Composition/framing: centered mark above the wordmark; generous padding; reads clearly at 32px
+Color palette: toasted wheat #C98B3A and deep oven brown #3B2A1E on a fully transparent background
+Text (verbatim): "小麦岛" and "WHEAT ISLE"
+Constraints: a single wheat ear whose grains form a small island outline; strong silhouette; balanced negative space; no gradients; no mockups; no 3D; original design only; no watermark
+Avoid: clip-art wheat, crests, extra slogans, resemblance to any existing bakery brand
+```

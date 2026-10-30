@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link, useLocation } from '@tanstack/react-router'
-import { ChevronRight } from 'lucide-react'
+import { ArrowUpRight, ChevronRight } from 'lucide-react'
 import { type ReactNode, useState, useEffect } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -63,12 +63,33 @@ import { ChatPresetsItem } from './chat-presets-item'
 export function NavGroup({ title, items }: NavGroupProps) {
   const { state, isMobile } = useSidebar()
   const href = useLocation({ select: (location) => location.href })
+  const pathname = useLocation({ select: (location) => location.pathname })
+  const searchParams = useLocation({
+    select: (location) => location.searchStr,
+  })
+  // An item with search params is active only when they match, and then it
+  // wins over a path-only item for the same page.
+  const matchesSearch = (item: NavLink) => {
+    if (!item.search || item.url !== pathname) return false
+    const current = new URLSearchParams(searchParams)
+    return Object.entries(item.search).every(([k, v]) => current.get(k) === v)
+  }
+  const searchMatch = items.find(
+    (item) => 'search' in item && item.search && matchesSearch(item as NavLink)
+  )
+  const isActive = (item: NavLink) => {
+    if (item.search) return matchesSearch(item)
+    if (searchMatch && item.url === searchMatch.url) return false
+    return checkIsActive(href, item)
+  }
 
   return (
     <SidebarGroup className='px-2 py-1'>
-      <SidebarGroupLabel className='text-muted-foreground/70 px-2 text-[11px] font-medium tracking-wider uppercase'>
-        {title}
-      </SidebarGroupLabel>
+      {title && (
+        <SidebarGroupLabel className='text-muted-foreground/70 px-2 text-[11px] font-medium tracking-wider uppercase'>
+          {title}
+        </SidebarGroupLabel>
+      )}
       <SidebarMenu>
         {items.map((item) => {
           const key = `${item.title}-${item.url || item.type}`
@@ -81,7 +102,11 @@ export function NavGroup({ title, items }: NavGroupProps) {
           // If no sub-items, render regular link
           if (!item.items) {
             return (
-              <SidebarMenuLink key={key} item={item as NavLink} href={href} />
+              <SidebarMenuLink
+                key={key}
+                item={item as NavLink}
+                active={isActive(item as NavLink)}
+              />
             )
           }
 
@@ -118,26 +143,59 @@ function NavBadge({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Red dot at the end of the row, or on the icon's corner when the sidebar is
+ * collapsed. Positioned against the menu item, so the button's overflow
+ * clipping doesn't cut it off.
+ */
+function NavDot({ label }: { label: string }) {
+  return (
+    <span className='bg-destructive group-data-[collapsible=icon]:ring-sidebar pointer-events-none absolute end-3 top-1/2 size-2 -translate-y-1/2 rounded-full group-data-[collapsible=icon]:end-1 group-data-[collapsible=icon]:top-1 group-data-[collapsible=icon]:translate-y-0 group-data-[collapsible=icon]:ring-2'>
+      <span className='sr-only'>{label}</span>
+    </span>
+  )
+}
+
+/**
  * Sidebar menu link item
  */
-function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
+function SidebarMenuLink(props: { item: NavLink; active: boolean }) {
   const { isMobile, setOpenMobile } = useSidebar()
+  const url = typeof props.item.url === 'string' ? props.item.url : ''
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        isActive={checkIsActive(href, item)}
-        tooltip={item.title}
+        isActive={props.active}
+        tooltip={
+          props.item.dot
+            ? `${props.item.title} · ${props.item.dot}`
+            : props.item.title
+        }
         render={
-          <Link
-            to={item.url}
-            preload={isMobile ? false : undefined}
-            onClick={() => setOpenMobile(false)}
-          />
+          props.item.external ? (
+            <a href={url} target='_blank' rel='noopener noreferrer' />
+          ) : (
+            <Link
+              to={props.item.url}
+              // For a `to` that is not a route literal the router types
+              // `search` as `true | (prev) => never`, so no value fits.
+              search={props.item.search as never}
+              preload={isMobile ? false : undefined}
+              onClick={() => setOpenMobile(false)}
+            />
+          )
         }
       >
-        {item.icon && <item.icon className='shrink-0' />}
-        <span className='min-w-0 flex-1 truncate'>{item.title}</span>
-        {item.badge && <NavBadge>{item.badge}</NavBadge>}
+        {props.item.icon && <props.item.icon className='shrink-0' />}
+        {props.item.dot && <NavDot label={props.item.dot} />}
+        <span className='min-w-0 flex-1 truncate'>{props.item.title}</span>
+        {props.item.badge && <NavBadge>{props.item.badge}</NavBadge>}
+        {props.item.external && (
+          <ArrowUpRight
+            aria-hidden='true'
+            className='text-muted-foreground ms-auto size-3.5! group-data-[collapsible=icon]:hidden'
+          />
+        )}
       </SidebarMenuButton>
     </SidebarMenuItem>
   )

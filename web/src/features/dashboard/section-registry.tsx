@@ -31,12 +31,13 @@ const DASHBOARD_SECTIONS = [
   },
   {
     id: 'models',
-    titleKey: 'Model Call Analytics',
+    titleKey: 'Usage statistics',
     build: () => null,
   },
   {
     id: 'flow',
     titleKey: 'Flow',
+    adminOnly: true,
     build: () => null,
   },
   {
@@ -49,7 +50,12 @@ const DASHBOARD_SECTIONS = [
 
 export type DashboardSectionId = (typeof DASHBOARD_SECTIONS)[number]['id']
 
-const ADMIN_ONLY_SECTIONS = new Set<string>(['users'])
+// Sections that look at the whole site, read from their adminOnly flag
+export const ADMIN_ONLY_SECTIONS: ReadonlySet<string> = new Set(
+  DASHBOARD_SECTIONS.filter(
+    (section) => 'adminOnly' in section && section.adminOnly
+  ).map((section) => section.id)
+)
 
 const dashboardRegistry = createSectionRegistry<
   DashboardSectionId,

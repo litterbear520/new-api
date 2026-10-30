@@ -41,6 +41,8 @@ interface LogCostDisplayProps {
   quota: number
   other: LogOtherData | null
   showBillingSource?: boolean
+  /** Plain text instead of a framed badge, for dense tables. */
+  plain?: boolean
 }
 
 function ToolSurchargeMarker() {
@@ -100,40 +102,52 @@ export function LogCostDisplay(props: LogCostDisplayProps) {
     source = t('Wallet')
   }
 
+  const content = (
+    <>
+      {source ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className='inline-flex shrink-0 cursor-help items-center'
+                role='img'
+                aria-label={source}
+                tabIndex={0}
+              >
+                <HugeiconsIcon
+                  icon={isSubscription ? CrownIcon : Wallet01Icon}
+                  className='size-3.5'
+                  strokeWidth={2}
+                  aria-hidden='true'
+                />
+              </span>
+            }
+          />
+          <TooltipContent>{source}</TooltipContent>
+        </Tooltip>
+      ) : null}
+      <span className='whitespace-nowrap'>{formatLogQuota(quota)}</span>
+    </>
+  )
+
   return (
     <TooltipProvider>
       <div className='inline-flex w-fit items-center gap-1.5'>
-        <StatusBadge
-          type='badge'
-          variant='neutral'
-          size='lg'
-          copyable={false}
-          className='border-border/80 bg-muted/60 text-foreground rounded-md border font-semibold tabular-nums'
-        >
-          {source ? (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <span
-                    className='inline-flex shrink-0 cursor-help items-center'
-                    role='img'
-                    aria-label={source}
-                    tabIndex={0}
-                  >
-                    <HugeiconsIcon
-                      icon={isSubscription ? CrownIcon : Wallet01Icon}
-                      className='size-3.5'
-                      strokeWidth={2}
-                      aria-hidden='true'
-                    />
-                  </span>
-                }
-              />
-              <TooltipContent>{source}</TooltipContent>
-            </Tooltip>
-          ) : null}
-          <span className='whitespace-nowrap'>{formatLogQuota(quota)}</span>
-        </StatusBadge>
+        {props.plain ? (
+          <span className='inline-flex items-center gap-1 tabular-nums'>
+            {content}
+          </span>
+        ) : (
+          <StatusBadge
+            type='badge'
+            variant='neutral'
+            size='lg'
+            copyable={false}
+            className='border-border/80 bg-muted/60 text-foreground rounded-md border font-semibold tabular-nums'
+          >
+            {content}
+          </StatusBadge>
+        )}
         {showToolSurcharge ? <ToolSurchargeMarker /> : null}
       </div>
     </TooltipProvider>

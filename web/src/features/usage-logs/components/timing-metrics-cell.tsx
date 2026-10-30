@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { CircleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -24,17 +23,12 @@ import {
   textColorMap,
   type StatusVariant,
 } from '@/components/status-badge'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { formatUseTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 import { getFirstResponseTimeColor, getResponseTimeColor } from '../lib/format'
 import type { LogOtherData } from '../types'
+import { StreamErrorAlert } from './stream-error-alert'
 
 /**
  * Softened fills for the full-height timing bar. The bar sits directly beside
@@ -196,27 +190,11 @@ export function StreamTpsCell(props: StreamTpsCellProps) {
         )}
       >
         {streamLabel}
-        {showStreamError && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger
-                render={<CircleAlert className='text-destructive size-3' />}
-              />
-              <TooltipContent>
-                <div className='space-y-0.5 text-xs'>
-                  <p>
-                    {t('Stream Status')}: {t('Error')}
-                  </p>
-                  <p>{props.streamStatus?.end_reason || 'unknown'}</p>
-                  {(props.streamStatus?.error_count ?? 0) > 0 && (
-                    <p>
-                      {t('Soft Errors')}: {props.streamStatus?.error_count}
-                    </p>
-                  )}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        {showStreamError && props.streamStatus && (
+          <StreamErrorAlert
+            streamStatus={props.streamStatus}
+            iconClassName='size-3'
+          />
         )}
       </span>
       {(!props.compact ||

@@ -22,6 +22,7 @@ import {
   QUOTA_TYPES,
   QUOTA_TYPE_VALUES,
   ENDPOINT_TYPES,
+  type QuotaTypeOption,
   type SortOption,
 } from '../constants'
 import type { PricingModel } from '../types'
@@ -80,6 +81,22 @@ export function filterByGroup(
 }
 
 /**
+ * The billing bucket a model is counted and filtered in: task-usage models
+ * form their own bucket, disjoint from token / request. Undefined for a
+ * quota type this version does not know.
+ */
+export function getModelBillingType(
+  model: PricingModel
+): QuotaTypeOption | undefined {
+  if (hasTaskUsageSchema(model)) return QUOTA_TYPES.TASK
+  if (model.quota_type === QUOTA_TYPE_VALUES.TOKEN) return QUOTA_TYPES.TOKEN
+  if (model.quota_type === QUOTA_TYPE_VALUES.REQUEST) {
+    return QUOTA_TYPES.REQUEST
+  }
+  return undefined
+}
+
+/**
  * Filter models by quota type
  */
 export function filterByQuotaType(
@@ -87,17 +104,7 @@ export function filterByQuotaType(
   quotaType: string
 ): PricingModel[] {
   if (quotaType === QUOTA_TYPES.ALL) return models
-  // Task-usage models form their own bucket, disjoint from token/request.
-  if (quotaType === QUOTA_TYPES.TASK) {
-    return models.filter((m) => hasTaskUsageSchema(m))
-  }
-  const targetType =
-    quotaType === QUOTA_TYPES.TOKEN
-      ? QUOTA_TYPE_VALUES.TOKEN
-      : QUOTA_TYPE_VALUES.REQUEST
-  return models.filter(
-    (m) => m.quota_type === targetType && !hasTaskUsageSchema(m)
-  )
+  return models.filter((m) => getModelBillingType(m) === quotaType)
 }
 
 /**
@@ -250,7 +257,7 @@ export function extractAllTags(models: PricingModel[]): string[] {
     }
   })
 
-  return Array.from(tagSet).sort((a, b) => a.localeCompare(b))
+  return [...tagSet].sort((a, b) => a.localeCompare(b))
 }
 
 /**

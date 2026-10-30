@@ -16,8 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type LinkProps } from '@tanstack/react-router'
-import { type TFunction } from 'i18next'
+import type { LinkProps } from '@tanstack/react-router'
+import type { TFunction } from 'i18next'
 
 /**
  * Base navigation item type
@@ -28,6 +28,8 @@ type BaseNavItem = {
   icon?: React.ElementType
   activeUrls?: (LinkProps['to'] | (string & {}))[]
   configUrls?: (LinkProps['to'] | (string & {}))[]
+  /** Never hidden by the sidebar_modules switches (e.g. 账户设置 itself). */
+  alwaysVisible?: boolean
   /**
    * Minimum role required to see this item in the sidebar. When set, the item
    * is hidden for users whose role is below this threshold (see
@@ -41,6 +43,12 @@ type BaseNavItem = {
  */
 export type NavLink = BaseNavItem & {
   url: LinkProps['to'] | (string & {})
+  /** Shows a red dot; the text is for screen readers and the tooltip. */
+  dot?: string
+  /** Leaves the console: opens in a new tab with an arrow at the end. */
+  external?: boolean
+  /** Search params for the link; the item is active only when they match. */
+  search?: Record<string, string>
   items?: never
   type?: never
 }
@@ -73,7 +81,10 @@ export type NavItem = NavCollapsible | NavLink | NavChatPresets
  */
 export type NavGroup = {
   id?: string
-  title: string
+  /** Groups without a title render as a plain block below a thin divider. */
+  title?: string
+  /** Found through ⌘K search but not listed in the sidebar. */
+  searchOnly?: boolean
   items: NavItem[]
 }
 

@@ -163,7 +163,7 @@ it('shows desktop remaining and used amounts side by side without labels, with t
   expect(trigger).not.toHaveTextContent(/Remaining|Used amount/)
   expect(
     trigger.querySelector('[data-slot="api-key-quota-values"]')
-  ).toHaveClass('grid-cols-2')
+  ).toHaveClass('grid')
   expect(within(trigger).getByText('80')).toHaveClass('text-left')
   expect(within(trigger).getByText('120')).toHaveClass('text-right')
   expect(trigger.parentElement).toHaveClass('max-w-45')
@@ -294,6 +294,17 @@ it('keeps a long amount within its column while showing the full amount in detai
   ).toHaveLength(2)
 })
 
+it('keeps the desktop quota wide enough for a six-figure balance when a long name crowds the row', () => {
+  renderQuota({ ...key, remain_quota: 61_728_390_000, used_quota: 50 })
+  const button = screen.getByRole('button', { name: /Remaining 123,456\.78/ })
+  // the cell's floor, so the auto table layout cannot squeeze it to 「123,4…」
+  expect(button.parentElement).toHaveClass('min-w-44')
+  // the remaining amount takes the room the short used amount leaves
+  expect(
+    button.querySelector('[data-slot="api-key-quota-values"]')
+  ).toHaveClass('justify-between')
+})
+
 function KeysPage() {
   return (
     <ApiKeysProvider>
@@ -349,10 +360,13 @@ async function renderKeysPage(status = 1, overrides: Partial<ApiKey> = {}) {
   return { post, put }
 }
 
-it('combines creation and last use while keeping expiry, models and IP restrictions separate', async () => {
+it('combines creation and last use, keeps expiry separate and drops the group, model and IP columns', async () => {
   await renderKeysPage()
-  for (const name of ['Name', 'API Key', 'Group', 'Models', 'IP Restriction']) {
+  for (const name of ['Name', 'API Key']) {
     expect(screen.getByRole('columnheader', { name })).toBeInTheDocument()
+  }
+  for (const name of ['Group', 'Models', 'IP Restriction']) {
+    expect(screen.queryByRole('columnheader', { name })).not.toBeInTheDocument()
   }
   expect(screen.getByRole('columnheader', { name: 'Time' })).toBeInTheDocument()
   expect(
@@ -366,6 +380,20 @@ it('combines creation and last use while keeping expiry, models and IP restricti
   })
   expect(quotaHeader).not.toHaveClass('pr-8')
   expect(quotaTrigger.closest('td')).not.toHaveClass('pr-8')
+})
+
+it('caps a long name so the quota and time columns keep their room on desktop', async () => {
+  const longName =
+    'A-very-long-key-name-for-overflow-check 超长密钥名称溢出测试'
+  await renderKeysPage(1, { name: longName })
+  // the name column stops growing and truncates, with the full name on hover
+  const name = screen.getByText(longName)
+  expect(name).toHaveClass('truncate')
+  expect(name).toHaveAttribute('title', longName)
+  expect(name.parentElement).toHaveClass('max-w-80')
+  // the time column keeps a floor so 「创建时间 1个月前」 is not cut
+  const timeCell = screen.getByRole('cell', { name: /Created.*Last Used/ })
+  expect(timeCell.firstElementChild).toHaveClass('min-w-36')
 })
 
 it('restores dates hidden by the old default and preserves unrelated column preferences', async () => {
@@ -446,7 +474,7 @@ it.each([true, false])(
   }
 )
 
-it('keeps full mobile information without group or quota section headings', async () => {
+it('keeps mobile quota, dates and restrictions without section headings', async () => {
   const matchMedia = window.matchMedia
   vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
     ...matchMedia(query),
@@ -468,8 +496,6 @@ it('keeps full mobile information without group or quota section headings', asyn
     expect(
       screen.queryByText(zh.translation['Group'], { exact: true })
     ).not.toBeInTheDocument()
-    expect(screen.getByText('default')).toBeInTheDocument()
-    expect(screen.getByText('1x')).toBeInTheDocument()
     expect(screen.getByText(zh.translation['Models'])).toBeInTheDocument()
     expect(
       screen.getByText(zh.translation['IP Restriction'])
@@ -524,4 +550,33 @@ it('keeps mobile quota readable and opens complete model and IP restrictions by 
   details = await screen.findByRole('dialog')
   expect(within(details).getByText('192.0.2.1')).toBeVisible()
   expect(within(details).getByText('2001:db8::1')).toBeVisible()
+})
+
+it('shows the group and the note line under the name on mobile cards', async () => {
+  const matchMedia = window.matchMedia
+  vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    ...matchMedia(query),
+    matches: query.includes('max-width'),
+  }))
+  await renderKeysPage(1, {
+    group: 'team_a',
+    model_limits_enabled: true,
+    model_limits: 'model-alpha,model-beta',
+    allow_ips: '192.0.2.1',
+  })
+  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  expect(
+    screen.getByText('team_a · Models: 2 · IP Restriction')
+  ).toBeInTheDocument()
+})
+
+it('leaves the note line out of mobile cards for a plain key in the default group', async () => {
+  const matchMedia = window.matchMedia
+  vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    ...matchMedia(query),
+    matches: query.includes('max-width'),
+  }))
+  await renderKeysPage()
+  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  expect(screen.queryByText(/^default/)).not.toBeInTheDocument()
 })

@@ -35,17 +35,31 @@ import { ApiKeysProvider } from '../api-keys-provider'
 
 let client: QueryClient
 
+// What New API returns for GET /v1/models without a key
+function relayUnauthorized() {
+  return new Response(
+    JSON.stringify({
+      error: { message: 'Invalid token', type: 'new_api_error' },
+    }),
+    { status: 401, headers: { 'Content-Type': 'application/json' } }
+  )
+}
+
 beforeEach(() => {
   localStorage.clear()
   client = new QueryClient({
     defaultOptions: { queries: { enabled: false, retry: false } },
   })
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+    relayUnauthorized()
+  )
 })
 
 afterEach(() => {
   cleanup()
   client.clear()
   localStorage.clear()
+  vi.restoreAllMocks()
 })
 
 function renderAddresses(status: StatusData) {
@@ -213,4 +227,65 @@ it('keeps long addresses readable within the scrollable panel and updates when c
     })
   )
   expect(await navigator.clipboard.readText()).toBe('https://new.example.com')
+})
+
+it('probes every address on open and grades it by latency', async () => {
+  const user = userEvent.setup()
+  vi.mocked(fetch).mockImplementation(async (input) => {
+    if (String(input).startsWith('https://blocked.example.com')) {
+      throw new TypeError('Failed to fetch')
+    }
+    return relayUnauthorized()
+  })
+  renderAddresses({
+    api_info_enabled: true,
+    api_info: [
+      {
+        route: 'Main',
+        description: 'Direct',
+        url: 'https://api.example.com',
+        color: 'green',
+      },
+      {
+        route: 'Blocked',
+        description: 'Reset by the network',
+        url: 'https://blocked.example.com',
+        color: 'red',
+      },
+    ],
+  })
+
+  await user.click(screen.getByRole('button', { name: 'API Addresses' }))
+  const dialog = await screen.findByRole('dialog', { name: 'API Addresses' })
+  const rows = within(dialog).getAllByRole('listitem')
+  expect(await within(rows[0]).findByText(/^Excellent · \d+ ms$/)).toBeVisible()
+  expect(await within(rows[1]).findByText('Unreachable')).toBeVisible()
+  expect(fetch).toHaveBeenCalledWith(
+    'https://api.example.com/v1/models',
+    expect.objectContaining({ credentials: 'omit' })
+  )
+})
+
+it('probes again when refresh is clicked', async () => {
+  const user = userEvent.setup()
+  renderAddresses({
+    api_info: [
+      {
+        route: 'Main',
+        description: 'Direct',
+        url: 'https://api.example.com',
+        color: 'green',
+      },
+    ],
+  })
+
+  await user.click(screen.getByRole('button', { name: 'API Addresses' }))
+  const dialog = await screen.findByRole('dialog', { name: 'API Addresses' })
+  await within(dialog).findByText(/^Excellent/)
+  const callsAfterOpen = vi.mocked(fetch).mock.calls.length
+  expect(callsAfterOpen).toBeGreaterThan(0)
+
+  await user.click(within(dialog).getByRole('button', { name: 'Refresh' }))
+  await within(dialog).findByText(/^Excellent/)
+  expect(vi.mocked(fetch).mock.calls.length).toBe(callsAfterOpen * 2)
 })

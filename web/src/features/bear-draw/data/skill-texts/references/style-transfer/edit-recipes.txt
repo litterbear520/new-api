@@ -1,0 +1,120 @@
+# 编辑配方（参考）
+
+> 本文件由小熊API整理，是 `style-transfer` 技能的附属参考，其他技能做编辑时也可以用。下面的英文段落是开源项目的原文摘录，每段上方标了来源和许可证。许可证全文见 `../../LICENSES/`，致谢清单见 `../../../CREDITS.md`。
+
+## 怎么用
+
+- 先按 `SKILL.md` 判断是生成还是编辑，再挑对应的配方。
+- 每个配方都有「只改什么、什么不变」，照这个格式写，每一轮都重复「不变」的部分。
+
+## 原文
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › compositing · Apache-2.0 (verbatim)
+
+````text
+### compositing
+```
+Use case: compositing
+Input images: Image 1: base scene; Image 2: subject to insert
+Primary request: place the subject from Image 2 next to the person in Image 1
+Constraints: match lighting, perspective, and scale; keep the base framing unchanged; no extra elements
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › sketch-to-render · Apache-2.0 (verbatim)
+
+````text
+### sketch-to-render
+```
+Use case: sketch-to-render
+Input images: Image 1: drawing
+Primary request: turn the drawing into a photorealistic image
+Constraints: preserve layout, proportions, and perspective; choose realistic materials and lighting; do not add new elements or text
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › precise-object-edit · Apache-2.0 (verbatim)
+
+````text
+### precise-object-edit
+```
+Use case: precise-object-edit
+Input images: Image 1: room photo
+Primary request: replace only the white chairs with wooden chairs
+Constraints: preserve camera angle, room lighting, floor shadows, and surrounding objects; keep all other aspects unchanged
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › background-extraction · Apache-2.0 (verbatim)
+
+````text
+### background-extraction
+```
+Use case: background-extraction
+Input images: Image 1: product photo
+Primary request: isolate the product on a clean transparent background
+Constraints: crisp silhouette; no halos or fringing; preserve label text exactly; no restyling
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › text-localization · Apache-2.0 (verbatim)
+
+````text
+### text-localization
+```
+Use case: text-localization
+Input images: Image 1: original infographic
+Primary request: replace "Bean Hopper", "Grinder", "Brew Group", "Boiler", "Water Tank", and "Drip Tray" with "Tolva", "Molino", "Grupo de infusión", "Caldera", "Depósito de agua", and "Bandeja de goteo"
+Constraints: change only the text; preserve layout, typography, spacing, and hierarchy; no extra words; do not alter logos or imagery
+```
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.2 Virtual Clothing Try-On · MIT (verbatim)
+
+````text
+Virtual try-on is ideal for ecommerce previews where identity preservation is critical. The key is to explicitly lock the person (face, body shape, pose, hair, expression) and allow changes *only* to garments, then require realistic fit (draping, folds, occlusion) plus consistent lighting/shadows so the outfit looks naturally worn—not pasted on.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.2 Virtual Clothing Try-On (prompt) · MIT (verbatim)
+
+````text
+Edit the image to dress the woman using the provided clothing images. Do not change her face, facial features, skin tone, body shape, pose, or identity in any way. Preserve her exact likeness, expression, hairstyle, and proportions. Replace only the clothing, fitting the garments naturally to her existing pose and body geometry with realistic fabric behavior. Match lighting, shadows, and color temperature to the original photo so the outfit integrates photorealistically, without looking pasted on. Do not change the background, camera angle, framing, or image quality, and do not add accessories, text, logos, or watermarks.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.4 Character consistency · MIT (verbatim)
+
+````text
+## 6.4 Children’s Book Art with Character Consistency (multi-image workflow)
+Designed for multi-page illustration pipelines where character drift is unacceptable. A reusable “character anchor” ensures visual continuity across scenes, poses, and pages while allowing environmental and narrative variation.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.4 Character consistency (prompt) · MIT (verbatim)
+
+````text
+Continue the children’s book story using the same character.
+
+Scene:
+The same young forest hero is gently helping a frightened squirrel
+out of a fallen tree after a winter storm.
+The character kneels beside the squirrel, offering reassurance.
+
+Character Consistency:
+- Same green hooded tunic
+- Same facial features, proportions, and color palette
+- Same gentle, heroic personality
+
+Style:
+Children’s book watercolor illustration,
+soft lighting, snowy forest environment,
+warm and comforting mood.
+
+Constraints:
+- Do not redesign the character
+- No text
+- No watermarks
+````
+
+## 本站调整
+
+- 原文的虚拟试穿只用于用户本人或已授权的模特照片，不给明星或他人换装。
+- 原文的角色一致性示例是童书插画；我们用同样的写法做「同一个吉祥物出现在一整套图里」：先出一张角色定稿，后面每张都把它作为 Image 1，并列出不能变的特征。

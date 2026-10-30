@@ -1,0 +1,236 @@
+---
+name: xhs-cover
+description: 做小红书笔记封面（3:4，1080×1440，大字标题）和配套内页，整套一个模板、一个色调。用户提到「小红书」「笔记封面」「红书封面」「种草图」「图文笔记」「封面大字」时使用；也适合其他平台 3:4 图文封面。Creates Xiaohongshu 3:4 note covers with big title text plus matching inner pages.
+---
+
+# 小红书封面
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 小红书图文笔记：1 张封面 + 3–6 张内页，比例统一。
+- 种草、教程、清单、测评、探店类笔记。
+- 不适用：直播间素材和竖版视频封面（用 `live-douyin`）；带价格的活动海报（用 `promo-poster`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 这篇笔记讲什么、给谁看？有没有现成的标题？
+   - 封面要不要放商品或真人照片（有就上传）？
+   - 风格：干净杂志风 / 手账拼贴 / 高对比大字 / 胶片生活感。
+2. **定标题，再定版式**：给 3 个标题让用户挑（参考下面原文的 hook 公式，改成中文说法：数字清单型、结果型、反常识型、提问型）。主标题 ≤12 字，副标题 ≤10 字。
+3. **列交付清单**，确认后出图：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 封面 | 3:4 | 1080×1440 | gpt-image-2.5-sunburst | 大字标题占画面 30%–40%，一眼看清 |
+   | 2–5 | 内页 | 3:4 | 1080×1440 | gpt-image-2.5-sunburst | 每页一个要点，同一模板，页码一致 |
+   | 6 | 结尾页（可选） | 3:4 | 1080×1440 | gpt-image-2 | 总结或收藏提示，不放二维码和联系方式 |
+
+4. **一张图一段提示词，一张图调用一次**：整套共用风格锁（底色、字体风格、强调色、边距、页码样式）；内页只换标题、要点和配图。有照片时用 `edit_image`。
+5. **检查**：标题逐字核对；字在手机小图上能不能看清（缩到 1/4 看）；跑 `data/ad-law-words.json`；画面里不能有二维码、微信号、手机号和站外链接。
+
+## 最佳实践原文
+
+### 封面就是缩略图，整套一个模板
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/social/references/carousel-frameworks.md › Picking a Framework · MIT (verbatim)
+
+````text
+Two cross-framework rules before the specifics:
+
+- **Slide 1 is the thumbnail.** It competes in the feed alone, before anyone knows a carousel follows. Design and write it as a standalone scroll-stopper.
+- **One visual template per carousel.** Same layout, type scale, and palette on every interior slide. Variety between slides reads as clutter; consistency lets the *content* change while the frame stays still.
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/social/references/carousel-frameworks.md › Framework A · MIT (verbatim)
+
+````text
+## Framework A: Value-Stack (4–14 slides)
+
+The "everything you need" carousel. Works because the cover makes a completeness claim — an exact count and an exact deliverable — and every swipe pays it down.
+
+| Slide | Job | Pattern |
+|---|---|---|
+| 1 — Cover | State the exact count + exact deliverable. Specificity proves scale upfront. | "[N] [resource type] for [role/outcome]" |
+| 2 to N−1 — Value delivery | One item or category per slide, 3–6 concrete sub-items each. Same visual template, zero filler slides. | "[Category/item]: [sub-items]" |
+| N — Close | Convert the swipe-through into an action. | "[Action] for [the payoff]" — comment a keyword, follow, link in bio |
+
+**Why the exact count matters:** "27 free tools" outperforms "the best free tools" because a number is a checkable promise — the reader can verify you delivered. Rounding up with padding breaks the trust the count created.
+
+*SaaS example:* "12 ChatGPT prompts for SaaS onboarding emails" → one prompt per slide with the use case → "Comment PROMPTS and I'll send the full doc."
+
+**Failure mode:** filler slides to hit a bigger number. Cut to the real count; a tight 8 beats a padded 14.
+````
+
+### 标题怎么写
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/social/SKILL.md › Hook Formulas · MIT (verbatim)
+
+````text
+## Hook Formulas
+
+The first line determines whether anyone reads the rest.
+
+### Curiosity Hooks
+- "I was wrong about [common belief]."
+- "[Outcome] usually comes down to [specific, surprising cause]."
+- "[Impressive result] in [surprisingly short time]."
+
+### Story Hooks
+- "Last week, [unexpected thing] happened."
+- "I almost [big mistake/failure]."
+- "3 years ago, I [past state]. Today, [current state]."
+
+### Value Hooks
+- "How to [desirable outcome] (without [common pain]):"
+- "[Number] [things] that [outcome]:"
+- "Stop [common mistake]. Do this instead:"
+
+### Contrarian Hooks
+- "Unpopular opinion: [bold statement]"
+- "[Common advice] cost us [specific result]."
+- "I stopped [common practice] and [positive result]."
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/social/SKILL.md › No AI Tells · MIT (verbatim)
+
+````text
+### No AI Tells
+
+Readers scroll past posts that read as generated, and on LinkedIn they say so in the comments. A hook formula is a starting shape. Fill it with a specific fact, number, or story.
+
+Never write these:
+- **Contrast reveals**: "It's not X, it's Y." "Not because X. Because Y." State Y directly, with the reason.
+- **Negation lists**: "No X, no Y, no Z." Say what does happen. One plain absence ("No card required") is fine.
+- **Trailing pile-ons**: a full claim, then a comma and more restating clauses. End the sentence at the claim.
+- **Self-answered questions and colon reveals**: "The result? 3x faster." "The best part: it learns." FAQ questions and a question in the reader's own voice are fine.
+- **Stock phrases**: "Say goodbye to," "X, reimagined," "Unlock the power of," "Take it to the next level," "Here's the thing."
+- **Em dashes** in posts. Use a period or a line break.
+
+Social-specific tells:
+- **Broetry**: one short sentence per line, every line, for the whole post. Write paragraphs and break lines where a person would pause.
+- **Engagement bait**: "Agree?" "Thoughts?" "Let that sink in." "Read that again." End on the point, or a real question you want answered.
+- **Manufactured vulnerability**: "I'll be honest, I was terrified..." with no real story behind it.
+- **Emoji as bullets**: 🚀 ✅ 💡 leading every line.
+
+Keep fragments and lists of three to one per post. For the full blacklist, use the **copywriting** skill's AI-tells reference.
+````
+
+### 图里放真字
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.5 Marketing Creatives with Real Text · MIT (verbatim)
+
+````text
+Marketing creatives with real in-image text are great for rapid ad concepting, but typography needs explicit constraints. Put the exact copy in quotes, demand verbatim rendering (no extra characters), and describe placement and font style. If text fidelity is imperfect, keep the prompt strict and iterate—small wording/layout tweaks usually improve legibility.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.5 Marketing Creatives (prompt) · MIT (verbatim)
+
+````text
+Create a realistic billboard mockup of the shampoo on a highway scene during sunset.
+Billboard text (EXACT, verbatim, no extra characters):
+"Fresh and clean"
+Typography: bold sans-serif, high contrast, centered, clean kerning.
+Ensure text appears once and is perfectly legible.
+No watermarks, no logos.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Text in images · Apache-2.0 (verbatim)
+
+````text
+## Text in images
+- Put literal text in quotes or ALL CAPS and specify typography (font style, size, color, placement).
+- Spell uncommon words letter-by-letter if accuracy matters.
+- For in-image copy, require verbatim rendering and no extra characters.
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/image/references/ai-image-prompting.md › Common Prompt Mistakes · MIT (verbatim)
+
+````text
+## Common Prompt Mistakes
+
+| Mistake | Why It Fails | Fix |
+|---------|-------------|-----|
+| "A professional image" | No visual detail | Describe subject, setting, style, lighting |
+| Long paragraph of text in image | Models can't render paragraphs | 3-5 words max; add text in post |
+| "Make it look good" | Not actionable | Specify style: "commercial photography, bright" |
+| 200+ word prompts | Models lose focus | 40-80 words, specific over comprehensive |
+| No aspect ratio | Random output size | Always specify dimensions or ratio |
+| "Logo in bottom right" | Unreliable placement | Add logos in post-processing |
+| "Make it viral" | Not a visual instruction | Describe the aesthetic you want |
+| Requesting UI screenshots | AI hallucinates interfaces | Capture real screenshots instead |
+````
+
+### 标签结构
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Decision tree · Apache-2.0 (verbatim)
+
+````text
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+````
+
+## 本站调整
+
+- **平台换成小红书**：原文讲 Instagram / LinkedIn carousel，「slide」对应小红书的一页图文；「封面就是缩略图」「整套一个模板」两条原样适用。
+- **比例**：默认 3:4（1080×1440）。小红书图文也支持 1:1 和 4:3，同一篇笔记要统一比例，否则系统会补白边。本站出图通常是 1024×1536 竖图，页面裁成 3:4，所以标题和主体离上下边至少留 8%。
+- **标题公式改成中文**：原文的英文 hook 只当思路用，标题用中文写，短而具体，带数字更好（如「5 步搞定手冲」）。不用「绝绝子」「yyds」堆砌，不用感叹号刷屏。
+- **字数**：主标题 ≤12 字，副标题 ≤10 字，内页每页要点 ≤3 条、每条 ≤14 字。原文说超过短标题的文字最好后期叠加；我们优先直接出（gpt-image-2.5-sunburst 对中文短句比较稳），一页字太多就拆成两页。
+- **不导流**：画面里不放二维码、微信号、手机号、外链和其他平台的 Logo。
+- **广告法**：标题和要点不写「最」「第一」「100% 有效」等；种草类不写功效保证。详见 `data/ad-law-words.json`。
+- **模型**：带字的封面和内页用 gpt-image-2.5-sunburst；无字底图、结尾页可用 gpt-image-2。
+- **导出**：ZIP 里按 `小红书-01-封面.jpg`、`小红书-02.jpg` … 命名。
+- **示例**：原文的 shampoo 广告牌只是示意；我们的示例用虚构品牌「雾岭」挂耳咖啡。
+
+### 示例（虚构品牌「雾岭」挂耳咖啡，封面）
+
+```text
+Use case: infographic-diagram
+Asset type: Xiaohongshu note cover, portrait 3:4
+Primary request: a bold, clean cover for a beginner pour-over coffee guide
+Scene/backdrop: overhead shot of a light oak table with a ceramic dripper, a glass server and two WULING drip-bag sachets
+Style/medium: bright lifestyle photo with large editorial typography on top
+Composition/framing: portrait 3:4; title block in the upper 40% on a soft cream panel; props in the lower half; 8% safe margin top and bottom
+Lighting/mood: soft morning window light, warm and calm
+Color palette: cream #F6EFE4, coffee brown #5A3A22, accent tomato red #E0533D for the number
+Text (verbatim): main title "新手手冲 5步不翻车" in heavy rounded sans-serif; subtitle "附 3 款豆子怎么选" in regular weight
+Constraints: render every text exactly once and fully legible at thumbnail size; no QR codes; no phone numbers; no other logos; no watermark
+Avoid: tiny body text, cluttered stickers, emoji rows
+```

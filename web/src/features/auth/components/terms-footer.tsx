@@ -16,8 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 
+import { useSystemConfig } from '@/hooks/use-system-config'
 import { cn } from '@/lib/utils'
 
 import type { SystemStatus } from '../types'
@@ -28,67 +29,61 @@ interface TermsFooterProps {
   status?: SystemStatus | null
 }
 
-export function TermsFooter({
-  variant = 'sign-in',
-  className,
-  status,
-}: TermsFooterProps) {
+// Whole sentences per case, so each locale can order the links naturally.
+const NOTICE_KEYS = {
+  'sign-in': {
+    both: 'By continuing, you agree to the {{systemName}} <terms>User Agreement</terms> and <privacy>Privacy Policy</privacy>.',
+    terms:
+      'By continuing, you agree to the {{systemName}} <terms>User Agreement</terms>.',
+    privacy:
+      'By continuing, you agree to the {{systemName}} <privacy>Privacy Policy</privacy>.',
+  },
+  'sign-up': {
+    both: 'By signing up, you agree to the {{systemName}} <terms>User Agreement</terms> and <privacy>Privacy Policy</privacy>.',
+    terms:
+      'By signing up, you agree to the {{systemName}} <terms>User Agreement</terms>.',
+    privacy:
+      'By signing up, you agree to the {{systemName}} <privacy>Privacy Policy</privacy>.',
+  },
+} as const
+
+const linkClassName = 'hover:text-foreground underline underline-offset-4'
+
+/** Passive legal notice: continuing means agreeing, no checkbox needed. */
+export function TermsFooter(props: TermsFooterProps) {
   const { t } = useTranslation()
-  const text =
-    variant === 'sign-in'
-      ? 'By clicking sign in, you agree to our'
-      : 'By creating an account, you agree to our'
+  const { systemName } = useSystemConfig()
+  const keys = NOTICE_KEYS[props.variant ?? 'sign-in']
+  const hasUserAgreement = Boolean(props.status?.user_agreement_enabled)
+  const hasPrivacyPolicy = Boolean(props.status?.privacy_policy_enabled)
 
-  const hasUserAgreement = Boolean(status?.user_agreement_enabled)
-  const hasPrivacyPolicy = Boolean(status?.privacy_policy_enabled)
-
-  if (!hasUserAgreement && !hasPrivacyPolicy) {
+  let i18nKey: string
+  if (hasUserAgreement && hasPrivacyPolicy) {
+    i18nKey = keys.both
+  } else if (hasUserAgreement) {
+    i18nKey = keys.terms
+  } else if (hasPrivacyPolicy) {
+    i18nKey = keys.privacy
+  } else {
     return null
   }
 
-  const agreementLink = {
-    label: 'User Agreement',
-    href: '/user-agreement',
-  }
-  const privacyLink = {
-    label: 'Privacy Policy',
-    href: '/privacy-policy',
-  }
-
-  const activeLinks =
-    hasUserAgreement || hasPrivacyPolicy
-      ? ([
-          hasUserAgreement ? agreementLink : null,
-          hasPrivacyPolicy ? privacyLink : null,
-        ].filter(Boolean) as Array<{ label: string; href: string }>)
-      : [agreementLink, privacyLink]
-
-  const [firstLink, secondLink] = activeLinks
-
   return (
-    <p className={cn('text-muted-foreground text-center text-xs', className)}>
-      {text}{' '}
-      {firstLink && (
-        <a
-          href={firstLink.href}
-          className='hover:text-primary underline underline-offset-4'
-        >
-          {firstLink.label}
-        </a>
+    <p
+      className={cn(
+        'text-muted-foreground text-center text-xs leading-5',
+        props.className
       )}
-      {secondLink && (
-        <>
-          {' '}
-          {t('and')}{' '}
-          <a
-            href={secondLink.href}
-            className='hover:text-primary underline underline-offset-4'
-          >
-            {secondLink.label}
-          </a>
-        </>
-      )}
-      .
+    >
+      <Trans
+        t={t}
+        i18nKey={i18nKey}
+        values={{ systemName }}
+        components={{
+          terms: <a href='/user-agreement' className={linkClassName} />,
+          privacy: <a href='/privacy-policy' className={linkClassName} />,
+        }}
+      />
     </p>
   )
 }

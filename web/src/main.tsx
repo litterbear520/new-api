@@ -21,17 +21,22 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 
+import { useSiteBarStore } from '@/components/site-bar/store'
+import { dropHeroShell } from '@/features/home/night-sea/hero-shell'
+import { bootstrapAuthentication } from '@/lib/auth-session'
 import { installBuildMetadata } from '@/lib/build-metadata'
-import { applyFaviconToDom } from '@/lib/dom-utils'
 import '@/lib/dayjs'
+import { applyFaviconToDom } from '@/lib/dom-utils'
 import { initializeFrontendCache } from '@/lib/frontend-cache'
 import { createAppQueryClient } from '@/lib/query-client'
 import { readCachedStatus, statusQueryOptions } from '@/lib/status-query'
+import { clearRetiredThemePreferences } from '@/lib/theme-storage'
 
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
 import { ThemeProvider } from './context/theme-provider'
-import './i18n/config'
+import { prefetchSetupStatus } from './features/setup/api'
+import { i18nReady } from './i18n/config'
 // Generated Routes
 import { routeTree } from './routeTree.gen'
 
@@ -41,11 +46,26 @@ import './styles/index.css'
 // Ensure VChart theme is initialized before any chart mounts (prevents white default theme flash)
 // VChart theme is driven by our ThemeProvider (html.light/html.dark) via per-chart `theme` prop.
 initializeFrontendCache()
+clearRetiredThemePreferences()
 installBuildMetadata()
 
 const queryClient = createAppQueryClient(() => {
   void router.navigate({ to: '/500' })
 })
+
+/**
+ * Whether a page sits on the dark night sky (home and the sign-in pages).
+ * The page on screen says so itself (useDarkSiteBar); the next one can only
+ * be guessed from its route, which misses a home page the admin replaced:
+ * then two light pages cross-fade, which does no harm.
+ */
+function onNightSky(pathname: string) {
+  return router
+    .matchRoutes(pathname)
+    .some(
+      (match) => match.routeId === '/' || match.routeId.startsWith('/(auth)')
+    )
+}
 
 // Create a new router instance
 const router = createRouter({
@@ -53,6 +73,29 @@ const router = createRouter({
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
+  // Going between the night sky and the light pages cross-fades the whole
+  // screen under the site bar, which stays put (see
+  // components/site-bar/site-bar.css); other page changes only fade the page in.
+  defaultViewTransition: {
+    types: ({ fromLocation, toLocation, pathChanged }) => {
+      if (!fromLocation || !pathChanged) return false
+      const fromDark = useSiteBarStore.getState().darkPages > 0
+      if (fromDark === onNightSky(toLocation.pathname)) {
+        return false
+      }
+      return ['page']
+    },
+  },
+})
+
+// The home page's first screen comes with the HTML (features/home/night-sea/
+// hero-shell.ts); any other page takes it away, and so does an error in place
+// of the home page (the home page itself does once it shows its own)
+router.subscribe('onResolved', ({ toLocation }) => {
+  const failed = router.state.matches.some(
+    (match) => match.status === 'error' || match.status === 'notFound'
+  )
+  if (toLocation.pathname !== '/' || failed) dropHeroShell()
 })
 
 // Register the router instance for type safety
@@ -60,6 +103,21 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
+}
+
+// What the first page waits for (the session and setup checks the root guard
+// makes, and the page's own code) starts now, alongside the language file,
+// instead of one after the other once React renders. Both checks are shared
+// with the guard, so nothing is requested twice.
+void bootstrapAuthentication().catch(() => undefined)
+prefetchSetupStatus()
+try {
+  for (const match of router.matchRoutes(router.latestLocation)) {
+    const route = router.looseRoutesById[match.routeId]
+    if (route) router.loadRouteChunk(route)?.catch(() => undefined)
+  }
+} catch {
+  // the router loads them itself when it renders
 }
 
 // Render the app
@@ -102,17 +160,20 @@ if (!rootElement) {
 })()
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
-  root.render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <FontProvider>
-            <DirectionProvider>
-              <RouterProvider router={router} />
-            </DirectionProvider>
-          </FontProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </StrictMode>
+  // Wait for the interface language's chunk, so the first paint is never English.
+  void i18nReady.then(() =>
+    root.render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <FontProvider>
+              <DirectionProvider>
+                <RouterProvider router={router} />
+              </DirectionProvider>
+            </FontProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </StrictMode>
+    )
   )
 }

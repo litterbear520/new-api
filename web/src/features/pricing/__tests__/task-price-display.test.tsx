@@ -43,6 +43,27 @@ import {
 import type { PricingModel, BillingUsageSchema } from '../types'
 
 vi.mock('@visactor/react-vchart', () => ({ VChart: () => null }))
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-router')>()),
+  Link: ({
+    to,
+    params,
+    search: _search,
+    children,
+    ...rest
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    to: string
+    params?: Record<string, string>
+    search?: unknown
+  }) => (
+    <a
+      href={params?.modelId ? to.replace('$modelId', params.modelId) : to}
+      {...rest}
+    >
+      {children}
+    </a>
+  ),
+}))
 
 it('shows an explicit free request price alongside token prices with distinct units', () => {
   render(
@@ -117,7 +138,7 @@ it('shows nested task conditions and prices in detail and group tables without a
   }
   render(
     <QueryClientProvider client={client}>
-      <ModelCard model={nestedModel} onClick={vi.fn()} />
+      <ModelCard model={nestedModel} />
       <ModelPriceCell model={nestedModel} />
       <ModelDetailsContent
         model={nestedModel}
@@ -228,7 +249,7 @@ it('updates count unit labels across cards, table cells and breakdowns with loca
   render(
     <>
       <div data-testid='card'>
-        <ModelCard model={imageModel} onClick={() => {}} />
+        <ModelCard model={imageModel} />
       </div>
       <div data-testid='cell'>
         <ModelPriceCell model={imageModel} />
@@ -343,7 +364,7 @@ it('shows one standard task price and a localized group price without duplicate 
 })
 
 it('labels even a single task price on model cards', async () => {
-  render(<ModelCard model={model} onClick={() => {}} />)
+  render(<ModelCard model={model} />)
   expect(screen.getByText('Song generation unit price')).toBeVisible()
   await act(() => i18next.changeLanguage('zhCN'))
   expect(screen.getByText('生成歌曲单价')).toBeVisible()
@@ -654,7 +675,7 @@ it('shows provider count, price range and missing-price status in both list and 
   render(
     <QueryClientProvider client={client}>
       <ModelPriceCell model={shared} />
-      <ModelCard model={shared} onClick={vi.fn()} />
+      <ModelCard model={shared} />
     </QueryClientProvider>
   )
   expect(screen.getAllByText(/3 providers/)).toHaveLength(2)

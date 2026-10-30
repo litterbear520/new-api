@@ -18,14 +18,17 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import {
   Activity,
+  BarChart3,
+  Bell,
+  BookOpen,
   Box,
   ClipboardList,
   CreditCard,
   FileText,
-  FlaskConical,
+  Gift,
+  Image as ImageIcon,
   Key,
-  LayoutDashboard,
-  ListTodo,
+  MessageCircle,
   MessageSquare,
   PlugZap,
   Radio,
@@ -33,14 +36,16 @@ import {
   Settings,
   ShieldCheck,
   Ticket,
-  User,
+  UserRound,
   Users,
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import type { SidebarData } from '@/components/layout/types'
+import { useStatus } from '@/hooks/use-status'
 import { ROLE } from '@/lib/roles'
+import { useDrawDotStore } from '@/stores/draw-dot-store'
 
 /**
  * Root navigation groups for the application sidebar.
@@ -50,20 +55,33 @@ import { ROLE } from '@/lib/roles'
  */
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
+  const { status } = useStatus()
+  const docsLink = (status?.docs_link as string | undefined) || '/docs/'
+  const drawDot = useDrawDotStore((s) => s.dot)
+  let drawDotLabel: string | undefined
+  if (drawDot === 'new') drawDotLabel = t('New')
+  if (drawDot === 'done') drawDotLabel = t('Drawing finished')
 
   return {
     navGroups: [
       {
         id: 'chat',
-        title: t('Chat'),
         items: [
           {
-            title: t('Playground'),
+            title: t('Chat'),
             url: '/playground',
-            icon: FlaskConical,
+            icon: MessageCircle,
           },
           {
-            title: t('Chat'),
+            title: t('Draw pictures'),
+            url: '/draw',
+            // the old drawing page stays reachable and belongs here too
+            activeUrls: ['/draw/classic'],
+            icon: ImageIcon,
+            dot: drawDotLabel,
+          },
+          {
+            title: t('Chat apps'),
             icon: MessageSquare,
             type: 'chat-presets',
           },
@@ -71,7 +89,6 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'general',
-        title: t('General'),
         items: [
           {
             title: t('Overview'),
@@ -79,52 +96,88 @@ export function useSidebarData(): SidebarData {
             icon: Activity,
           },
           {
-            title: t('Dashboard'),
-            url: '/dashboard/models',
-            icon: LayoutDashboard,
-          },
-          {
             title: t('API Keys'),
             url: '/keys',
             icon: Key,
           },
           {
+            title: t('Usage statistics'),
+            url: '/dashboard/models',
+            // the admin sections of the same page
+            activeUrls: ['/dashboard/flow', '/dashboard/users'],
+            icon: BarChart3,
+          },
+          {
+            // task and drawing logs are tabs on the same page
             title: t('Usage Logs'),
             url: '/usage-logs/common',
+            activeUrls: ['/usage-logs/task', '/usage-logs/drawing'],
             icon: FileText,
           },
-          {
-            title: t('Audit Logs'),
-            url: '/usage-logs/audit',
-            icon: ClipboardList,
-          },
-          {
-            title: t('Task Logs'),
-            url: '/usage-logs/task',
-            activeUrls: ['/usage-logs/drawing'],
-            configUrls: ['/usage-logs/drawing', '/usage-logs/task'],
-            icon: ListTodo,
-          },
-        ],
-      },
-      {
-        id: 'personal',
-        title: t('Personal'),
-        items: [
           {
             title: t('Wallet'),
             url: '/wallet',
             icon: Wallet,
           },
           {
-            title: t('Profile'),
+            title: t('Invite rewards'),
+            url: '/invite',
+            icon: Gift,
+          },
+        ],
+      },
+      {
+        // 账户设置 and its sections, reached from the account menu at the
+        // bottom of the sidebar; each section keeps its old page's visibility
+        id: 'account',
+        searchOnly: true,
+        items: [
+          {
+            title: t('Account settings'),
             url: '/profile',
-            icon: User,
+            // the personal switch lives on this page, so it can't hide it
+            alwaysVisible: true,
+            icon: UserRound,
           },
           {
-            title: t('Security & Access'),
-            url: '/security',
+            title: t('Sign-in & security'),
+            url: '/profile',
+            search: { section: 'security' },
+            configUrls: ['/security'],
             icon: ShieldCheck,
+          },
+          {
+            title: t('Notifications'),
+            url: '/profile',
+            search: { section: 'notifications' },
+            icon: Bell,
+          },
+          {
+            title: t('Audit Logs'),
+            url: '/profile',
+            search: { section: 'audit' },
+            configUrls: ['/usage-logs/audit'],
+            icon: ClipboardList,
+          },
+        ],
+      },
+      {
+        // in the top bar's dock now (and the sidebar's site links on
+        // narrow screens); kept here so ⌘K still finds them
+        id: 'links',
+        searchOnly: true,
+        items: [
+          {
+            title: t('Model Square'),
+            url: '/pricing',
+            icon: Box,
+            external: true,
+          },
+          {
+            title: t('Docs'),
+            url: docsLink,
+            icon: BookOpen,
+            external: true,
           },
         ],
       },

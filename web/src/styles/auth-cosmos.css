@@ -1,0 +1,66 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/*
+ * Auth pages (sign-in, sign-up, password reset, verification): the home
+ * page's night-sea palette, scoped to the always-dark auth shell. Components
+ * keep using semantic tokens; only the token values change here.
+ */
+.auth-cosmos.dark {
+  --background: #03050b;
+  --foreground: #eef2fa;
+  --card: #0b1020;
+  --card-foreground: #eef2fa;
+  --popover: #0b1020;
+  --popover-foreground: #eef2fa;
+  --primary: #eef2fa;
+  --primary-foreground: #0b0e17;
+  --muted: rgb(22 27 42 / 82%);
+  --muted-foreground: #8e9ab4;
+  --accent: rgb(32 38 56 / 90%);
+  --accent-foreground: #eef2fa;
+  --border: rgb(190 205 240 / 14%);
+  --input: rgb(190 205 240 / 20%);
+  --ring: #f3d58e;
+}
+
+/* Darken the middle where the form sits; keep the edges of the sky visible. */
+.auth-cosmos-veil {
+  background: linear-gradient(
+    180deg,
+    rgb(3 5 11 / 35%),
+    rgb(3 5 11 / 80%) 38%,
+    var(--background) 70%
+  );
+}
+
+@media (width >= 40rem) {
+  .auth-cosmos-veil {
+    background: radial-gradient(
+      ellipse 34% 62% at 50% 52%,
+      rgb(3 5 11 / 86%),
+      rgb(3 5 11 / 60%) 60%,
+      rgb(3 5 11 / 32%) 100%
+    );
+  }
+}
+
+.auth-cosmos-mark {
+  filter: drop-shadow(0 0 22px rgb(243 213 142 / 35%));
+}

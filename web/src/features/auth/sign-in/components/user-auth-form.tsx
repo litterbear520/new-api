@@ -18,8 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { Loader2, LogIn, KeyRound } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Loader2, KeyRound } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -29,6 +29,7 @@ import { Dialog } from '@/components/dialog'
 import { PasswordInput } from '@/components/password-input'
 import { Turnstile } from '@/components/turnstile'
 import { Button } from '@/components/ui/button'
+import { FieldSeparator } from '@/components/ui/field'
 import {
   Form,
   FormControl,
@@ -40,7 +41,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { login, wechatLoginByCode } from '@/features/auth/api'
-import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { loginFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
@@ -68,7 +68,8 @@ export function UserAuthForm({
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [wechatCode, setWeChatCode] = useState('')
-  const [agreedToLegal, setAgreedToLegal] = useState(false)
+  const [step, setStep] = useState<'identifier' | 'password'>('identifier')
+  const focusAfterStepChange = useRef(false)
   const [passkeySupported, setPasskeySupported] = useState(false)
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
   const [passkeyDomains, setPasskeyDomains] = useState<PasskeyDomains | null>(
@@ -80,7 +81,6 @@ export function UserAuthForm({
   const [isWeChatDialogOpen, setIsWeChatDialogOpen] = useState(false)
   const [isWeChatSubmitting, setIsWeChatSubmitting] = useState(false)
   const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0)
-  const legalConsentErrorMessage = t('Please agree to the legal terms first')
   const loginFailedMessage = t('Login failed')
 
   const { status } = useStatus()
@@ -104,13 +104,7 @@ export function UserAuthForm({
   } = useTurnstile()
   const { handleLoginResult } = useAuthRedirect()
 
-  const hasUserAgreement = Boolean(status?.user_agreement_enabled)
-  const hasPrivacyPolicy = Boolean(status?.privacy_policy_enabled)
-  const requiresLegalConsent = hasUserAgreement || hasPrivacyPolicy
-  const passkeyButtonDisabled =
-    isPasskeyLoading ||
-    !passkeySupported ||
-    (requiresLegalConsent && !agreedToLegal)
+  const passkeyButtonDisabled = isPasskeyLoading || !passkeySupported
   const hasWeChatLogin = Boolean(status?.wechat_login)
   const hasOAuthLogin = Boolean(
     status?.github_oauth ||
@@ -122,14 +116,6 @@ export function UserAuthForm({
   )
   const hasAlternativeLogin =
     passkeyLoginEnabled || hasWeChatLogin || hasOAuthLogin
-
-  useEffect(() => {
-    if (requiresLegalConsent) {
-      setAgreedToLegal(false)
-    } else {
-      setAgreedToLegal(true)
-    }
-  }, [requiresLegalConsent])
 
   useEffect(() => {
     detectPasskeySupport()
@@ -144,6 +130,38 @@ export function UserAuthForm({
       password: '',
     },
   })
+  const identifier = form.watch('username').trim()
+
+  // Move focus only after the user switches steps, never on the first render,
+  // so phones do not pop the keyboard as soon as the page opens.
+  useEffect(() => {
+    if (!focusAfterStepChange.current) return
+    focusAfterStepChange.current = false
+    form.setFocus(step === 'password' ? 'password' : 'username')
+  }, [form, step])
+
+  async function continueToPassword() {
+    if (!(await form.trigger('username'))) return
+    form.setValue('username', identifier)
+    focusAfterStepChange.current = true
+    setStep('password')
+  }
+
+  function backToIdentifier() {
+    form.setValue('password', '')
+    form.clearErrors('password')
+    focusAfterStepChange.current = true
+    setStep('identifier')
+  }
+
+  function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
+    if (step === 'identifier') {
+      event.preventDefault()
+      void continueToPassword()
+      return
+    }
+    void form.handleSubmit(onSubmit)(event)
+  }
 
   const wechatQrCodeUrl = useMemo(() => {
     return (
@@ -160,11 +178,6 @@ export function UserAuthForm({
   }, [status])
 
   async function onSubmit(data: z.infer<typeof loginFormSchema>) {
-    if (requiresLegalConsent && !agreedToLegal) {
-      toast.error(legalConsentErrorMessage)
-      return
-    }
-
     if (!validateTurnstile()) return
 
     const submittedTurnstileToken = turnstileToken
@@ -198,11 +211,6 @@ export function UserAuthForm({
   }
 
   const handleOpenWeChatDialog = () => {
-    if (requiresLegalConsent && !agreedToLegal) {
-      toast.error(legalConsentErrorMessage)
-      return
-    }
-
     setIsWeChatDialogOpen(true)
   }
 
@@ -241,11 +249,6 @@ export function UserAuthForm({
   }
 
   async function handlePasskeyLogin() {
-    if (requiresLegalConsent && !agreedToLegal) {
-      toast.error(legalConsentErrorMessage)
-      return
-    }
-
     if (!passkeySupported) {
       toast.error(t('Passkey is not supported on this device'))
       return
@@ -302,19 +305,21 @@ export function UserAuthForm({
   const alternativeLoginMethods = (
     <>
       {passkeyLoginEnabled && (
-        <div className='mt-2 space-y-1'>
+        <div className='flex flex-col gap-1'>
           <Button
             type='button'
             variant='outline'
             disabled={passkeyButtonDisabled}
             onClick={handlePasskeyLogin}
-            className='h-11 w-full justify-center gap-2 rounded-lg'
+            className='relative h-11 w-full justify-center'
           >
-            {isPasskeyLoading ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <KeyRound className='h-4 w-4' />
-            )}
+            <span aria-hidden='true' className='absolute start-4 flex'>
+              {isPasskeyLoading ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <KeyRound className='h-4 w-4' />
+              )}
+            </span>
             {t('Sign in with Passkey')}
           </Button>
           <PasskeyDomainSelector
@@ -335,7 +340,7 @@ export function UserAuthForm({
       <OAuthProviders
         status={status}
         redirectTo={redirectTo}
-        disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
+        disabled={isLoading}
         onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
         isWeChatLoading={isWeChatSubmitting}
       />
@@ -345,24 +350,31 @@ export function UserAuthForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={handleFormSubmit}
         className={cn('grid gap-4', className)}
         {...props}
       >
         {hasAlternativeLogin && alternativeLoginMethods}
 
-        {passwordLoginEnabled && (
+        {hasAlternativeLogin && passwordLoginEnabled && (
+          <FieldSeparator className='my-1'>{t('or')}</FieldSeparator>
+        )}
+
+        {passwordLoginEnabled && step === 'identifier' && (
           <>
-            {/* Username Field */}
             <FormField
               control={form.control}
               name='username'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Username or Email')}</FormLabel>
+                  <FormLabel className='sr-only'>
+                    {t('Username or Email')}
+                  </FormLabel>
                   <FormControl>
                     <Input
+                      autoComplete='username'
                       placeholder={t('Enter your username or email')}
+                      className='h-11'
                       {...field}
                     />
                   </FormControl>
@@ -371,62 +383,85 @@ export function UserAuthForm({
               )}
             />
 
-            {/* Password Field */}
+            <Button
+              type='submit'
+              className='h-11 w-full justify-center'
+              disabled={!identifier}
+            >
+              {t('Continue')}
+            </Button>
+          </>
+        )}
+
+        {passwordLoginEnabled && step === 'password' && (
+          <>
+            <div className='border-border bg-muted/40 flex h-11 items-center justify-between gap-2 rounded-lg border ps-3.5 pe-1 text-sm'>
+              <span className='truncate'>{identifier}</span>
+              <Button
+                type='button'
+                variant='link'
+                className='h-9'
+                onClick={backToIdentifier}
+              >
+                {t('Change')}
+              </Button>
+            </div>
+            {/* Lets password managers pair the saved account with the password. */}
+            <input
+              type='text'
+              name='username'
+              value={identifier}
+              autoComplete='username'
+              readOnly
+              tabIndex={-1}
+              aria-hidden='true'
+              className='sr-only'
+            />
+
             <FormField
               control={form.control}
               name='password'
               render={({ field }) => (
-                <FormItem className='relative'>
-                  <FormLabel>{t('Password')}</FormLabel>
+                <FormItem>
+                  <FormLabel className='sr-only'>{t('Password')}</FormLabel>
                   <FormControl>
                     <PasswordInput
+                      autoComplete='current-password'
                       placeholder={t('Enter password')}
+                      className='[&_input]:h-11'
                       {...field}
                     />
                   </FormControl>
                   <FormMessage />
-                  <Link
-                    to='/forgot-password'
-                    className='text-muted-foreground absolute end-0 -top-0.5 z-10 text-sm font-medium hover:opacity-75'
-                  >
-                    {t('Forgot password?')}
-                  </Link>
                 </FormItem>
               )}
             />
+            <Link
+              to='/forgot-password'
+              className='text-muted-foreground -mt-2 justify-self-end text-sm hover:opacity-75'
+            >
+              {t('Forgot password?')}
+            </Link>
 
-            {/* Submit Button */}
+            {isTurnstileEnabled && (
+              <Turnstile
+                key={turnstileWidgetKey}
+                siteKey={turnstileSiteKey}
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken('')}
+              />
+            )}
+
             <Button
               type='submit'
-              className='mt-2 w-full justify-center gap-2'
+              className='h-11 w-full justify-center gap-2'
               disabled={isLoading}
             >
-              {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
+              {isLoading && <Loader2 className='animate-spin' />}
               {t('Sign in')}
             </Button>
-
-            {/* Turnstile */}
-            {isTurnstileEnabled && (
-              <div className='mt-2'>
-                <Turnstile
-                  key={turnstileWidgetKey}
-                  siteKey={turnstileSiteKey}
-                  onVerify={setTurnstileToken}
-                  onExpire={() => setTurnstileToken('')}
-                />
-              </div>
-            )}
           </>
         )}
-
-        <LegalConsent
-          status={status}
-          checked={agreedToLegal}
-          onCheckedChange={setAgreedToLegal}
-          className='mt-1'
-        />
-
-        {!hasAlternativeLogin && alternativeLoginMethods}
       </form>
 
       {hasWeChatLogin && (
@@ -454,11 +489,7 @@ export function UserAuthForm({
               <Button
                 type='button'
                 onClick={handleWeChatLogin}
-                disabled={
-                  isWeChatSubmitting ||
-                  !wechatCode.trim() ||
-                  (requiresLegalConsent && !agreedToLegal)
-                }
+                disabled={isWeChatSubmitting || !wechatCode.trim()}
                 className='gap-2'
               >
                 {isWeChatSubmitting ? (

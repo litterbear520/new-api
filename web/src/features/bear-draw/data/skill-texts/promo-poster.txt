@@ -1,0 +1,281 @@
+---
+name: promo-poster
+description: 做大促和节日促销海报：先定一句视觉方向，出一张 3:4 主海报，再改出 9:16 竖版和 16:9 横版，价格、折扣、活动时间逐字准确。用户提到「促销海报」「大促海报」「双11」「618」「年货节」「中秋」「店铺活动图」「满减海报」「节日海报」时使用。Designs sale and festival promo posters with exact price and discount text, then adapts them to other sizes.
+---
+
+# 促销海报
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 双11、618、年货节、中秋、店庆等活动的主海报和多尺寸延展。
+- 海报上要有价格、折扣、满减、活动时间这类准确文字。
+- 不适用：一组投放用的多角度广告（用 `ad-creative`）；直播间贴片（用 `live-douyin`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 活动名称、时间和真实的优惠内容（如「满300减40」「到手价 ¥199」），一个字都不能猜。
+   - 主推商品（上传实拍图更好）。
+   - 投放位置：店铺首页 / 朋友圈 / 社群 / 门店屏，决定要哪些尺寸。
+2. **先定视觉方向**：照下面原文的两步法，但只写一句方向名 + 3–4 行说明（色彩、版式、材质、字体气质），从原文的 22 种风格里挑一种做底。给用户看一眼再出图。
+3. **列交付清单**，确认后出图：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 主海报 | 3:4 | 1080×1440 | gpt-image-2.5-sunburst | 三段式：上活动名，中商品，下优惠和时间 |
+   | 2 | 竖版 | 9:16 | 1080×1920 | gpt-image-2.5-sunburst | 用主海报做 Image 1 编辑延展，文字不改 |
+   | 3 | 横版 Banner | 16:9 | 1920×1080 | gpt-image-2.5-sunburst | 同上，商品放右侧，文字放左侧 |
+   | 4 | 方图（可选） | 1:1 | 1080×1080 | gpt-image-2.5-sunburst | 朋友圈、社群用 |
+
+4. **一张图调用一次**：先出主海报，用户满意后再用 `edit_image` 延展到其他尺寸，提示词写「只扩展背景、调整排版，商品和所有文字不变」。
+5. **检查**：价格、折扣、日期逐字核对；数字和单位不能错一个；跑 `data/ad-law-words.json`；文字不贴边、不重叠。
+
+## 最佳实践原文
+
+### 先定视觉方向
+
+> 来源 / Source: anthropics/skills · skills/canvas-design/SKILL.md › DESIGN PHILOSOPHY CREATION · Apache-2.0 (verbatim)
+
+````text
+### THE CRITICAL UNDERSTANDING
+- What is received: Some subtle input or instructions by the user that should be taken into account, but used as a foundation; it should not constrain creative freedom.
+- What is created: A design philosophy/aesthetic movement.
+- What happens next: Then, the same version receives the philosophy and EXPRESSES IT VISUALLY - creating artifacts that are 90% visual design, 10% essential text.
+
+Consider this approach:
+- Write a manifesto for an art movement
+- The next phase involves making the artwork
+
+The philosophy must emphasize: Visual expression. Spatial communication. Artistic interpretation. Minimal words.
+````
+
+> 来源 / Source: anthropics/skills · skills/canvas-design/SKILL.md › DESIGN PHILOSOPHY CREATION · Apache-2.0 (verbatim)
+
+````text
+### HOW TO GENERATE A VISUAL PHILOSOPHY
+
+**Name the movement** (1-2 words): "Brutalist Joy" / "Chromatic Silence" / "Metabolist Dreams"
+
+**Articulate the philosophy** (4-6 paragraphs - concise but complete):
+
+To capture the VISUAL essence, express how the philosophy manifests through:
+- Space and form
+- Color and material
+- Scale and rhythm
+- Composition and balance
+- Visual hierarchy
+````
+
+> 来源 / Source: anthropics/skills · skills/canvas-design/SKILL.md › PHILOSOPHY EXAMPLES · Apache-2.0 (verbatim)
+
+````text
+**"Analog Meditation"**
+Philosophy: Quiet visual contemplation through texture and breathing room.
+Visual expression: Paper grain, ink bleeds, vast negative space. Photography and illustration dominate. Typography whispered (small, restrained, serving the visual). Japanese photobook aesthetic. Images breathe across pages. Text appears sparingly - short phrases, never explanatory blocks. Each composition balanced with the care of a meditation practice.
+
+**"Organic Systems"**
+Philosophy: Natural clustering and modular growth patterns.
+Visual expression: Rounded forms, organic arrangements, color from nature through architecture. Information shown through visual diagrams, spatial relationships, iconography. Text only for key labels floating in space. The composition tells the story through expert spatial orchestration.
+
+**"Geometric Silence"**
+Philosophy: Pure order and restraint.
+Visual expression: Grid-based precision, bold photography or stark graphics, dramatic negative space. Typography precise but minimal - small essential text, large quiet zones. Swiss formalism meets Brutalist material honesty. Structure communicates, not words. Every alignment the work of countless refinements.
+````
+
+### 版式与风格
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/banner-sizes-and-styles.md › 22 Art Direction Styles · MIT (verbatim)
+
+````text
+## 22 Art Direction Styles
+
+1. **Minimalist** — White space dominant, single focal element, 1-2 colors, clean sans-serif
+2. **Bold Typography** — Type IS the design; oversized, expressive letterforms fill canvas
+3. **Gradient / Color Wash** — Smooth transitions, mesh gradients, chromatic blends
+4. **Photo-Based** — Full-bleed photography with text overlay; hero lifestyle imagery
+5. **Illustrated / Hand-Drawn** — Custom illustrations, bespoke icons, artisan feel
+6. **Geometric / Abstract** — Shapes, lines, grids as primary visual elements
+7. **Retro / Vintage** — Distressed textures, muted palettes, serif type, halftone dots
+8. **Glassmorphism** — Frosted glass panels, blur backdrop, subtle border glow
+9. **3D / Sculptural** — Rendered objects, depth, shadows; product-centric
+10. **Neon / Cyberpunk** — Dark backgrounds, glowing neon accents, high contrast
+11. **Duotone** — Two-color photo treatment; bold brand color overlay on image
+12. **Editorial / Magazine** — Grid-heavy layouts, pull quotes, journalistic composition
+13. **Collage / Mixed Media** — Cut-paper textures, photo cutouts, layered elements
+14. **Retro Futurism** — Space-age nostalgia, chrome, gradients, optimism
+15. **Expressive / Anti-Design** — Chaotic layouts, mixed fonts, deliberate "wrong" composition
+16. **Digi-Cute / Kawaii** — Rounded shapes, pastel gradients, pixel art, playful characters
+17. **Tactile / Sensory** — Puffy/squishy textures, hyper-real materials, embossed feel
+18. **Data / Infographic** — Stats front-and-center, charts, numbers as heroes
+19. **Dark Mode / Moody** — Near-black backgrounds, rich jewel tones, high contrast
+20. **Flat / Solid Color** — Single background color, clean icons, no gradients
+21. **Nature / Organic** — Earthy tones, botanical motifs, sustainable brand feel
+22. **Motion-Ready / Kinetic** — Designed for animation; layered elements, loopable
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/banner-sizes-and-styles.md › Design Principles · MIT (verbatim)
+
+````text
+## Design Principles
+
+### Visual Hierarchy (3-Zone Rule)
+- **Top**: Logo or main value prop
+- **Middle**: Supporting message + visuals
+- **Bottom**: CTA (button/QR/URL)
+
+### Safe Zones
+- Critical content in central 70-80% of canvas
+- Avoid text/CTA within 50-100px of edges
+- YouTube: 1546 × 423px safe area inside 2560 × 1440
+- Meta/Instagram: central 80% to avoid UI chrome
+
+### CTA Rules
+- One CTA per banner
+- High contrast vs background
+- Bottom-right placement (terminal area)
+- Min 44px height for mobile tap targets
+- Action verbs: "Get", "Start", "Download", "Claim"
+
+### Typography
+- Max 2 typefaces per banner
+- Min 16px body, ≥32px headline (digital)
+- Min 4.5:1 contrast ratio
+- Max 7 words/line, 3 lines for ads
+
+### Text-to-Image Ratio
+- Ads: under 20% text (Meta penalizes)
+- Social covers: 60/40 image-to-text
+- Print: 70pt+ headlines for 3-5m viewing distance
+````
+
+> 来源 / Source: anthropics/skills · skills/canvas-design/SKILL.md › CANVAS CREATION · Apache-2.0 (verbatim)
+
+````text
+**Text as a contextual element**: Text is always minimal and visual-first, but let context guide whether that means whisper-quiet labels or bold typographic gestures. A punk venue poster might have larger, more aggressive type than a minimalist ceramics studio identity. Most of the time, font should be thin. All use of fonts must be design-forward and prioritize visual communication. Regardless of text scale, nothing falls off the page and nothing overlaps. Every element must be contained within the canvas boundaries with proper margins. Check carefully that all text, graphics, and visual elements have breathing room and clear separation. This is non-negotiable for professional execution.
+````
+
+> 来源 / Source: anthropics/skills · skills/canvas-design/SKILL.md › FINAL STEP · Apache-2.0 (verbatim)
+
+````text
+**CRITICAL**: To refine the work, avoid adding more graphics; instead refine what has been created and make it extremely crisp, respecting the design philosophy and the principles of minimalism entirely. Rather than adding a fun filter or refactoring a font, consider how to make the existing composition more cohesive with the art. If the instinct is to call a new function or draw a new shape, STOP and instead ask: "How can I make what's already here more of a piece of art?"
+````
+
+### 节日海报与真字
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.2 3D pop-up holiday card · MIT (verbatim)
+
+````text
+## 6.2 3D pop-up holiday card (product-style mock)
+Ideal for seasonal marketing concepts and print previews. Emphasizes tactile realism—paper layers, fibers, folds, and soft studio lighting—so the result reads as a photographed physical product rather than a flat illustration.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.2 holiday card (prompt) · MIT (verbatim)
+
+````text
+Create a Christmas holiday card illustration.
+
+Scene:
+{scene_description}
+
+Mood:
+Warm, nostalgic, gentle, emotional.
+
+Style:
+Premium holiday card photography, soft cinematic lighting,
+realistic textures, shallow depth of field,
+tasteful bokeh lights, high print-quality composition.
+
+Constraints:
+- Original artwork only
+- No trademarks
+- No watermarks
+- No logos
+
+Include ONLY this card text (verbatim):
+"{short_copy}"
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.5 Marketing Creatives with Real Text · MIT (verbatim)
+
+````text
+Marketing creatives with real in-image text are great for rapid ad concepting, but typography needs explicit constraints. Put the exact copy in quotes, demand verbatim rendering (no extra characters), and describe placement and font style. If text fidelity is imperfect, keep the prompt strict and iterate—small wording/layout tweaks usually improve legibility.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Text in images · Apache-2.0 (verbatim)
+
+````text
+## Text in images
+- Put literal text in quotes or ALL CAPS and specify typography (font style, size, color, placement).
+- Spell uncommon words letter-by-letter if accuracy matters.
+- For in-image copy, require verbatim rendering and no extra characters.
+````
+
+### 标签结构
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+## 本站调整
+
+- **方向说明缩短**：Anthropic 原文要求写 4–6 段「设计哲学」，再画成 90% 视觉、10% 文字的艺术作品。促销海报要卖货，文字比例更高，所以我们只写一句方向名 + 3–4 行说明，用来锁定整套的色彩和气质。原文「不加东西、只打磨」的收尾要求照用。
+- **文字准确第一**：价格、折扣、日期全部放进 Text (verbatim)，并写「render exactly once」。原文 Cookbook 的节日卡写法（Include ONLY this text）照用。
+- **价格合规**：只写商家真实的优惠；写「原价」「划线价」要有依据（促销前 7 天内的最低成交价），没有依据就只写到手价；满减、券要写清门槛。
+- **广告法**：不写「全网最低」「史上最低」「最划算」「第一」「仅此一次」（除非属实）等，详见 `data/ad-law-words.json`。
+- **节日元素**：中秋、春节可以用月亮、灯笼、祥云等传统元素，不用别家 IP 角色、明星形象和其他品牌 Logo。
+- **多尺寸延展**：先出 3:4 主海报，再用编辑延展，保证文字和商品一致；原文的「CTA 放右下」在横版里照用，竖版放底部安全区。
+- **模型**：海报都带字，默认 gpt-image-2.5-sunburst；只出无字背景时可用 gpt-image-2。
+- **尺寸**：本站出图通常是 1024×1536 或 1536×1024，页面再裁到 3:4、9:16、16:9，所以主体和字离边至少留 8%。
+- **导出**：ZIP 里按 `海报-主图-3x4.jpg`、`海报-竖版-9x16.jpg`、`海报-横版-16x9.jpg` 命名。
+- **示例**：原文的圣诞卡、洗发水广告牌只是示意；我们的示例用虚构品牌「栖木」实木家具。
+
+### 示例（虚构品牌「栖木」，双11 主海报）
+
+```text
+Use case: product-mockup
+Asset type: Double 11 sale poster, portrait 3:4
+Primary request: warm, premium sale poster for a solid-wood side table
+Input images: Image 1: product photo of the QIMU walnut side table (keep exactly)
+Scene/backdrop: minimal living-room corner, warm plaster wall, late-afternoon sun shapes on the wall
+Subject: the side table with a ceramic vase and an open book, product fully visible
+Style/medium: editorial interior photography with bold modern typography; direction "Quiet Grain": warm neutrals, generous space, one strong accent
+Composition/framing: portrait 3:4; top band event title; middle product; bottom band offer and date; 8% safe margin all around
+Lighting/mood: golden hour, calm and premium
+Color palette: walnut brown, linen white #F4EEE6, accent persimmon #D9532B
+Text (verbatim): "栖木 双11" (top, large); "满300减40" (bottom, largest); "11.1–11.11" (bottom, small)
+Constraints: preserve the table exactly as in Image 1; render each text exactly once; no other text; no other logos; no watermark
+Avoid: crossed-out prices, starbursts with extra words, clutter around the product
+```

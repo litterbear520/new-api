@@ -1,0 +1,271 @@
+---
+name: ad-creative
+description: 做一组投放广告图：先定 3 个不同的「点击理由」（角度），每个角度出一张主图，用户挑中后再延展到 1:1、4:5、9:16、16:9 多尺寸。用户提到「广告图」「投放素材」「信息流广告」「朋友圈广告」「千川素材」「广告创意」「A/B 测试素材」「多尺寸广告」时使用。Builds paid-ad image sets: angles first, one master per angle, then multi-size variants.
+---
+
+# 广告创意
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。更多静态广告版式见 `references/static-templates.md`。
+
+## 适用
+
+- 抖音、朋友圈、视频号、小红书、淘宝站外等信息流投放，需要几组不同角度的图来测试。
+- 已经有商品、卖点和目标人群，想要「一组可以测的素材」，而不是一张图。
+- 不适用：单张活动海报（用 `promo-poster`）；电商主图（用 `taobao-main-set`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 卖什么、给谁、想让人做什么（下单 / 留资 / 下载）。
+   - 有没有真实素材可以当依据：用户评价、跑得好的旧广告、评论区问题。没有就只用用户确认的卖点。
+   - 投放平台，决定尺寸。
+2. **定 3 个角度**：照下面原文 Step 1 的角度表，挑 3 个不同动机（痛点 / 结果 / 对比 / 身份 / 社会证明…），每个角度写一句标题 + 一句画面说明 + 它依据的真实素材。给用户确认。
+3. **先出 3 张主图**（每个角度 1 张，默认 1:1），用户挑中 1–2 个再延展多尺寸：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 角度 A 主图 | 1:1 | 1080×1080 | gpt-image-2.5-sunburst | 一个角度一句标题，标题 ≤12 字 |
+   | 2 | 角度 B 主图 | 1:1 | 1080×1080 | gpt-image-2.5-sunburst | 换动机，不只是换措辞 |
+   | 3 | 角度 C 主图 | 1:1 | 1080×1080 | gpt-image-2.5-sunburst | 换版式模板（见原文模板） |
+   | 4 | 延展 4:5 | 4:5 | 1080×1350 | gpt-image-2.5-sunburst | 用选中的主图做 Image 1 编辑延展 |
+   | 5 | 延展 9:16 | 9:16 | 1080×1920 | gpt-image-2.5-sunburst | 字放在竖屏安全带内 |
+   | 6 | 延展 16:9 | 16:9 | 1920×1080 | gpt-image-2.5-sunburst | 文字和商品左右分开 |
+
+   全部做完是「角度数 × 4 张」，3 个角度就是 12 张，所以先出主图、再延展，计划卡上写清每一步的张数和金额。
+4. **一张图调用一次**：主图用 `generate_image`（有商品图用 `edit_image`），延展用 `edit_image`，提示词写「只扩展背景、重新排版；商品、标题、价格不变」。
+5. **检查**：标题逐字核对；同一批里句式不要都一样；跑 `data/ad-law-words.json`；每张图标注它属于哪个角度、依据了什么素材。
+
+## 最佳实践原文
+
+### 角度 → 变体 → 校验
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/SKILL.md › Generating Ad Copy · MIT (verbatim)
+
+````text
+### Step 1: Define Your Angles
+
+Before writing individual headlines, establish 3-5 distinct **angles** — different reasons someone would click. Each angle should tap into a different motivation.
+
+**Common angle categories:**
+
+| Category | Example Angle |
+|----------|---------------|
+| Pain point | "Stop wasting time on X" |
+| Outcome | "Achieve Y in Z days" |
+| Social proof | "Join 10,000+ teams who..." |
+| Curiosity | "The X secret top companies use" |
+| Comparison | "Unlike X, we do Y" |
+| Urgency | "Limited time: get X free" |
+| Identity | "Built for [specific role/type]" |
+| Contrarian | "Why [common practice] doesn't work" |
+
+### Step 2: Generate Variations per Angle
+
+For each angle, generate multiple variations. Vary:
+- **Word choice** — synonyms, active vs. passive
+- **Specificity** — numbers vs. general claims
+- **Tone** — direct vs. question vs. command
+- **Structure** — short punch vs. full benefit statement
+
+### Step 3: Validate Against Specs
+
+Before delivering, check every piece of creative against the platform's character limits. Flag anything that's over and provide a trimmed alternative.
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/SKILL.md › Batch Generation Workflow · MIT (verbatim)
+
+````text
+### 2. Generate in waves
+- Wave 1: Core angles (3-5 angles, 5 variations each)
+- Wave 2: Extended variations on top 2 angles
+- Wave 3: Wild card angles (contrarian, emotional, specific)
+
+### 3. Quality filter
+- Remove anything over character limit
+- Remove duplicates or near-duplicates
+- Flag anything that might violate platform policies
+- Ensure headline/description combinations make sense together
+````
+
+### 写标题
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/SKILL.md › Writing Quality Standards · MIT (verbatim)
+
+````text
+### Headlines That Click
+
+**Strong headlines:**
+- Specific ("Cut reporting time 75%") over vague ("Save time")
+- Benefits ("Ship code faster") over features ("CI/CD pipeline")
+- Active voice ("Automate your reports") over passive ("Reports are automated")
+- Include numbers when possible ("3x faster," "in 5 minutes," "10,000+ teams")
+
+**Avoid:**
+- Jargon the audience won't recognize
+- Claims without specificity ("Best," "Leading," "Top")
+- All caps or excessive punctuation
+- Clickbait that the landing page can't deliver on
+- Shortened or nicknamed product names — use the exact product name the
+  brief gives, in every field of every concept, unless a short form is
+  explicitly approved
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/SKILL.md › Writing Quality Standards · MIT (verbatim)
+
+````text
+### No AI Tells
+
+Ad copy that reads as generated looks like every other ad in the feed, and generating at volume multiplies whatever tic the first draft has. Check the whole batch.
+
+Never write these:
+- **Contrast reveals**: "It's not X, it's Y." "Not because X. Because Y." State Y directly, with the reason.
+- **Negation lists**: "No X, no Y, no Z." Say what does happen. One plain absence ("No card required") is fine.
+- **Trailing pile-ons**: a full claim, then a comma and more restating clauses. End the sentence at the claim.
+- **Self-answered questions and colon reveals**: "The result? 3x faster." "The best part: it learns." FAQ questions and a question in the reader's own voice are fine.
+- **Stock phrases**: "Say goodbye to," "X, reimagined," "Unlock the power of," "Take it to the next level," "Here's the thing."
+- **Em dashes** in headlines, descriptions, and primary text.
+
+Ad-specific tells:
+- **Stacked negations to fit a character limit**: "No setup. No fees. No contracts." Keep the one that matters most and use the space for a fact.
+- **Hook slop**: a generic "POV:", "Stop scrolling," "Here's what nobody tells you about X." Earn the next second with something specific to the viewer. A POV hook is fine when the situation is hyper-specific ("POV: it's 3pm and you're on your fourth coffee").
+- **CTA slop**: "Get started today," "Join thousands of happy customers." Name the action and what they get.
+
+Across a batch, vary the sentence shapes. Ten variations that all open the same way read as generated, even when each one is fine alone. For the full blacklist, use the **copywriting** skill's AI-tells reference.
+````
+
+### 不编造
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/SKILL.md › Grounded Inputs · MIT (verbatim)
+
+````text
+**Grounding rules:**
+- Every concept cites its source (which review, winning ad, or comment it traces to)
+- No invented claims, stats, or testimonials — ever
+- If `inputs/winning-ads/` or `inputs/reviews/` is empty, stop and ask the user to populate it before generating. Do not generate ungrounded concepts as a fallback.
+- Inputs decay: refresh `inputs/winning-ads/` as new ads scale; refresh `inputs/reviews/` and `inputs/comments/` monthly
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Generation Rules · MIT (verbatim)
+
+````text
+## Generation Rules
+
+- Every variation must include: **template name, headline copy, body copy, visual description, source grounding**
+- Source grounding = which review, winning ad, or comment this concept is based on
+- Never produce a variation without source grounding — no invented claims, stats, or testimonials
+- Pull copy directly from customer language whenever possible; don't paraphrase reviews into marketing-speak
+- Match the brand voice doc on tone, not generic direct-response voice
+- Real names, real stats, real quotes only — fabricated social proof is a compliance and trust violation
+````
+
+### 版式模板（节选，更多见 references）
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 1 Headline Statement · MIT (verbatim)
+
+````text
+### 1. Headline Statement
+
+Bold one-line claim. Single product hero shot. Minimal background. The headline does all the work.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. OG print-era format; only cranks with *amazing* messaging, and pairs best with a Callout treatment (see below).
+- **Structure**: One dominant text line (60%+ of visual weight), product image, logo small
+- **Copy slot**: One claim specific enough to stop the scroll
+- **DTC example**: "The last greens powder you'll ever buy."
+- **SaaS example**: "Close your books in 3 days, not 3 weeks."
+- **Source it from**: Your strongest winning-ad hook or the most repeated benefit in reviews
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 2 Us vs. Them · MIT (verbatim)
+
+````text
+### 2. Us vs. Them
+
+Side-by-side comparison. Competitor or "old way" on the left (grayed out), your product on the right (full color). 4-6 comparison rows.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. "Us vs. them" reliably sneaks into a brand's top 8; converts well for people already weighing you against an alternative, but rarely the format that opens cold net-new reach.
+- **Structure**: Two columns, check/cross marks per row, your side visually alive
+- **Copy slot**: Comparison rows — each row a real differentiator, not filler
+- **DTC example**: "Their multivitamin: 13 ingredients. Ours: 60."
+- **SaaS example**: "Spreadsheets: 6 hours a week. Us: 6 minutes."
+- **Source it from**: Reviews that mention switching, or comments comparing you to a competitor
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Per-Concept Output Format · MIT (verbatim)
+
+````text
+## Per-Concept Output Format
+
+Each generated concept follows this structure:
+
+```markdown
+## Concept [N]: [Template Name]
+
+**Headline**: [the headline copy]
+**Body**: [supporting copy, if the template uses it]
+**Visual**: [layout description specific enough to design or generate from]
+**Image prompt**: [prompt for the image tool, if generating — see generative-tools.md]
+**Grounded in**: [which review / winning ad / comment this traces to, quoted or named]
+```
+
+Record each concept's **tier** alongside its template so the reviewer sees the funnel role at a glance. For a batch, add an `INDEX.md` listing every concept with its template type, tier, and grounding source, so the reviewer can scan 50 concepts in two minutes.
+````
+
+### 把 brief 写进图像提示词
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 4.6 Ads Generation · MIT (verbatim)
+
+````text
+## 4.6 Ads Generation
+
+Ad generation works best when the prompt is written like a creative brief rather than a purely technical image spec. Describe the brand, audience, culture, concept, composition, and exact copy, then let the model make taste-driven creative decisions inside those boundaries. This is useful for early campaign exploration because the model can interpret audience cues, infer art direction, and propose visual details that make the ad feel considered rather than merely rendered.
+
+For stronger results, include the brand positioning, desired vibe, target audience, scene, and tagline in the same prompt. If the text must appear in the image, quote it exactly and ask for clean, legible typography.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 4.6 Ads Generation (prompt) · MIT (verbatim)
+
+````text
+Give me a cool in culture ad / fashion shot for a brand called Thread. 
+It's a hip young street brand. The ad shows a group of friends hanging out together with the tagline "Yours to Create."
+Make it feel like a polished campaign image for a youth streetwear audience: stylish, contemporary, energetic, and tasteful.
+Use clean composition, strong color direction, natural poses, and premium fashion photography cues.
+Render the tagline exactly once, clearly and legibly, integrated into the ad layout.
+No extra text, no watermarks, no unrelated logos.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Decision tree · Apache-2.0 (verbatim)
+
+````text
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+````
+
+## 本站调整
+
+- **平台换成国内**：原文的字符限制（Google RSA 30 字符、Meta 40 字符等）只对英文投放有用。国内投放我们统一用：图内标题 ≤12 字，副标题 ≤16 字，按钮文字 ≤6 字；具体以投放后台为准。
+- **尺寸**：1:1、4:5、9:16、16:9 四种覆盖大部分信息流位置。本站出图通常是 1024×1024、1024×1536、1536×1024，页面再裁到目标比例，所以字离边至少留 8%；9:16 按 `live-douyin` 里的竖屏安全带放字。
+- **先少后多**：原文按 50 个概念一批来做；我们按张收费，所以先 3 个角度各 1 张，选中再延展，避免一次出 12 张以上。超过 3 张都要先确认。
+- **评价、销量、对比要真**：原文要求每个概念都引用真实评价或数据，`inputs/` 文件夹空着就停下。本站没有这个文件夹：用户给了真实评价就引用；没给时只用用户确认过的卖点，并且不做 Review Card、Stat Callout 这类需要评价或数据的模板，也不点名竞品。
+- **广告法**：不写「最」「第一」「全网最低」「100%」「国家级」等；对比类只写能证明的差别。详见 `data/ad-law-words.json`。
+- **原文的英文 AI 腔清单**：同样适用于中文——不用「不是 X，而是 Y」的反转句，不用「告别……」「解锁……」「开启……新篇章」这类套话，不用一串感叹号。
+- **模型**：投放图都带字，默认 gpt-image-2.5-sunburst；只要无字背景时用 gpt-image-2。
+- **导出**：ZIP 里按 `广告-A-痛点-1x1.jpg`、`广告-A-痛点-9x16.jpg` 命名，方便在后台按角度建组。
+- **示例**：原文的「Thread」街头品牌示例保留为英文原文；我们的示例用虚构品牌「北屿」跑鞋。
+
+### 示例（虚构品牌「北屿」跑鞋，角度 A：痛点）
+
+```text
+Use case: product-mockup
+Asset type: paid social feed ad, square 1:1, angle A (pain point: legs feel heavy late in a long run)
+Primary request: a runner's tired evening moment turned around by a cushioned shoe
+Input images: Image 1: product photo of the NORTHISLE Cloudstep running shoe (keep exactly)
+Scene/backdrop: city riverside path at dusk, wet pavement reflections
+Subject: the shoe in the foreground on the pavement, a runner's legs slightly out of focus behind
+Style/medium: photorealistic sports campaign photography
+Composition/framing: square 1:1; headline in the upper-left third; shoe lower-right; 8% safe margin
+Lighting/mood: blue hour with warm street-lamp rim light on the shoe
+Color palette: deep navy, sodium orange, white text
+Text (verbatim): "跑完 10 公里 脚步还轻" (headline); "北屿 云步" (small, bottom-left)
+Constraints: preserve the shoe exactly as in Image 1; the headline must match a claim the brand has confirmed; render each text exactly once; no other logos; no watermark
+Avoid: medical claims, fake ratings, crossed-out prices
+```

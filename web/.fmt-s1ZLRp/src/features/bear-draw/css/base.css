@@ -1,0 +1,174 @@
+/*
+ * The drawing page as a design agent (画图). Tokens shared by every bd-
+ * file: the console's own colours, plus a fixed night palette for the night
+ * sea (same values as the chat page's .bc-night). Light = clean studio with
+ * a dot grid; dark = the console's dark colours, with meteors on the home
+ * page; the night sea (found by wishing on one) = night sky and sea behind
+ * the canvas.
+ */
+
+@font-face {
+  font-family: 'Bear Draw Serif';
+  src: url('../../../assets/fonts/chat-greet-serif.woff2') format('woff2');
+  font-weight: 400 600;
+  font-display: swap;
+}
+
+.bd,
+.bd-pop {
+  --bd-s1: var(--background);
+  --bd-s2: var(--card);
+  --bd-ink: var(--foreground);
+  --bd-ink2: color-mix(in oklab, var(--foreground) 74%, var(--background));
+  --bd-ink3: var(--muted-foreground);
+  --bd-bd: var(--border);
+  --bd-bd2: color-mix(in oklab, var(--foreground) 18%, transparent);
+  --bd-hov: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --bd-sel: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --bd-bubble: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --bd-accent: var(--primary);
+  --bd-on-accent: var(--primary-foreground);
+  --bd-accent-ink: color-mix(in oklab, var(--primary), #000 18%);
+  --bd-danger: var(--destructive);
+  --bd-danger-bg: color-mix(in oklab, var(--destructive) 7%, transparent);
+  --bd-ok: var(--success, oklch(0.596 0.145 163.225));
+  --bd-warn: var(--warning, oklch(0.681 0.162 75.834));
+  /* studio canvas floor and its dot grid */
+  --bd-canvas: oklch(0.968 0.003 250);
+  --bd-dot: color-mix(in oklab, var(--foreground) 13%, transparent);
+  --bd-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.08);
+  --bd-shadow-pop:
+    0 2px 6px rgb(15 23 42 / 0.08), 0 18px 48px rgb(15 23 42 / 0.14);
+  --bd-sans:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'Noto Sans SC', system-ui,
+    sans-serif;
+  --bd-serif:
+    'Bear Draw Serif', 'Lora Variable', 'Songti SC', 'Noto Serif SC',
+    'Source Han Serif SC', STSong, serif;
+  --bd-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  --bd-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --bd-ease-over: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* glass: the drawing page's values */
+  --g-tint: 255 255 255;
+  --g-a: 0.62;
+  --g-edge: rgb(15 23 42 / 0.11);
+  --g-shadow:
+    0 12px 32px -14px rgb(15 23 42 / 0.24), 0 2px 6px -2px rgb(15 23 42 / 0.07);
+  --spec: 255 255 255;
+  --hair: rgb(255 255 255 / 0.55);
+}
+
+.dark .bd,
+.dark .bd-pop {
+  --bd-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.35);
+  --bd-shadow-pop: 0 2px 6px rgb(0 0 0 / 0.35), 0 18px 48px rgb(0 0 0 / 0.5);
+  --bd-canvas: transparent;
+  --bd-accent-ink: #79b6f4;
+  --bd-dot: rgb(255 255 255 / 0.07);
+  /* glass in the console's (Claude's) dark colours */
+  --g-tint: 32 32 31;
+  --g-a: 0.72;
+  --g-edge: rgb(255 255 255 / 0.1);
+  --g-shadow:
+    0 12px 32px -14px rgb(0 0 0 / 0.7), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+  --hair: rgb(255 255 255 / 0.1);
+}
+
+/* night palette: the night sea inside the design space */
+.dark .bd-night {
+  --bd-s1: #04060d;
+  --bd-s2: #0f1526;
+  --bd-ink: #e9eef7;
+  --bd-ink2: #b8c3d6;
+  --bd-ink3: #8592aa;
+  --bd-bd: rgb(255 255 255 / 0.12);
+  --bd-bd2: rgb(255 255 255 / 0.22);
+  --bd-hov: rgb(255 255 255 / 0.08);
+  --bd-sel: rgb(255 255 255 / 0.14);
+  --bd-bubble: rgb(255 255 255 / 0.08);
+  --bd-accent: #2b7fd4;
+  --bd-on-accent: #fff;
+  --bd-accent-ink: #8cc4ff;
+  --bd-danger: #ec7e7e;
+  --bd-danger-bg: rgb(236 126 126 / 0.1);
+  --bd-canvas: transparent;
+  --bd-dot: rgb(255 255 255 / 0.07);
+  --g-tint: 22 30 52;
+  --g-a: 0.55;
+  --g-edge: rgb(255 255 255 / 0.14);
+  --g-shadow: 0 14px 36px -12px rgb(0 0 0 / 0.6);
+  --spec: 200 220 255;
+  --hair: rgb(255 255 255 / 0.18);
+}
+
+/* ---------- page frame ---------- */
+.bd {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bd-s1);
+  color: var(--bd-ink);
+  font-family: var(--bd-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.bd button {
+  cursor: pointer;
+}
+.bd button:disabled {
+  cursor: default;
+}
+.bd :is(button, a, textarea, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--bd-accent);
+  outline-offset: 2px;
+}
+.bd img {
+  display: block;
+  max-width: 100%;
+}
+.bd-muted {
+  color: var(--bd-ink3);
+}
+.bd-num {
+  font-variant-numeric: tabular-nums;
+}
+.bd-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd *,
+  .bd *::before,
+  .bd *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* project menus: the title menu, 全部 on the home (outside .bd, console tokens) */
+.bd-pmenu-t {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bd-pmenu-r {
+  margin-left: auto;
+  padding-left: 8px;
+  flex: none;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}

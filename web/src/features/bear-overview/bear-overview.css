@@ -1,0 +1,1535 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/*
+ * The overview (「概览」): Claude Console's quiet home page, one column led by
+ * a stat row with the wallet card (see "one column" below). The wallet card
+ * is the one place with brand flair (the night Earth); everything else stays
+ * plain. Type sizes 12 / 13 / 14 / 16, display 22 / 30 / 32 / 38;
+ * spacing 8 / 12 / 16 / 24 / 32. Classes are prefixed bo-.
+ */
+
+/* ---------- tokens ---------- */
+/* .bo-vars: popovers render outside the page but use the same tokens */
+.bo-page,
+.bo-vars {
+  --bo-s1: var(--background);
+  --bo-s2: var(--card);
+  --bo-ink: var(--foreground);
+  --bo-ink2: color-mix(in oklab, var(--foreground) 74%, var(--background));
+  --bo-ink3: var(--muted-foreground);
+  --bo-bd: var(--border);
+  --bo-bd2: color-mix(in oklab, var(--foreground) 18%, transparent);
+  --bo-hov: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --bo-sel: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --bo-accent: var(--primary);
+  /* Link text: the primary colour pushed to 5:1 on the card */
+  --bo-accent-ink: color-mix(in oklab, var(--primary), #000 22%);
+  --bo-good: #1f7a4d;
+  --bo-warn-dot: #fab219;
+  --bo-bad: #b3261e;
+  --bo-grid: color-mix(in oklab, var(--foreground) 8%, transparent);
+  --bo-axis: color-mix(in oklab, var(--foreground) 22%, transparent);
+  /* Model families, checked with the dataviz validator on these surfaces */
+  --f-gpt: #2a78d6;
+  --f-claude: #eb6834;
+  --f-gemini: #1baf7a;
+  --f-image: #eda100;
+  --f-other: #8b929b;
+  --bo-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  --bo-ease: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --bo-gap: 16px;
+}
+.dark .bo-page,
+.dark .bo-vars {
+  --bo-accent-ink: color-mix(in oklab, var(--primary), #fff 35%);
+  --bo-good: #7fd1a5;
+  --bo-bad: #f08a84;
+  --f-gpt: #3987e5;
+  --f-claude: #d95926;
+  --f-gemini: #199e70;
+  --f-image: #c98500;
+  --f-other: #7a828c;
+}
+
+/* ---------- page ---------- */
+.bo-page {
+  /* the console scrolls the whole page, under the top bar */
+  flex: 1 0 auto;
+  padding: 40px 40px 64px;
+  container: bo-pg / inline-size;
+  color: var(--bo-ink);
+  font-size: 14px;
+}
+.bo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 336px;
+  grid-template-areas: 'head head' 'main rail';
+  column-gap: 32px;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.bo a,
+.bo-pop a {
+  text-decoration: none;
+}
+.bo-link,
+.bo-sec-h > a,
+.bo-m-p a,
+.bo-field-empty a {
+  color: var(--bo-accent-ink);
+  border-radius: 4px;
+}
+.bo-link:hover,
+.bo-sec-h > a:hover,
+.bo-m-p a:hover,
+.bo-field-empty a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.bo a:focus-visible,
+.bo-pop a:focus-visible,
+.bo-ln:has(:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.bo-nw {
+  white-space: nowrap;
+}
+
+/* ---------- header ---------- */
+.bo-head {
+  grid-area: head;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.bo-lead {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: var(--bo-ink2);
+}
+.bo-hot {
+  color: var(--bo-bad);
+  font-weight: 600;
+}
+.bo-acts {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* info icon: the text shows on hover or keyboard focus */
+.bo-i {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  margin: 0 -2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--bo-ink3);
+  cursor: help;
+}
+.bo-i svg {
+  width: 14px;
+  height: 14px;
+}
+.bo-i:hover {
+  color: var(--bo-ink);
+  background: var(--bo-hov);
+}
+.bo-i:focus-visible {
+  outline: 2px solid var(--ring);
+}
+
+/* ---------- cards ---------- */
+.bo-card {
+  border-radius: 14px;
+  background: var(--bo-s2);
+  box-shadow: 0 0 0 1px var(--bo-bd);
+}
+.bo-c {
+  min-width: 0;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.bo-c-h,
+.bo-card-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--bo-ink2);
+  white-space: nowrap;
+}
+.bo-c-h h2,
+.bo-card-h h2 {
+  flex: none;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+}
+.bo-chip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bo-hov);
+  font-size: 12px;
+  color: var(--bo-ink2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bo-v {
+  margin-top: 20px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.bo-s {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--bo-ink3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Bullet graph: the bar is today, the tick is a usual day (7-day average) */
+.bo-bullet {
+  position: relative;
+  height: 6px;
+  margin: 26px 0 4px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--bo-accent) 14%, transparent);
+}
+.bo-bullet > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  background: var(--bo-accent);
+}
+.bo-bullet > i.bo-hot-bar {
+  background: var(--bo-warn-dot);
+}
+.bo-bullet > b {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--bo-ink2);
+}
+.bo-bullet > b > span {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--bo-ink3);
+  white-space: nowrap;
+}
+
+/* ---------- usage card ---------- */
+.bo-use {
+  margin-top: var(--bo-gap);
+  padding: 16px 20px 12px;
+}
+.bo-use-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+.bo-seg {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--bo-hov);
+}
+.bo-seg > button {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--bo-ink3);
+  font-size: 13px;
+  font-weight: 400;
+}
+.bo-seg > button:hover {
+  background: none;
+  color: var(--bo-ink);
+}
+.bo-seg > button[aria-pressed='true'] {
+  background: var(--bo-s2);
+  color: var(--bo-ink);
+  font-weight: 500;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.08),
+    0 0 0 1px var(--bo-bd);
+}
+.bo-use-b {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 24px;
+  align-items: end;
+  margin-top: 8px;
+}
+.bo-use-v {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.bo-use-s {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--bo-ink3);
+}
+.bo-use-l {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 13px;
+}
+.bo-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 16px 0 0;
+  padding: 0 0 20px;
+  list-style: none;
+  font-size: 13px;
+  color: var(--bo-ink2);
+}
+.bo-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.bo-sw {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+.bo-fam-gpt {
+  --fam: var(--f-gpt);
+}
+.bo-fam-claude {
+  --fam: var(--f-claude);
+}
+.bo-fam-gemini {
+  --fam: var(--f-gemini);
+}
+.bo-fam-image {
+  --fam: var(--f-image);
+}
+.bo-fam-other {
+  --fam: var(--f-other);
+}
+.bo-sw,
+.bo-chart .bo-seg-fill {
+  background: var(--fam);
+  fill: var(--fam);
+}
+.bo-chart-box {
+  position: relative;
+  min-width: 0;
+  height: 132px;
+}
+.bo-chart {
+  display: block;
+  overflow: visible;
+}
+.bo-chart text {
+  fill: var(--bo-ink3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.bo-chart .bo-gl {
+  stroke: var(--bo-grid);
+  shape-rendering: crispEdges;
+}
+.bo-chart .bo-base {
+  stroke: var(--bo-axis);
+  shape-rendering: crispEdges;
+}
+.bo-chart .bo-today {
+  opacity: 0.5;
+}
+.bo-chart .bo-hit {
+  fill: transparent;
+}
+.bo-chart .bo-hit[data-on] {
+  fill: var(--bo-hov);
+}
+.bo-tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  min-width: 132px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow:
+    0 8px 24px rgb(0 0 0 / 0.12),
+    0 0 0 1px var(--bo-bd);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.bo-tip b {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+.bo-tip-r {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.bo-tip-r > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bo-ink2);
+}
+
+/* ---------- sections ---------- */
+.bo-sec-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 32px 0 12px;
+}
+.bo-sec-h h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.bo-sec-h p {
+  margin: 0 0 0 4px;
+  font-size: 13px;
+  color: var(--bo-ink3);
+}
+.bo-sec-h > a {
+  margin-left: auto;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---------- key limits (bars fill by what is used, like claude.ai) ---------- */
+.bo-meters {
+  padding: 0 20px;
+}
+.bo-m {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 104px;
+  gap: 24px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--bo-bd);
+}
+.bo-m:last-child {
+  border-bottom: 0;
+}
+.bo-m-n {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.bo-m-n > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bo-m-n small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--bo-ink3);
+}
+.bo-m-n small + small {
+  margin-top: 0;
+}
+.bo-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--bo-accent) 14%, transparent);
+  overflow: hidden;
+}
+.bo-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--bo-accent);
+}
+.bo-bar.bo-warn {
+  background: color-mix(in oklab, var(--bo-warn-dot) 22%, transparent);
+}
+.bo-bar.bo-warn > i {
+  background: var(--bo-warn-dot);
+}
+.bo-spent {
+  font-size: 13px;
+  color: var(--bo-ink2);
+  font-variant-numeric: tabular-nums;
+}
+.bo-m-p {
+  text-align: right;
+  font-size: 13px;
+  color: var(--bo-ink2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bo-m-p b {
+  font-weight: 600;
+  color: var(--bo-ink);
+}
+.bo-m-p small {
+  display: block;
+  font-size: 12px;
+  color: var(--bo-ink3);
+}
+.bo-m-empty {
+  padding: 20px 0;
+  font-size: 13px;
+  color: var(--bo-ink3);
+}
+.bo-upd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--bo-ink3);
+}
+
+/* Wallet card: the one place on the page with brand flair. An astronaut's
+   view at night: the Earth leans in from the right, its night side lit with
+   cities (「点亮全球」) and the sun just behind its limb. The Earth is a render
+   of NASA's Black Marble 2016 city lights (public domain) on a globe seen
+   from orbit; it is as tall as the card and pinned to the right edge, and the
+   text keeps to the left 54%. Running low swaps in an orbital sunset. */
+.bo-wallet {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 1.586;
+  padding: 18px 20px 16px;
+  border-radius: 18px;
+  color: #eef3fb;
+  background: #02040a;
+  box-shadow:
+    0 18px 36px -20px rgb(10 20 38 / 0.7),
+    inset 0 0 0 1px rgb(255 255 255 / 0.07);
+}
+.dark .bo-wallet {
+  box-shadow:
+    0 18px 36px -20px rgb(0 0 0 / 0.8),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1);
+}
+/* Stars; one set twinkles. The Earth covers the ones behind it. */
+/* The layers clip themselves: overflow: hidden on the card would stop it
+   growing past its aspect ratio when the text runs long. */
+.bo-wallet::before,
+.bo-wallet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.bo-wallet::before {
+  background-image:
+    radial-gradient(
+      0.7px 0.7px at 42.7% 76.4%,
+      rgb(255 240 214 / 0.33) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 88.8% 37.2%,
+      rgb(255 255 255 / 0.32) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.6px 0.6px at 44.4% 61.8%,
+      rgb(214 228 255 / 0.56) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1.1px 1.1px at 10% 92.7%,
+      rgb(255 255 255 / 0.57) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 90.4% 12.4%,
+      rgb(255 240 214 / 0.73) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 49.3% 4.9%,
+      rgb(255 240 214 / 0.54) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 28.2% 33.5%,
+      rgb(255 240 214 / 0.59) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 6.9% 30.3%,
+      rgb(255 255 255 / 0.71) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1px 1px at 17.8% 64.7%,
+      rgb(214 228 255 / 0.48) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 55.5% 29.1%,
+      rgb(255 255 255 / 0.61) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 5.9% 14.3%,
+      rgb(255 255 255 / 0.66) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1.1px 1.1px at 30.6% 36.2%,
+      rgb(255 255 255 / 0.6) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 68.2% 68.2%,
+      rgb(255 255 255 / 0.64) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 21.7% 79.2%,
+      rgb(214 228 255 / 0.68) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 94.7% 48.4%,
+      rgb(255 255 255 / 0.51) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1.1px 1.1px at 23.6% 53.1%,
+      rgb(255 255 255 / 0.41) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 70.7% 22.6%,
+      rgb(255 255 255 / 0.53) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 65% 18.3%,
+      rgb(214 228 255 / 0.64) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.6px 0.6px at 42.8% 70.7%,
+      rgb(255 240 214 / 0.7) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1.1px 1.1px at 22.3% 92.7%,
+      rgb(255 255 255 / 0.54) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 50.5% 58.9%,
+      rgb(255 255 255 / 0.44) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 86.9% 66.8%,
+      rgb(214 228 255 / 0.42) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 77.5% 80.2%,
+      rgb(255 240 214 / 0.61) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.6px 0.6px at 39.1% 21.1%,
+      rgb(255 240 214 / 0.68) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 69.2% 3.9%,
+      rgb(255 255 255 / 0.64) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1px 1px at 28% 77.6%,
+      rgb(255 255 255 / 0.64) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 12.8% 80.8%,
+      rgb(255 240 214 / 0.47) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 42.3% 8.4%,
+      rgb(255 255 255 / 0.38) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 32.9% 76.8%,
+      rgb(214 228 255 / 0.33) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1.1px 1.1px at 13% 53.5%,
+      rgb(255 255 255 / 0.34) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1px 1px at 63% 95.2%,
+      rgb(255 240 214 / 0.38) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 66.2% 47.5%,
+      rgb(255 255 255 / 0.48) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 75.3% 70.8%,
+      rgb(255 255 255 / 0.7) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 16.7% 43%,
+      rgb(214 228 255 / 0.45) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.7px 0.7px at 64.7% 56.4%,
+      rgb(255 240 214 / 0.49) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1px 1px at 76.6% 30.7%,
+      rgb(214 228 255 / 0.51) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1px 1px at 73.4% 44.1%,
+      rgb(255 255 255 / 0.48) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1.1px 1.1px at 63.2% 77.6%,
+      rgb(255 255 255 / 0.33) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      1px 1px at 84.4% 92.4%,
+      rgb(255 255 255 / 0.67) 0 45%,
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 43.6% 91.8%,
+      rgb(214 228 255 / 0.68) 0 45%,
+      transparent 100%
+    );
+}
+.bo-wallet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+@keyframes bo-twinkle {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+.bo-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* The render covers the right 200px of a 336x212 card plus 88px below, so
+   in the rail it scales with the card's width and a card that grows taller
+   shows more of the globe instead of moving the limb onto the text */
+.bo-earth {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 59.52%;
+  height: auto;
+  max-width: none;
+  user-select: none;
+}
+/* Film look: a soft vignette and a little grain */
+.bo-film {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      130% 120% at 40% 40%,
+      transparent 55%,
+      rgb(0 0 0 / 0.35) 100%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.bo-wtop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgb(238 243 251 / 0.8);
+}
+.bo-wtop svg {
+  width: 20px;
+  height: 20px;
+}
+.bo-amt {
+  margin-top: 14px;
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.bo-wsub {
+  margin-top: 6px;
+  max-width: 54%;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgb(238 243 251 / 0.8);
+}
+.bo-wm {
+  width: 54%;
+  margin-top: auto;
+  padding-top: 10px;
+}
+.bo-wrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bo-wrow b {
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bo-wbar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.18);
+  overflow: hidden;
+}
+.bo-wbar > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.9);
+}
+.bo-wallet.bo-low .bo-wsub {
+  color: #ffd1a6;
+}
+.bo-wallet.bo-low .bo-wbar > i {
+  background: #ff9d5c;
+}
+
+/* ---------- connection details ---------- */
+.bo-acc {
+  padding: 16px 20px;
+}
+.bo-acc h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.bo-kv + .bo-kv {
+  margin-top: 16px;
+}
+.bo-lab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--bo-ink3);
+}
+.bo-lab-r {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.bo-fmt {
+  margin-left: auto;
+  padding: 2px;
+  gap: 1px;
+  border-radius: 7px;
+}
+.bo-fmt > button {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.bo-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 4px 0 12px;
+  border-radius: 8px;
+  background: var(--bo-hov);
+  box-shadow: inset 0 0 0 1px var(--bo-bd);
+  font: 13px var(--bo-mono);
+}
+.bo-field > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bo-field-empty {
+  padding: 0 12px;
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--bo-bd2);
+  color: var(--bo-ink3);
+  font-family: inherit;
+}
+.bo-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--bo-ink3);
+}
+.bo-lines {
+  display: grid;
+  gap: 2px;
+}
+.bo-ln {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  margin: 0 -8px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--bo-ink);
+  cursor: pointer;
+}
+.bo-ln:hover {
+  background: var(--bo-hov);
+}
+.bo-ln:has([data-checked]) {
+  background: color-mix(in oklab, var(--bo-accent) 9%, transparent);
+}
+.bo-ln-nm {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bo-ms {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bo-ink3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bo-ms > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bo-sel);
+}
+.bo-ms > i[data-grade='excellent'] {
+  background: #0ca30c;
+}
+.bo-ms > i[data-grade='good'] {
+  background: #fab219;
+}
+.bo-ms > i[data-grade='slow'] {
+  background: #f07f12;
+}
+.bo-ms > i[data-grade='unreachable'] {
+  background: #e5484d;
+}
+
+/* collapsed connection details (running low) */
+.bo-fold {
+  padding: 0;
+}
+.bo-fold > h2 {
+  margin: 0;
+}
+.bo-fold-t {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px 14px 20px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.bo-fold-t:hover {
+  background: var(--bo-hov);
+}
+.bo-fold-t > span:first-child {
+  flex: none;
+  white-space: nowrap;
+}
+.bo-fold-t:focus-visible {
+  outline: 2px solid var(--ring);
+}
+.bo-fold-sum {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 12px var(--bo-mono);
+  color: var(--bo-ink3);
+}
+.bo-fold-t > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--bo-ink3);
+  transition: transform 0.15s var(--bo-ease);
+}
+.bo-fold[data-open] .bo-fold-t {
+  border-radius: 14px 14px 0 0;
+}
+.bo-fold[data-open] .bo-fold-t > svg {
+  transform: rotate(180deg);
+}
+.bo-fold[data-open] .bo-fold-sum {
+  visibility: hidden;
+}
+.bo-fold-b {
+  padding: 4px 20px 16px;
+}
+
+/* skeletons keep the layout while data loads */
+.bo-skel {
+  display: block;
+  border-radius: 6px;
+  background: var(--bo-sel);
+  animation: bo-skel 1.4s ease-in-out infinite;
+}
+@keyframes bo-skel {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.bo-lead,
+.bo-m-n small,
+.bo-hint {
+  text-wrap: pretty;
+}
+
+/* ---------- narrower ---------- */
+@container bo-pg (max-width: 1099px) {
+  .bo {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    column-gap: 24px;
+  }
+  .bo-c {
+    padding: 16px;
+  }
+  .bo-v {
+    font-size: 26px;
+  }
+  .bo-m {
+    grid-template-columns: 172px minmax(0, 1fr) 96px;
+    gap: 16px;
+  }
+  .bo-use-b {
+    grid-template-columns: 148px minmax(0, 1fr);
+    gap: 16px;
+  }
+  .bo-amt {
+    font-size: 34px;
+  }
+  .bo-acc {
+    padding: 16px;
+  }
+  .bo-fold {
+    padding: 0;
+  }
+}
+/* One column: wallet → main → connection details; new users see the
+   checklist first. */
+@container bo-pg (max-width: 899px) {
+  /* Wide cards: the globe at its 1x size, pinned to the right edge, so the lit
+     coast stays in view and long text never pulls the limb leftward */
+  .bo-earth {
+    width: 200px;
+  }
+  .bo {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'head' 'wal' 'ma' 'acc' 'mb';
+  }
+  .bo[data-kind='new'] {
+    grid-template-areas: 'head' 'ma' 'wal' 'acc' 'mb';
+  }
+  .bo-acc {
+    grid-area: acc;
+    margin-top: 32px;
+  }
+}
+@container bo-pg (max-width: 720px) {
+  .bo-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .bo-acts {
+    margin-left: 0;
+  }
+  .bo-c {
+    padding: 12px;
+  }
+  .bo-c-h {
+    font-size: 13px;
+  }
+  .bo-c-h .bo-chip {
+    display: none;
+  }
+  .bo-v {
+    margin-top: 12px;
+    font-size: 22px;
+  }
+  .bo-s {
+    white-space: normal;
+    font-size: 12px;
+  }
+  .bo-use-b {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bo-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    padding-bottom: 0;
+  }
+  .bo-m {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+  }
+  .bo-m .bo-bar,
+  .bo-m .bo-spent {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .bo-sec-h p {
+    display: none;
+  }
+}
+@container bo-pg (max-width: 520px) {
+  .bo-page {
+    padding: 24px 16px 48px;
+  }
+  .bo-c-h {
+    white-space: normal;
+  }
+  .bo-c-h h2 {
+    flex: 0 1 auto;
+  }
+  .bo-seg > button {
+    padding: 0 8px;
+  }
+  /* The two toggles get their own line under the title */
+  .bo-use .bo-card-h {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .bo-use-ctl {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bo-wallet::after,
+  .bo-skel {
+    animation: none;
+  }
+}
+
+/* ---------- dedicated account quota (专属号额度) ---------- */
+.bo-qx {
+  /* Amber text: --bo-warn-dot is too light for words on the card */
+  --bo-qx-warn-ink: #a15c00;
+  margin-bottom: var(--bo-gap);
+  padding: 16px 20px;
+}
+.dark .bo-qx {
+  --bo-qx-warn-ink: #f2b65c;
+}
+.bo-qx-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bo-qx-h h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.bo-qx-plan {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bo-hov);
+  font-size: 12px;
+  color: var(--bo-ink2);
+  white-space: nowrap;
+}
+.bo-qx-desc {
+  margin: 4px 0 14px;
+  font-size: 12px;
+  color: var(--bo-ink3);
+}
+.bo-qx-row + .bo-qx-row {
+  margin-top: 14px;
+}
+.bo-qx-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.bo-qx-top span {
+  color: var(--bo-ink2);
+}
+.bo-qx-top b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bo-qx-sub {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--bo-ink3);
+  font-variant-numeric: tabular-nums;
+}
+/* What is left: green from 70%, amber from 30%, red below */
+.bo-bar.bo-qx-good {
+  background: color-mix(in oklab, var(--bo-good) 16%, transparent);
+}
+.bo-bar.bo-qx-good > i {
+  background: var(--bo-good);
+}
+.bo-bar.bo-qx-bad {
+  background: color-mix(in oklab, var(--bo-bad) 18%, transparent);
+}
+.bo-bar.bo-qx-bad > i {
+  background: var(--bo-bad);
+}
+.bo-qx-good-t {
+  color: var(--bo-good);
+}
+.bo-qx-warn-t {
+  color: var(--bo-qx-warn-ink);
+}
+.bo-qx-bad-t {
+  color: var(--bo-bad);
+}
+.bo-qx-rc {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--bo-bd);
+  border-radius: 8px;
+  background: var(--bo-hov);
+  font-size: 12px;
+}
+.bo-qx-rc-h {
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--bo-ink3);
+}
+.bo-qx-rc-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1.9;
+  color: var(--bo-ink2);
+}
+.bo-qx-rc-row > span + span {
+  font-family: var(--bo-mono);
+  color: var(--bo-ink3);
+  white-space: nowrap;
+}
+.bo-qx-rc-row > span.bo-qx-soon {
+  color: var(--bo-qx-warn-ink);
+}
+.bo-qx-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bo-ink2);
+}
+.bo-qx-note {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bo-hov);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--bo-ink2);
+}
+.bo-qx-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bo-bd);
+  font-size: 12px;
+  color: var(--bo-ink3);
+}
+.bo-qx-acts {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+.bo-qx-foot.bo-qx-old > span {
+  color: var(--bo-qx-warn-ink);
+}
+/* Why 刷新 is greyed out: a title never shows on touch screens */
+.bo-qx-wait {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--bo-ink3);
+  text-align: end;
+}
+/* One column: right after the wallet, before the main column */
+@container bo-pg (max-width: 899px) {
+  .bo:has(.bo-qx) {
+    grid-template-areas: 'head' 'wal' 'qx' 'ma' 'acc' 'mb';
+  }
+  .bo[data-kind='new']:has(.bo-qx) {
+    grid-template-areas: 'head' 'ma' 'wal' 'qx' 'acc' 'mb';
+  }
+  .bo-qx {
+    grid-area: qx;
+    margin-bottom: 24px;
+  }
+}
+
+/* ---------- one column (2026-10, after OpenModel's dashboard) ----------
+   Page header like every console page, a stat row led by the wallet card,
+   then usage and key limits. Selectors carry .bo-one so they win over the
+   older two-column rules above. */
+.bo-page {
+  padding: 24px 24px 48px;
+}
+.bo.bo-one {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bo-gap);
+  max-width: none;
+}
+.bo-one .bo-head {
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.bo-one .bo-lead {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--bo-ink3);
+}
+.bo-one .bo-qx {
+  margin-bottom: 0;
+}
+.bo-one .bo-sec-h {
+  margin-top: 16px;
+}
+
+.bo-stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+  gap: var(--bo-gap);
+}
+.bo-stats > .bo-c {
+  min-width: 0;
+}
+/* Usage failed to load: one card in place of the three usage tiles */
+.bo-stats > .bo-stats-error {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* The wallet card as a stat tile: wider than a bank card, so the globe
+   shows its upper limb and the text keeps to the left */
+.bo-wallet.bo-compact {
+  aspect-ratio: auto;
+  min-height: 168px;
+  padding: 16px 18px 14px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+}
+.bo-wallet.bo-compact .bo-earth {
+  width: 59.52%;
+}
+.bo-wallet.bo-compact .bo-amt {
+  margin-top: 10px;
+  font-size: 30px;
+}
+.bo-wallet.bo-compact .bo-wsub {
+  font-size: 12px;
+}
+
+/* 接入信息 in a popover: the panel without its card frame. The popover is
+   portalled out of .bo-page, so it takes the page's text here. */
+.bo-pop {
+  color: var(--bo-ink);
+  font-size: 14px;
+}
+.bo-pop .bo-acc {
+  box-shadow: none;
+  background: transparent;
+}
+
+/* New account: a faint chart, one line, two buttons */
+.bo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 40px;
+  text-align: center;
+}
+.bo-empty-art {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 64px;
+  margin-bottom: 20px;
+}
+.bo-empty-art > i {
+  width: 20px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(var(--bo-sel), transparent);
+}
+.bo-empty h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.bo-empty p {
+  margin: 6px 0 0;
+  max-width: 360px;
+  font-size: 13px;
+  color: var(--bo-ink3);
+}
+.bo-empty-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+@container bo-pg (max-width: 1099px) {
+  .bo-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .bo-stats > .bo-wallet,
+  .bo-stats > .bo-stats-error {
+    grid-column: 1 / -1;
+  }
+  /* A wide card shows the globe at its 1x size on the right */
+  .bo-wallet.bo-compact .bo-earth {
+    width: 240px;
+  }
+}
+@container bo-pg (max-width: 720px) {
+  .bo-one .bo-head {
+    flex-direction: column;
+  }
+  .bo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .bo-stats > .bo-c:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@container bo-pg (max-width: 520px) {
+  .bo-page {
+    padding: 16px 16px 40px;
+  }
+}

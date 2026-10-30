@@ -1,0 +1,1526 @@
+{
+  "categories": [
+    {
+      "id": "ecom",
+      "name": "电商"
+    },
+    {
+      "id": "brand",
+      "name": "品牌"
+    },
+    {
+      "id": "social",
+      "name": "社交媒体"
+    },
+    {
+      "id": "ads",
+      "name": "海报广告"
+    },
+    {
+      "id": "pack",
+      "name": "包装"
+    }
+  ],
+  "skills": [
+    {
+      "id": "taobao-main-set",
+      "name": "淘宝主图套图",
+      "tagline": "一次出齐 5 张主图，风格统一",
+      "description": "交付 5 张 800×800 主图：首图、卖点图、场景图、细节图、白底图。适合新品上架或换图；上传实拍图时，商品外观不会走样。",
+      "category": "ecom",
+      "platforms": ["淘宝", "天猫", "京东", "拼多多"],
+      "author": "小熊API",
+      "starters": [
+        "用「淘宝主图套图」给我的保温杯出一套 5 张主图",
+        "我上传了商品图，按天猫风格做一套主图，卖点是 316 内胆、一键开盖、杯身轻",
+        "把这套主图改成拼多多 750×750 的版本"
+      ],
+      "questions": [
+        {
+          "q": "有商品实拍图吗？",
+          "multi": false,
+          "options": ["有，我上传", "没有，先出概念图"],
+          "other": false
+        },
+        {
+          "q": "主打哪几个卖点？",
+          "multi": true,
+          "options": ["保温保冷", "轻便好带", "容量大", "材质放心", "颜值高"],
+          "other": true
+        },
+        {
+          "q": "整套风格？",
+          "multi": false,
+          "options": ["干净棚拍", "生活场景", "撞色国潮"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "首图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "商品占画面 60–70%，最多品牌名 + 一句 ≤8 字卖点"
+        },
+        {
+          "label": "卖点图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "只讲一个卖点，2–3 个短标注"
+        },
+        {
+          "label": "场景图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "model": "gpt-image-2",
+          "note": "真实使用场景，不加字"
+        },
+        {
+          "label": "细节图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "model": "gpt-image-2",
+          "note": "材质、做工特写"
+        },
+        {
+          "label": "白底图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "纯白 #FFFFFF，无字、无道具"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/SKILL.md",
+          "used": "原文摘录：Step 1 – identity anchors、Step 3 – fidelity lock、Step 3 – slot prompts"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Shared prompt schema、Decision tree、Prompting best practices"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Text in images"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/static-ad-templates.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/static-ad-templates.md",
+          "used": "原文摘录：Template 17 Callout"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/references/checklist.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/references/checklist.md",
+          "used": "原文摘录：Checklist P0、Checklist P1"
+        }
+      ]
+    },
+    {
+      "id": "white-background",
+      "name": "白底商品图",
+      "tagline": "商品照变纯白底，平台直接能用",
+      "description": "交付纯白 #FFFFFF 白底图，也可同时出透明底 PNG；商品外观、Logo、标签文字都不变。适合淘宝、京东、拼多多、抖店的白底位，或者以后要换背景合成时用。",
+      "category": "ecom",
+      "platforms": ["淘宝", "天猫", "京东", "拼多多", "抖店"],
+      "author": "小熊API",
+      "starters": [
+        "用「白底商品图」把这张耳机照片做成淘宝白底图",
+        "这 3 张不同角度的商品照都做成白底，再各出一张透明底 PNG",
+        "这张白底图边缘有灰边，帮我修成纯白"
+      ],
+      "questions": [
+        {
+          "q": "用在哪个平台？",
+          "multi": true,
+          "options": ["淘宝/天猫", "京东", "拼多多", "抖店"],
+          "other": true
+        },
+        {
+          "q": "要投影吗？",
+          "multi": false,
+          "options": ["不要（默认）", "要一点淡投影"],
+          "other": false
+        },
+        {
+          "q": "要不要同时出透明底 PNG？",
+          "multi": false,
+          "options": ["要", "不要"],
+          "other": false
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "白底主图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "纯白背景，商品完整居中，四周留白均匀"
+        },
+        {
+          "label": "透明底 PNG",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-flare",
+          "note": "透明背景，边缘干净无光晕"
+        },
+        {
+          "label": "3:4 白底（可选）",
+          "ratio": "3:4",
+          "size": "750×1000",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "服饰鞋包类竖版"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/sample-prompts.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/sample-prompts.md",
+          "used": "原文摘录：Edit › background-extraction"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：5.4 Product Mockups、1.1 Model parameters"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/SKILL.md",
+          "used": "原文摘录：Step 3 – fidelity lock、Step 3 – slot prompts"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Examples、Shared prompt schema、Workflow steps 12–13"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Constraints and invariants、Use-case tips"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/references/checklist.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/references/checklist.md",
+          "used": "原文摘录：Checklist P0"
+        }
+      ]
+    },
+    {
+      "id": "detail-page",
+      "name": "详情页长图",
+      "tagline": "750 宽详情长图，一屏一个卖点",
+      "description": "按首屏、痛点、卖点、场景、细节、参数、保障排 6–8 屏，每屏单独出一张图，最后由页面拼成 750 宽长图并切片。适合淘宝、拼多多、抖店的商品详情。",
+      "category": "ecom",
+      "platforms": ["淘宝", "天猫", "拼多多", "抖店", "京东"],
+      "author": "小熊API",
+      "starters": [
+        "用「详情页长图」给我的便携榨汁杯做一套 7 屏详情",
+        "按这 3 个卖点做详情页：30 秒碎冰、USB-C 充电、杯身可拆洗",
+        "把详情页的参数屏重做一下，参数我贴给你"
+      ],
+      "questions": [
+        {
+          "q": "准备做几屏？",
+          "multi": false,
+          "options": ["6 屏", "7 屏（推荐）", "8 屏"],
+          "other": false
+        },
+        {
+          "q": "要哪些模块？",
+          "multi": true,
+          "options": [
+            "痛点",
+            "核心卖点",
+            "使用场景",
+            "细节做工",
+            "规格参数",
+            "前后对比",
+            "售后保障"
+          ],
+          "other": true
+        },
+        {
+          "q": "整体风格？",
+          "multi": false,
+          "options": ["简约白", "生活暖色", "科技深色"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "首屏",
+          "ratio": "2:3",
+          "size": "750×1125",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "商品 + 品牌 + 一句主张"
+        },
+        {
+          "label": "痛点",
+          "ratio": "2:3",
+          "size": "750×1125",
+          "model": "gpt-image-2",
+          "note": "一个场景 + 一句话"
+        },
+        {
+          "label": "核心卖点",
+          "ratio": "2:3",
+          "size": "750×1125",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "特征 → 好处，2–3 个标注"
+        },
+        {
+          "label": "使用场景",
+          "ratio": "2:3",
+          "size": "750×1125",
+          "model": "gpt-image-2",
+          "note": "真实场景，字很少"
+        },
+        {
+          "label": "细节做工",
+          "ratio": "1:1",
+          "size": "750×750",
+          "model": "gpt-image-2",
+          "note": "材质、接口、做工特写"
+        },
+        {
+          "label": "规格参数",
+          "ratio": "2:3",
+          "size": "750×1125",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "尺寸图 + ≤8 行参数，只写用户给的"
+        },
+        {
+          "label": "售后与品牌",
+          "ratio": "3:2",
+          "size": "750×500",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "真实保障 + 品牌收尾"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：4.10 Slides, Diagrams, Charts、4.9 Scientific / Educational Visuals"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Use-case tips、Text in images"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/sample-prompts.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/sample-prompts.md",
+          "used": "原文摘录：Generate › infographic-diagram"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/static-ad-templates.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/static-ad-templates.md",
+          "used": "原文摘录：Template 7 Problem / Solution、Template 9 Feature Spotlight、Template 2 Us vs. Them"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/social/references/carousel-frameworks.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/social/references/carousel-frameworks.md",
+          "used": "原文摘录：Picking a Framework"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/SKILL.md",
+          "used": "原文摘录：Step 3 – fidelity lock"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/references/checklist.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/references/checklist.md",
+          "used": "原文摘录：Checklist P0"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Shared prompt schema、Decision tree"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/image/references/ai-image-prompting.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/image/references/ai-image-prompting.md",
+          "used": "原文摘录：Common Prompt Mistakes"
+        }
+      ]
+    },
+    {
+      "id": "xhs-cover",
+      "name": "小红书封面",
+      "tagline": "3:4 大字封面，内页一套出",
+      "description": "交付 1 张 1080×1440 封面和 3–6 张同模板内页，标题大字，手机上一眼能看清。适合种草、教程、清单、测评类小红书笔记。",
+      "category": "social",
+      "platforms": ["小红书"],
+      "author": "小熊API",
+      "starters": [
+        "用「小红书封面」给我的挂耳咖啡做一篇新手教程笔记",
+        "标题是「打工人早八续命清单」，帮我出封面和 4 张内页",
+        "这张封面的字太小了，标题放大重做"
+      ],
+      "questions": [
+        {
+          "q": "笔记类型？",
+          "multi": false,
+          "options": ["教程", "好物清单", "测评", "探店/日常"],
+          "other": true
+        },
+        {
+          "q": "封面放什么？",
+          "multi": false,
+          "options": ["商品图", "真人照片", "纯大字"],
+          "other": true
+        },
+        {
+          "q": "风格？",
+          "multi": false,
+          "options": ["干净杂志风", "手账拼贴", "高对比大字", "胶片生活感"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "封面",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "大字标题占画面 30%–40%"
+        },
+        {
+          "label": "内页 1",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "一个要点，同一模板"
+        },
+        {
+          "label": "内页 2",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "一个要点，同一模板"
+        },
+        {
+          "label": "内页 3",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "一个要点，同一模板"
+        },
+        {
+          "label": "结尾页（可选）",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "model": "gpt-image-2",
+          "note": "总结或收藏提示，不放二维码"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/social/references/carousel-frameworks.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/social/references/carousel-frameworks.md",
+          "used": "原文摘录：Picking a Framework、Framework A"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/social/SKILL.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/social/SKILL.md",
+          "used": "原文摘录：Hook Formulas、No AI Tells"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：5.5 Marketing Creatives with Real Text、5.5 Marketing Creatives"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Text in images"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/image/references/ai-image-prompting.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/image/references/ai-image-prompting.md",
+          "used": "原文摘录：Common Prompt Mistakes"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Shared prompt schema、Decision tree"
+        }
+      ]
+    },
+    {
+      "id": "live-douyin",
+      "name": "直播间与抖音素材",
+      "tagline": "直播背景、贴片、预告一套出",
+      "description": "交付 9:16 直播间背景、透明底价格和福利贴片、直播预告海报和竖版封面，整套同一主题色。适合抖音、视频号、快手直播带货。",
+      "category": "social",
+      "platforms": ["抖音", "视频号", "快手"],
+      "author": "小熊API",
+      "starters": [
+        "用「直播间与抖音素材」给我的坚果直播做一套背景和贴片",
+        "周六晚 8 点开播，帮我做直播预告海报，主推每日坚果礼盒",
+        "做 3 个透明底贴片：关注领券、下单送试吃装、晚 9 点抽奖"
+      ],
+      "questions": [
+        {
+          "q": "要哪些素材？",
+          "multi": true,
+          "options": [
+            "直播间背景",
+            "价格贴片",
+            "福利贴片",
+            "预告海报",
+            "视频封面"
+          ],
+          "other": false
+        },
+        {
+          "q": "主播站位？",
+          "multi": false,
+          "options": ["居中", "偏左", "偏右"],
+          "other": false
+        },
+        {
+          "q": "主题风格？",
+          "multi": false,
+          "options": ["温暖家居", "节日喜庆", "清爽简约", "国潮"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "直播间背景",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "model": "gpt-image-2",
+          "note": "中间 60% 留给主播，主题字放上方"
+        },
+        {
+          "label": "价格贴片",
+          "ratio": "1:1",
+          "size": "600×600",
+          "model": "gpt-image-2.5-flare",
+          "note": "透明底 PNG，价格逐字"
+        },
+        {
+          "label": "福利贴片",
+          "ratio": "3:2",
+          "size": "900×600",
+          "model": "gpt-image-2.5-flare",
+          "note": "透明底 PNG，如「关注领券」"
+        },
+        {
+          "label": "直播预告海报",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "主题 + 真实时间 + 主推商品"
+        },
+        {
+          "label": "视频封面",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "标题放在竖屏安全带内"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/short-form-video-specs.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/short-form-video-specs.md",
+          "used": "原文摘录：Vertical video production spec"
+        },
+        {
+          "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "path": ".claude/skills/design/references/banner-sizes-and-styles.md",
+          "license": "MIT",
+          "stars": 139979,
+          "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/.claude/skills/design/references/banner-sizes-and-styles.md",
+          "used": "原文摘录：Design Principles"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/sample-prompts.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/sample-prompts.md",
+          "used": "原文摘录：Website assets example"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Composition and layout、Text in images"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：1.1 Model parameters、5.5 Marketing Creatives with Real Text、5.5 Marketing Creatives"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/static-ad-templates.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/static-ad-templates.md",
+          "used": "原文摘录：Template 22 Ugly / Post-it"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Shared prompt schema、Decision tree"
+        }
+      ]
+    },
+    {
+      "id": "promo-poster",
+      "name": "促销海报",
+      "tagline": "大促节日海报，价格一字不错",
+      "description": "先定一句视觉方向，出一张 3:4 主海报，再延展成 9:16 竖版和 16:9 横版；价格、满减、日期逐字准确。适合双11、618、年货节、中秋等活动。",
+      "category": "ads",
+      "platforms": ["淘宝", "天猫", "京东", "朋友圈", "社群"],
+      "author": "小熊API",
+      "starters": [
+        "用「促销海报」给我的实木家具店做双11海报，满300减40",
+        "做一张中秋礼盒海报，到手价 ¥168，9 月 20 日截止",
+        "把这张海报改成 16:9 横版 Banner，文字不变"
+      ],
+      "questions": [
+        {
+          "q": "什么活动？",
+          "multi": false,
+          "options": ["双11", "618", "年货节", "中秋", "店庆"],
+          "other": true
+        },
+        {
+          "q": "优惠形式？（具体数字请逐字填写）",
+          "multi": false,
+          "options": ["满减", "到手价", "折扣", "赠品"],
+          "other": true
+        },
+        {
+          "q": "要哪些尺寸？",
+          "multi": true,
+          "options": ["3:4 主海报", "9:16 竖版", "16:9 横版", "1:1 方图"],
+          "other": false
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "主海报",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "上活动名，中商品，下优惠和时间"
+        },
+        {
+          "label": "竖版",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "主海报编辑延展，文字不改"
+        },
+        {
+          "label": "横版 Banner",
+          "ratio": "16:9",
+          "size": "1920×1080",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "文字左、商品右"
+        },
+        {
+          "label": "方图（可选）",
+          "ratio": "1:1",
+          "size": "1080×1080",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "朋友圈、社群用"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "anthropics/skills",
+          "path": "skills/canvas-design/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 183542,
+          "url": "https://github.com/anthropics/skills/blob/main/skills/canvas-design/SKILL.md",
+          "used": "原文摘录：DESIGN PHILOSOPHY CREATION、PHILOSOPHY EXAMPLES、CANVAS CREATION、FINAL STEP"
+        },
+        {
+          "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "path": ".claude/skills/design/references/banner-sizes-and-styles.md",
+          "license": "MIT",
+          "stars": 139979,
+          "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/.claude/skills/design/references/banner-sizes-and-styles.md",
+          "used": "原文摘录：22 Art Direction Styles、Design Principles"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：6.2 3D pop-up holiday card、6.2 holiday card、5.5 Marketing Creatives with Real Text"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Text in images"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Shared prompt schema"
+        }
+      ]
+    },
+    {
+      "id": "ad-creative",
+      "name": "广告创意",
+      "tagline": "3 个角度起步，选中再出多尺寸",
+      "description": "先定 3 个不同的点击理由（角度），每个角度出一张主图；你选中后再延展成 1:1、4:5、9:16、16:9。适合信息流投放和 A/B 测试。",
+      "category": "ads",
+      "platforms": ["抖音", "朋友圈", "视频号", "小红书"],
+      "author": "小熊API",
+      "starters": [
+        "用「广告创意」给我的跑鞋做 3 个角度的信息流广告",
+        "这 3 张里我选 B，帮我延展成 4:5、9:16、16:9",
+        "按这几条真实买家评价做一组广告图"
+      ],
+      "questions": [
+        {
+          "q": "投放目标？",
+          "multi": false,
+          "options": ["下单", "留资", "关注/下载"],
+          "other": true
+        },
+        {
+          "q": "想测哪些角度？",
+          "multi": true,
+          "options": ["痛点", "结果", "对比", "人群身份", "真实评价"],
+          "other": true
+        },
+        {
+          "q": "投放平台？",
+          "multi": true,
+          "options": ["抖音", "朋友圈", "视频号", "小红书"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "角度 A 主图",
+          "ratio": "1:1",
+          "size": "1080×1080",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "一个角度一句标题，≤12 字"
+        },
+        {
+          "label": "角度 B 主图",
+          "ratio": "1:1",
+          "size": "1080×1080",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "换动机，不只换措辞"
+        },
+        {
+          "label": "角度 C 主图",
+          "ratio": "1:1",
+          "size": "1080×1080",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "换版式模板"
+        },
+        {
+          "label": "延展 4:5",
+          "ratio": "3:4",
+          "size": "1080×1350",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "选中的角度编辑延展"
+        },
+        {
+          "label": "延展 9:16",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "字放在竖屏安全带内"
+        },
+        {
+          "label": "延展 16:9",
+          "ratio": "16:9",
+          "size": "1920×1080",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "文字和商品左右分开"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/SKILL.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/SKILL.md",
+          "used": "原文摘录：Generating Ad Copy、Batch Generation Workflow、Writing Quality Standards、Grounded Inputs"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/static-ad-templates.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/static-ad-templates.md",
+          "used": "原文摘录：Generation Rules、Template 1 Headline Statement、Template 2 Us vs. Them、Per-Concept Output Format、Template 16 Grid Static、Template 11 Lifestyle Hero、Template 17 Callout、Template 7 Problem / Solution、Template 22 Ugly / Post-it"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：4.6 Ads Generation"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Decision tree"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/generative-tools.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/generative-tools.md",
+          "used": "原文摘录：Platform-Specific Image Specs"
+        }
+      ]
+    },
+    {
+      "id": "packaging-system",
+      "name": "包装系统",
+      "tagline": "主包装到货架陈列，一个家族",
+      "description": "在同一套品牌锁下出主包装、标签平面稿、礼盒、手提袋和货架陈列，还能扩展多个口味/SKU。适合新品包装提案和节日礼盒。",
+      "category": "pack",
+      "platforms": ["电商", "线下零售"],
+      "author": "小熊API",
+      "starters": [
+        "用「包装系统」给我的茶叶品牌做一套罐装包装和礼盒",
+        "在现有包装的基础上，出一个中秋礼盒版",
+        "同一个包装做 5 个口味，颜色分开但一看就是一家"
+      ],
+      "questions": [
+        {
+          "q": "包装形式？",
+          "multi": false,
+          "options": ["罐", "袋", "盒", "瓶"],
+          "other": true
+        },
+        {
+          "q": "要哪些物料？",
+          "multi": true,
+          "options": ["主包装", "标签平面稿", "礼盒", "手提袋", "货架陈列"],
+          "other": false
+        },
+        {
+          "q": "风格？",
+          "multi": false,
+          "options": ["东方雅致", "极简现代", "手绘插画", "复古"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "主包装",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "正面 + 45°，标签文字逐字"
+        },
+        {
+          "label": "标签平面稿",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "展开的正面标签，无透视"
+        },
+        {
+          "label": "礼盒",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "打开的礼盒 + 内托 + 单品"
+        },
+        {
+          "label": "手提袋",
+          "ratio": "2:3",
+          "size": "1024×1536",
+          "model": "gpt-image-2",
+          "note": "纸袋立放，Logo 清楚"
+        },
+        {
+          "label": "货架陈列",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2",
+          "note": "整个系列在货架上"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/sample-prompts.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/sample-prompts.md",
+          "used": "原文摘录：Generate › product-mockup、Edit › text-localization"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Use-case tips、Text in images、Iterate deliberately"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：5.4 Product Mockups、6.3 Collectible / merch concept、6.3 Collectible、4.2 Translation in Images"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/SKILL.md",
+          "used": "原文摘录：Step 3 – fidelity lock"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/static-ad-templates.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/static-ad-templates.md",
+          "used": "原文摘录：Template 16 Grid Static"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/brandkit/SKILL.md",
+          "license": "MIT",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/brandkit/SKILL.md",
+          "used": "原文摘录：MOCKUP DIRECTION",
+          "upstream": "Leonxlnx/taste-skill",
+          "upstreamStars": 102071,
+          "copyright": "© 2026 Leonxlnx"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Shared prompt schema、Decision tree"
+        }
+      ]
+    },
+    {
+      "id": "logo-mockup",
+      "name": "Logo 与样机",
+      "tagline": "3 个 Logo 方向，选定再上样机",
+      "description": "先用不同构思法出 3 个透明底 Logo 方向，你选定后放到名片、门头、App 图标和周边样机上看效果。适合新店、新品牌找方向。",
+      "category": "brand",
+      "platforms": ["通用"],
+      "author": "小熊API",
+      "starters": [
+        "用「Logo 与样机」给我的社区面包店「小麦岛」出 3 个 Logo 方向",
+        "我选方向 B，帮我做名片、门头和纸袋样机",
+        "把这个 Logo 放到 App 图标和小红书头像上看看"
+      ],
+      "questions": [
+        {
+          "q": "想要什么感觉？",
+          "multi": true,
+          "options": ["亲切", "专业", "高级", "年轻有趣"],
+          "other": true
+        },
+        {
+          "q": "Logo 类型？",
+          "multi": false,
+          "options": ["图形 + 文字", "纯文字", "字母组合"],
+          "other": true
+        },
+        {
+          "q": "主要用在哪？",
+          "multi": true,
+          "options": ["门头招牌", "包装", "App/头像", "名片物料"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "方向 A",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-flare",
+          "note": "透明底，图形 + 字标"
+        },
+        {
+          "label": "方向 B",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-flare",
+          "note": "换一种构思法"
+        },
+        {
+          "label": "方向 C",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-flare",
+          "note": "换一种构思法"
+        },
+        {
+          "label": "名片样机",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "选定 Logo 做参考图"
+        },
+        {
+          "label": "门头样机",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "真实街景或店内"
+        },
+        {
+          "label": "App 图标/头像",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "圆角方形和圆形裁切"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/brandkit/SKILL.md",
+          "license": "MIT",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/brandkit/SKILL.md",
+          "used": "原文摘录：LOGO GENERATION STANDARD、LOGO CONCEPT METHODS",
+          "upstream": "Leonxlnx/taste-skill",
+          "upstreamStars": 102071,
+          "copyright": "© 2026 Leonxlnx"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Use-case tips"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/sample-prompts.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/sample-prompts.md",
+          "used": "原文摘录：Logo template、Generate › logo-brand、Logo examples"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：4.5 Logo Generation"
+        },
+        {
+          "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "path": ".claude/skills/design/references/cip-prompt-engineering.md",
+          "license": "MIT",
+          "stars": 139979,
+          "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/.claude/skills/design/references/cip-prompt-engineering.md",
+          "used": "原文摘录：Base Prompt Structure、Style / Lighting / Context Modifiers"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/image/SKILL.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/image/SKILL.md",
+          "used": "原文摘录：Marketing Image Workflows"
+        },
+        {
+          "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "path": ".claude/skills/design/references/logo-prompt-engineering.md",
+          "license": "MIT",
+          "stars": 139979,
+          "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/.claude/skills/design/references/logo-prompt-engineering.md",
+          "used": "原文摘录：Common Pitfalls、Effective Keywords by Style、Technical Requirements、Prompt Templates"
+        },
+        {
+          "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "path": ".claude/skills/design/references/cip-deliverable-guide.md",
+          "license": "MIT",
+          "stars": 139979,
+          "url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/.claude/skills/design/references/cip-deliverable-guide.md",
+          "used": "原文摘录：Stationery Set、Digital Assets"
+        }
+      ]
+    },
+    {
+      "id": "brand-vi",
+      "name": "品牌 VI",
+      "tagline": "3×3 品牌板，色板字体一次定",
+      "description": "先写品牌策略和核心比喻，再出 3×3 品牌板、色板卡、字体样张和应用板；确认后存进 Brand Kit，其他技能出图时自动套用。适合新品牌的第一版视觉提案。",
+      "category": "brand",
+      "platforms": ["通用"],
+      "author": "小熊API",
+      "starters": [
+        "用「品牌 VI」给我的精品咖啡店「浮岛咖啡」做一版品牌板",
+        "按这套色板再做一张应用板：杯子、纸袋、门头",
+        "把确认好的颜色和字体存成 Brand Kit"
+      ],
+      "questions": [
+        {
+          "q": "品牌想给人什么感觉？",
+          "multi": true,
+          "options": ["安静", "高级", "活力", "温暖", "专业"],
+          "other": true
+        },
+        {
+          "q": "视觉模式？",
+          "multi": false,
+          "options": ["浅色杂志感", "深色自然感", "奢华精致", "东方雅致"],
+          "other": true
+        },
+        {
+          "q": "已有哪些素材？",
+          "multi": true,
+          "options": ["有 Logo", "有品牌色", "都没有"],
+          "other": false
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "3×3 品牌板",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "Logo、构造、色板、字体、应用等 9 格"
+        },
+        {
+          "label": "色板卡",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "主色、辅助色、中性色，每块写 hex"
+        },
+        {
+          "label": "字体样张",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "中英文标题字 + 正文字示意"
+        },
+        {
+          "label": "应用板",
+          "ratio": "3:2",
+          "size": "1536×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "名片、纸袋、杯套、门头、手机界面"
+        },
+        {
+          "label": "社交头像与封面",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-flare",
+          "note": "透明底头像 + 主色背景版"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/brandkit/SKILL.md",
+          "license": "MIT",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/brandkit/SKILL.md",
+          "used": "原文摘录：CORE PRINCIPLE、BRAND STRATEGY FIRST、DEFAULT OUTPUT、DEFAULT 3 × 3 PANEL SYSTEM、COLOR DISCIPLINE、TEXT RULES、ANTI-GENERIC RULES、PROMPT TEMPLATE、BOARD COMPOSITION DNA、VISUAL MODES、MOCKUP DIRECTION、REFERENCE USAGE",
+          "upstream": "Leonxlnx/taste-skill",
+          "upstreamStars": 102071,
+          "copyright": "© 2026 Leonxlnx"
+        },
+        {
+          "repo": "anthropics/skills",
+          "path": "skills/theme-factory/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 183542,
+          "url": "https://github.com/anthropics/skills/blob/main/skills/theme-factory/SKILL.md",
+          "used": "原文摘录：Create your Own Theme"
+        },
+        {
+          "repo": "anthropics/skills",
+          "path": "skills/theme-factory/themes/modern-minimalist.md",
+          "license": "Apache-2.0",
+          "stars": 183542,
+          "url": "https://github.com/anthropics/skills/blob/main/skills/theme-factory/themes/modern-minimalist.md",
+          "used": "原文摘录：Modern Minimalist"
+        },
+        {
+          "repo": "anthropics/skills",
+          "path": "skills/theme-factory/themes/botanical-garden.md",
+          "license": "Apache-2.0",
+          "stars": 183542,
+          "url": "https://github.com/anthropics/skills/blob/main/skills/theme-factory/themes/botanical-garden.md",
+          "used": "原文摘录：Botanical Garden"
+        },
+        {
+          "repo": "anthropics/skills",
+          "path": "skills/theme-factory/themes/golden-hour.md",
+          "license": "Apache-2.0",
+          "stars": 183542,
+          "url": "https://github.com/anthropics/skills/blob/main/skills/theme-factory/themes/golden-hour.md",
+          "used": "原文摘录：Golden Hour"
+        },
+        {
+          "repo": "anthropics/skills",
+          "path": "skills/theme-factory/themes/ocean-depths.md",
+          "license": "Apache-2.0",
+          "stars": 183542,
+          "url": "https://github.com/anthropics/skills/blob/main/skills/theme-factory/themes/ocean-depths.md",
+          "used": "原文摘录：Ocean Depths"
+        },
+        {
+          "repo": "anthropics/skills",
+          "path": "skills/theme-factory/themes/forest-canopy.md",
+          "license": "Apache-2.0",
+          "stars": 183542,
+          "url": "https://github.com/anthropics/skills/blob/main/skills/theme-factory/themes/forest-canopy.md",
+          "used": "原文摘录：Forest Canopy"
+        }
+      ]
+    },
+    {
+      "id": "before-after",
+      "name": "前后对比",
+      "tagline": "真实照片排成诚实的前后对比",
+      "description": "把你的真实前后照片排成左右或上下对比，统一色温和裁切，标签用顾客自己的话。化妆品、保健、医疗、减肥类不用 AI 编造使用后的效果。",
+      "category": "ecom",
+      "platforms": ["淘宝", "天猫", "京东", "小红书", "抖音"],
+      "author": "小熊API",
+      "starters": [
+        "用「前后对比」把这两张抽屉照片做成左右对比图",
+        "做一张上下对比图放详情页：改造前衣柜很乱，改造后很整齐",
+        "我只有改造前的照片，帮我出一张标「效果示意」的方案图"
+      ],
+      "questions": [
+        {
+          "q": "有真实的前后照片吗？",
+          "multi": false,
+          "options": ["两张都有", "只有前", "都没有"],
+          "other": false
+        },
+        {
+          "q": "放在哪里？",
+          "multi": false,
+          "options": ["主图", "详情页", "广告", "小红书"],
+          "other": true
+        },
+        {
+          "q": "版式？",
+          "multi": false,
+          "options": ["左右对比", "上下对比"],
+          "other": false
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "左右对比",
+          "ratio": "1:1",
+          "size": "800×800",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "Image 1 = 前，Image 2 = 后"
+        },
+        {
+          "label": "上下对比",
+          "ratio": "3:4",
+          "size": "750×1000",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "上前下后，手机竖屏"
+        },
+        {
+          "label": "详情页对比屏（可选）",
+          "ratio": "2:3",
+          "size": "750×1125",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "标题 + 对比 + 一句说明"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/references/static-ad-templates.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/references/static-ad-templates.md",
+          "used": "原文摘录：Template 6 Before / After、Template 2 Us vs. Them、Generation Rules"
+        },
+        {
+          "repo": "coreyhaines31/marketingskills",
+          "path": "skills/ad-creative/SKILL.md",
+          "license": "MIT",
+          "stars": 56391,
+          "url": "https://github.com/coreyhaines31/marketingskills/blob/main/skills/ad-creative/SKILL.md",
+          "used": "原文摘录：Grounded Inputs"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/references/checklist.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/references/checklist.md",
+          "used": "原文摘录：Checklist P0"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Input images and references、Constraints and invariants、Iterate deliberately"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/sample-prompts.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/sample-prompts.md",
+          "used": "原文摘录：Edit › compositing、Edit › precise-object-edit"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：6.1 Interior design swap"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Shared prompt schema"
+        }
+      ]
+    },
+    {
+      "id": "style-transfer",
+      "name": "风格迁移",
+      "tagline": "商品不走样，换成参考图的风格",
+      "description": "锁住商品或人物，只把画面换成参考图的色调、质感和笔触；先出 3 个风格小样，选定后再出整套。适合统一品牌调性，或做插画风、胶片风素材。",
+      "category": "brand",
+      "platforms": ["通用"],
+      "author": "小熊API",
+      "starters": [
+        "用「风格迁移」把我的陶瓷杯照片换成这张参考图的水彩风",
+        "同一个杯子出 3 种风格小样：胶片、黏土 3D、杂志",
+        "把这 6 张风格不一的商品图统一成一个调性"
+      ],
+      "questions": [
+        {
+          "q": "有风格参考图吗？",
+          "multi": false,
+          "options": ["有，我上传", "没有，用文字描述"],
+          "other": false
+        },
+        {
+          "q": "想要哪种风格？",
+          "multi": true,
+          "options": [
+            "水彩插画",
+            "胶片摄影",
+            "黏土 3D",
+            "杂志大片",
+            "工笔国风"
+          ],
+          "other": true
+        },
+        {
+          "q": "哪些地方不能变？",
+          "multi": true,
+          "options": ["商品外形", "Logo 和文字", "颜色", "人物长相"],
+          "other": true
+        }
+      ],
+      "deliverables": [
+        {
+          "label": "风格小样 A",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "最接近参考图"
+        },
+        {
+          "label": "风格小样 B",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2.5-sunburst",
+          "note": "同一风格，强度减弱"
+        },
+        {
+          "label": "风格小样 C",
+          "ratio": "1:1",
+          "size": "1024×1024",
+          "model": "gpt-image-2",
+          "note": "另一个可选方向"
+        }
+      ],
+      "sources": [
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+          "used": "原文摘录：Decision tree、Use-case taxonomy、Shared prompt schema"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/prompting.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/prompting.md",
+          "used": "原文摘录：Use-case tips (edit)、Input images and references、Use-case tips、Iterate deliberately"
+        },
+        {
+          "repo": "openai/openai-cookbook",
+          "path": "examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "license": "MIT",
+          "stars": 76798,
+          "url": "https://github.com/openai/openai-cookbook/blob/main/examples/multimodal/image-gen-models-prompting-guide.ipynb",
+          "used": "原文摘录：5.1 Style Transfer、5.6 Lighting and Weather、5.2 Virtual Clothing Try-On、6.4 Character consistency"
+        },
+        {
+          "repo": "openai/skills",
+          "path": "skills/.system/imagegen/references/sample-prompts.md",
+          "license": "Apache-2.0",
+          "stars": 28289,
+          "url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/references/sample-prompts.md",
+          "used": "原文摘录：Edit › style-transfer、Edit › identity-preserve、Edit › lighting-weather、Edit › compositing、Edit › sketch-to-render、Edit › precise-object-edit、Edit › background-extraction、Edit › text-localization"
+        },
+        {
+          "repo": "nexu-io/open-design",
+          "path": "skills/ecommerce-image-workflow/SKILL.md",
+          "license": "Apache-2.0",
+          "stars": 103786,
+          "url": "https://github.com/nexu-io/open-design/blob/main/skills/ecommerce-image-workflow/SKILL.md",
+          "used": "原文摘录：Step 3 – fidelity lock"
+        }
+      ]
+    }
+  ]
+}

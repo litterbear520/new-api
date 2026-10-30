@@ -57,6 +57,8 @@ import type {
 
 interface WalletProps {
   initialShowHistory?: boolean
+  /** Preselects this top-up amount when it is not below the minimum */
+  initialAmount?: number
 }
 
 export function Wallet(props: WalletProps) {
@@ -142,13 +144,25 @@ export function Wallet(props: WalletProps) {
     if (topupInfo && !topupAmountInitializedRef.current) {
       topupAmountInitializedRef.current = true
       const minTopup = getMinTopupAmount(topupInfo)
-      setTopupAmount(minTopup)
+      const requested = props.initialAmount ?? 0
+      const amount = requested >= minTopup ? requested : minTopup
+      setTopupAmount(amount)
+      if (amount === requested) {
+        setSelectedPreset(
+          presetAmounts.some((preset) => preset.value === amount)
+            ? amount
+            : null
+        )
+        document
+          .querySelector('#wallet-add-funds')
+          ?.scrollIntoView({ block: 'start' })
+      }
 
       // Calculate initial payment amount with default payment type
       const defaultPaymentType = getDefaultPaymentType(topupInfo)
-      calculatePaymentAmount(minTopup, defaultPaymentType)
+      calculatePaymentAmount(amount, defaultPaymentType)
     }
-  }, [topupInfo, calculatePaymentAmount])
+  }, [topupInfo, calculatePaymentAmount, presetAmounts, props.initialAmount])
 
   // Get current payment type (selected or default)
   const getCurrentPaymentType = useCallback(() => {

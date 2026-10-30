@@ -18,11 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { MODELS_DEFAULT_SECTION } from '@/features/system-settings/models/section-registry.tsx'
-
 export const Route = createFileRoute('/_authenticated/system-settings/models/')(
   {
-    beforeLoad: () => {
+    beforeLoad: async () => {
+      // The registry imports every section: load it with the page, not the app.
+      const { MODELS_DEFAULT_SECTION } =
+        await import('@/features/system-settings/models/section-registry.tsx')
       throw redirect({
         to: '/system-settings/models/$section',
         params: { section: MODELS_DEFAULT_SECTION },

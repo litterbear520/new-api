@@ -16,34 +16,49 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import i18n from 'i18next'
+import i18n, { type BackendModule } from 'i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 
 import { convertDetectedLanguage } from './languages'
-import en from './locales/en.json'
-import fr from './locales/fr.json'
-import ja from './locales/ja.json'
-import ru from './locales/ru.json'
-import vi from './locales/vi.json'
-import zhTW from './locales/zh-TW.json'
-import zhCN from './locales/zh.json'
+import type en from './locales/en.json'
 
-export const resources = {
-  en,
-  zhCN,
-  fr,
-  ru,
-  ja,
-  vi,
-  zhTW,
-} as const
+// The keys are the English text, so English is the keys themselves plus the
+// few entries that differ from their key (picked from en.json at build time,
+// see rsbuild.config.ts); every other language is its own chunk, fetched only
+// when it is the one in use (index.html starts it early, see the locale
+// preload in rsbuild.config.ts).
+declare const __EN_OVERRIDES__: Record<string, string>
 
-i18n
+const lazyLocales: Record<string, () => Promise<{ default: typeof en }>> = {
+  zhCN: () => import(/* webpackChunkName: "locale-zhCN" */ './locales/zh.json'),
+  fr: () => import(/* webpackChunkName: "locale-fr" */ './locales/fr.json'),
+  ru: () => import(/* webpackChunkName: "locale-ru" */ './locales/ru.json'),
+  ja: () => import(/* webpackChunkName: "locale-ja" */ './locales/ja.json'),
+  vi: () => import(/* webpackChunkName: "locale-vi" */ './locales/vi.json'),
+  zhTW: () =>
+    import(/* webpackChunkName: "locale-zhTW" */ './locales/zh-TW.json'),
+}
+
+// i18next waits on a promise from a two-argument `read`.
+const localeBackend: BackendModule = {
+  type: 'backend',
+  init() {},
+  read(language: string, namespace: string) {
+    const load = lazyLocales[language]
+    if (!load) return Promise.resolve({})
+    return load().then((module) => module.default[namespace as keyof typeof en])
+  },
+}
+
+/** Resolves once the detected language is loaded (or failed to load). */
+export const i18nReady = i18n
+  .use(localeBackend)
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources,
+    resources: { en: { translation: __EN_OVERRIDES__ } },
+    partialBundledLanguages: true,
     fallbackLng: 'en',
     supportedLngs: ['en', 'zhCN', 'fr', 'ru', 'ja', 'vi', 'zhTW'],
     load: 'currentOnly',
@@ -60,5 +75,9 @@ i18n
       convertDetectedLanguage,
     },
   })
+  .then(
+    () => undefined,
+    () => undefined
+  )
 
 export default i18n

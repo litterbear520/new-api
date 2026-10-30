@@ -74,16 +74,21 @@ function sidebarFor(admin?: object, user?: object, canConfigure = true) {
 }
 
 describe('security sidebar visibility', () => {
-  it('old configurations show Security & Access immediately after Profile and keep API Keys', () => {
+  it('old configurations list the account settings sections in their order and keep API Keys', () => {
     const { result } = sidebarFor(
       { personal: { enabled: true, personal: true, topup: true } },
       { personal: { enabled: true, personal: true } }
     )
     expect(
       result.current
-        .find((group) => group.id === 'personal')
+        .find((group) => group.id === 'account')
         ?.items.map((item) => item.title)
-    ).toEqual(['Wallet', 'Profile', 'Security & Access'])
+    ).toEqual([
+      'Account settings',
+      'Sign-in & security',
+      'Notifications',
+      'Audit Logs',
+    ])
     expect(
       result.current
         .flatMap((group) => group.items)
@@ -91,18 +96,33 @@ describe('security sidebar visibility', () => {
     ).toBe(true)
   })
   it.each([
+    [{ personal: { enabled: true, personal: false } }, undefined],
+    [undefined, { personal: { enabled: true, personal: false } }],
+    [undefined, { personal: { enabled: false } }],
+  ])(
+    'hiding the personal module keeps Account settings searchable (%j, %j)',
+    (admin, user) => {
+      const { result } = sidebarFor(admin, user)
+      expect(
+        result.current
+          .find((group) => group.id === 'account')
+          ?.items.map((item) => item.title)
+      ).toContain('Account settings')
+    }
+  )
+  it.each([
     [{ personal: { enabled: true, security: false } }, undefined],
     [{ personal: { enabled: false } }, { personal: { security: true } }],
     [undefined, { personal: { enabled: true, security: false } }],
     [undefined, { personal: { enabled: false } }],
   ])(
-    'admin or user disablement hides Security & Access (%j, %j)',
+    'admin or user disablement hides Sign-in & security (%j, %j)',
     (admin, user) => {
       const { result } = sidebarFor(admin, user)
       expect(
         result.current
           .flatMap((group) => group.items)
-          .some((item) => item.title === 'Security & Access')
+          .some((item) => item.title === 'Sign-in & security')
       ).toBe(false)
     }
   )
@@ -115,7 +135,7 @@ describe('security sidebar visibility', () => {
     expect(
       result.current
         .flatMap((group) => group.items)
-        .some((item) => item.title === 'Security & Access')
+        .some((item) => item.title === 'Sign-in & security')
     ).toBe(true)
   })
 })
@@ -136,22 +156,20 @@ describe('audit log sidebar entry', () => {
     expect(titles).toContain('Usage Logs')
   })
 
-  it('legacy configurations show a separate Audit Logs link immediately after Usage Logs', () => {
+  it('legacy configurations keep an Audit Logs entry that opens its account settings section', () => {
     const { result } = sidebarFor(
       { console: { enabled: true, log: true } },
       { console: { enabled: true, log: true } }
     )
-    const items =
-      result.current.find((group) => group.id === 'general')?.items ?? []
-    const usageIndex = items.findIndex((item) => item.title === 'Usage Logs')
-    expect(items[usageIndex + 1]).toMatchObject({
-      title: 'Audit Logs',
-      url: '/usage-logs/audit',
-    })
-    const selected = items.filter((item) =>
-      checkIsActive('/usage-logs/audit', item)
+    expect(
+      result.current.find((group) => group.id === 'account')?.items
+    ).toContainEqual(
+      expect.objectContaining({
+        title: 'Audit Logs',
+        url: '/profile',
+        search: { section: 'audit' },
+      })
     )
-    expect(selected.map((item) => item.title)).toEqual(['Audit Logs'])
   })
 
   it.each([
@@ -178,5 +196,67 @@ describe('audit log sidebar entry', () => {
       .map((item) => item.title)
     expect(titles).not.toContain('Usage Logs')
     expect(titles).toContain('Audit Logs')
+  })
+})
+
+describe('console sidebar layout', () => {
+  it('one Usage Logs entry stays selected on the task and drawing log tabs', () => {
+    const { result } = sidebarFor()
+    const items = result.current.flatMap((group) => group.items)
+    for (const href of [
+      '/usage-logs/common',
+      '/usage-logs/task',
+      '/usage-logs/drawing',
+    ]) {
+      expect(
+        items
+          .filter((item) => checkIsActive(href, item))
+          .map((item) => item.title)
+      ).toEqual(['Usage Logs'])
+    }
+  })
+
+  it('one Usage statistics entry stays selected on the admin flow and user analytics sections', () => {
+    const { result } = sidebarFor()
+    const items = result.current.flatMap((group) => group.items)
+    for (const href of [
+      '/dashboard/models',
+      '/dashboard/flow',
+      '/dashboard/users',
+    ]) {
+      expect(
+        items
+          .filter((item) => checkIsActive(href, item))
+          .map((item) => item.title)
+      ).toEqual(['Usage statistics'])
+    }
+  })
+
+  it('account search entries open the account settings sections instead of the old pages', () => {
+    const { result } = sidebarFor()
+    const account = result.current.find((group) => group.id === 'account')
+    expect(
+      account?.items.map((item) => ({
+        url: item.url,
+        search: 'search' in item ? item.search : undefined,
+      }))
+    ).toEqual([
+      { url: '/profile', search: undefined },
+      { url: '/profile', search: { section: 'security' } },
+      { url: '/profile', search: { section: 'notifications' } },
+      { url: '/profile', search: { section: 'audit' } },
+    ])
+  })
+
+  it('account pages are found by search but not listed in the sidebar', () => {
+    const { result } = sidebarFor()
+    const account = result.current.find((group) => group.id === 'account')
+    expect(account?.searchOnly).toBe(true)
+    expect(
+      result.current
+        .filter((group) => !group.searchOnly)
+        .flatMap((group) => group.items)
+        .map((item) => item.title)
+    ).not.toContain('Account settings')
   })
 })

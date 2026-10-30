@@ -25,19 +25,16 @@ import { Button } from '@/components/ui/button'
 import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import { requireServerSuccess } from '@/lib/server-error-message'
 
-import { DEFAULT_PRICING_PAGE_SIZE, DEFAULT_TOKEN_UNIT } from '../constants'
-import type { PricingModel, TokenUnit } from '../types'
+import { DEFAULT_PRICING_PAGE_SIZE } from '../constants'
+import type { ModelPerfData, PricingModel, PricingSearch } from '../types'
 import { ModelCard } from './model-card'
-import type { ModelPerfBadgeData } from './model-perf-badge'
 
 export interface ModelCardGridProps {
   models: PricingModel[]
-  onModelClick: (modelName: string) => void
   priceRate?: number
   usdExchangeRate?: number
-  tokenUnit?: TokenUnit
-  showRechargePrice?: boolean
   selectedGroup?: string
+  linkSearch?: PricingSearch
 }
 
 export const ModelCardGrid = memo(function ModelCardGrid(
@@ -46,7 +43,6 @@ export const ModelCardGrid = memo(function ModelCardGrid(
   const { t } = useTranslation()
   const [page, setPage] = useState(1)
   const pageSize = DEFAULT_PRICING_PAGE_SIZE
-  const tokenUnit = props.tokenUnit ?? DEFAULT_TOKEN_UNIT
   const totalPages = Math.max(1, Math.ceil(props.models.length / pageSize))
   const currentPage = Math.min(page, totalPages)
 
@@ -65,7 +61,7 @@ export const ModelCardGrid = memo(function ModelCardGrid(
   })
 
   const perfMap = useMemo(() => {
-    const map = new Map<string, ModelPerfBadgeData>()
+    const map = new Map<string, ModelPerfData>()
     for (const model of perfQuery.data?.data?.models ?? []) {
       map.set(model.model_name, {
         ...model,
@@ -80,6 +76,8 @@ export const ModelCardGrid = memo(function ModelCardGrid(
         avg_latency_ms: Number.NaN,
         avg_tps: Number.NaN,
         success_rate: Number.NaN,
+        window_start: perfQuery.data?.data.window_start,
+        window_end: perfQuery.data?.data.window_end,
         ...map.get(name),
         recent_success_series: series,
       })
@@ -98,13 +96,11 @@ export const ModelCardGrid = memo(function ModelCardGrid(
           <ModelCard
             key={model.id ?? model.model_name}
             model={model}
-            tokenUnit={tokenUnit}
             priceRate={props.priceRate}
             usdExchangeRate={props.usdExchangeRate}
-            showRechargePrice={props.showRechargePrice}
             selectedGroup={props.selectedGroup}
             perf={perfMap.get(model.model_name || '')}
-            onClick={props.onModelClick}
+            linkSearch={props.linkSearch}
           />
         ))}
       </div>

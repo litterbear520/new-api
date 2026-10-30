@@ -1,0 +1,122 @@
+/*
+ * The pixel bear on the composer's top-right rim (components/bear). Its acts
+ * come from features/bear-chat/bear.css; this is the perch, the status line
+ * on its left and the night boat (bear-chat.css .bc-perch / .bc-night).
+ * --bd-perch-r (how far from the right) is set per composer in composer.css.
+ */
+.bd-perch {
+  --bd-bear-b: -3.8px;
+  position: absolute;
+  bottom: 100%;
+  right: var(--bd-perch-r, 62px);
+  z-index: 4;
+  width: 72px;
+  height: 0;
+}
+/* the light entrance rises from behind the glass */
+.bd-perch.bd-behind {
+  z-index: 1;
+}
+.bd-bear-btn {
+  position: absolute;
+  left: 0;
+  bottom: var(--bd-bear-b);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.bd-bear-btn:focus-visible {
+  border-radius: 8px;
+}
+.bd-bear-btn > span,
+.bd-bear-btn .xb {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.bd-perch .xb .p-boat,
+.bd-perch .xb .p-hull {
+  display: none;
+}
+.bd-perch[data-mood='quiet'] .xb :is(.b-all, .fx, .p) {
+  animation: none !important;
+}
+
+/* 「正在画 · 12 秒」 */
+.bd-bear-stat {
+  position: absolute;
+  right: calc(100% + 2px);
+  bottom: 9px;
+  color: var(--bd-ink3);
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.bd-bear-stat.bd-on {
+  opacity: 1;
+}
+.bd-bear-shim {
+  background: linear-gradient(
+    90deg,
+    var(--bd-ink3) 0 35%,
+    var(--bd-ink) 50%,
+    var(--bd-ink3) 65% 100%
+  );
+  background-size: 320% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: bd-bear-shim 3s cubic-bezier(0.714, 0.121, 0.211, 0.888) infinite;
+}
+@keyframes bd-bear-shim {
+  0%,
+  15% {
+    background-position: 100% 0;
+  }
+  85%,
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* night: a bigger bear in its boat with the lantern, bobbing on the sea */
+.bd-perch.bd-perch-night {
+  --bd-bear-b: -6.4px;
+  right: calc(var(--bd-perch-r, 62px) - 8px);
+  width: 88px;
+}
+.bd-perch-night .xb .p-boat,
+.bd-perch-night .xb .p-hull {
+  display: inline;
+}
+.bd-perch-night .bd-bear-btn .xb {
+  transform-origin: 40% 100%;
+  animation: bd-bear-bob 3.6s ease-in-out infinite;
+}
+.bd-perch-night .bd-bear-stat {
+  color: #c9d6ee;
+}
+/* In a project the boat settles after two waves: the bear sits on the
+   composer's glass lens (a backdrop filter), and a bear that never stops
+   bobbing would redraw the whole page every frame while you work. */
+.bd-comp-dock .bd-perch-night .bd-bear-btn .xb {
+  animation-iteration-count: 2;
+}
+@keyframes bd-bear-bob {
+  50% {
+    transform: translateY(-1.6px) rotate(-1.2deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .bd-bear-stat {
+    display: none;
+  }
+}

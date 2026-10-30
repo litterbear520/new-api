@@ -1,0 +1,177 @@
+# 视觉模式与样机方向（参考）
+
+> 本文件由小熊API整理，是 `brand-vi` 技能的附属参考。下面的英文段落是开源项目的原文摘录，每段上方标了来源和许可证。许可证全文见 `../../LICENSES/`，致谢清单见 `../../../CREDITS.md`。
+
+## 怎么用
+
+- 写品牌策略时，从下面的视觉模式里选一个最接近的，写进提示词的 Visual mode 行。
+- 国内消费品牌最常用的是 Light Editorial、Luxury / Beauty / Fashion 和 Dark Nature / Calm；brandkit 原文还有开发者工具、安全、语音等模式，没收录在这里。
+- 用户给了参考图时，按 REFERENCE USAGE 只学节奏和质量，不抄内容。
+
+## 原文
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › BOARD COMPOSITION DNA · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# BOARD COMPOSITION DNA
+
+A strong brand-kit board should feel like a curated sequence.
+
+Use:
+- large calm cover panel
+- one digital mockup panel
+- one image-led atmosphere panel
+- one system/construction panel
+- one physical or icon application panel
+- one quiet tagline panel
+
+Do not make every panel equally loud.
+
+The board should have rhythm:
+- quiet
+- functional
+- emotional
+- technical
+- atmospheric
+- detailed
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › VISUAL MODES · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+## Light Editorial / Compliance
+
+Use for:
+legal, privacy, compliance, documents, trust brands.
+
+Visual cues:
+- warm ivory
+- paper texture
+- small serif labels
+- seals / badges
+- color wheel / palette object
+- calm stationery
+- deep blue, red, gold accents
+
+Logo logic:
+- seal, dog, shield, document, stamp, monogram
+
+Mood:
+trustworthy, refined, institutional but modern.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › VISUAL MODES · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+## Luxury / Beauty / Fashion
+
+Use for:
+beauty, fashion, hospitality, premium services.
+
+Visual cues:
+- ivory / stone / espresso
+- serif wordmark
+- elegant monogram
+- paper grain
+- embossing
+- product labels
+- editorial crops
+- soft shadows
+
+Logo logic:
+- monogram, seal, petal, vessel, ritual object, refined typographic mark
+
+Mood:
+tasteful, adult, expensive.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › VISUAL MODES · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+## Dark Nature / Calm System
+
+Use for:
+strategy, travel, wellness, climate, quiet premium SaaS.
+
+Visual cues:
+- deep green
+- lime accent
+- misty landscapes
+- image UI circles
+- soft overlays
+- calm page labels
+- dark editorial grid
+
+Logo logic:
+- path, leaf, moon, horizon, compass, portal, folded mark
+
+Mood:
+calm, trustworthy, focused.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › MOCKUP DIRECTION · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# MOCKUP DIRECTION
+
+Mockups should be minimal and believable.
+
+Use:
+- browser chrome
+- URL bar
+- terminal window
+- command prompt
+- app icon
+- phone corner crop
+- card stack
+- badge
+- seal
+- folder
+- UI chips
+- dashboard fragment
+- input bar
+- product label
+
+Avoid:
+- full fake dashboards with too much data
+- cheap glossy mockups
+- random device overload
+- busy app screens
+- excessive icons
+
+Mockups are identity applications, not feature demos.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › REFERENCE USAGE · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# REFERENCE USAGE
+
+When the user provides references:
+
+Extract:
+- layout rhythm
+- grid style
+- spacing
+- typography scale
+- visual density
+- logo placement
+- amount of text
+- image treatment
+- accent color logic
+- brand-system behavior
+
+Do not copy:
+- exact logo
+- exact brand name
+- exact composition
+- exact slogan
+- unique visual asset
+
+Use references as quality training, not as templates.
+````
+
+## 本站调整
+
+- 原文 mockup 清单偏数字产品（browser chrome、terminal）。国内消费品牌优先用名片、纸袋、杯套、门头、包装标签、手机下单界面。
+- 原文的「dark charcoal outer canvas」是一种展示风格；本站浅色主题下默认用浅色画布，用户要深色再换。

@@ -1,0 +1,143 @@
+# 配色与字体预设（参考）
+
+> 本文件由小熊API整理，是 `brand-vi` 技能的附属参考。下面的英文段落是开源项目的原文摘录，每段上方标了来源和许可证。许可证全文见 `../../LICENSES/`，致谢清单见 `../../../CREDITS.md`。
+
+## 怎么用
+
+- 这是 Anthropic theme-factory 里 10 套主题中的 5 套，适合做品牌色板的起点。挑一套最接近的，再按品牌改 1–2 个颜色。
+- 原文的字体（DejaVu、FreeSans、FreeSerif）是给文档用的西文字体；做中文品牌时只取它的气质（无衬线 / 衬线、粗细），中文落地用可商用字体。
+- 都不合适时，照原文 Create your Own Theme 新建一套，起一个能说明气质的名字。
+
+## 原文
+
+> 来源 / Source: anthropics/skills · skills/theme-factory/themes/modern-minimalist.md › Modern Minimalist · Apache-2.0 (verbatim)
+
+````text
+# Modern Minimalist
+
+A clean and contemporary theme with a sophisticated grayscale palette for maximum versatility.
+
+## Color Palette
+
+- **Charcoal**: `#36454f` - Primary dark color
+- **Slate Gray**: `#708090` - Medium gray for accents
+- **Light Gray**: `#d3d3d3` - Backgrounds and dividers
+- **White**: `#ffffff` - Text and clean backgrounds
+
+## Typography
+
+- **Headers**: DejaVu Sans Bold
+- **Body Text**: DejaVu Sans
+
+## Best Used For
+
+Tech presentations, architecture portfolios, design showcases, modern business proposals, data visualization.
+````
+
+> 来源 / Source: anthropics/skills · skills/theme-factory/themes/botanical-garden.md › Botanical Garden · Apache-2.0 (verbatim)
+
+````text
+# Botanical Garden
+
+A fresh and organic theme featuring vibrant garden-inspired colors for lively presentations.
+
+## Color Palette
+
+- **Fern Green**: `#4a7c59` - Rich natural green
+- **Marigold**: `#f9a620` - Bright floral accent
+- **Terracotta**: `#b7472a` - Earthy warm tone
+- **Cream**: `#f5f3ed` - Soft neutral backgrounds
+
+## Typography
+
+- **Headers**: DejaVu Serif Bold
+- **Body Text**: DejaVu Sans
+
+## Best Used For
+
+Garden centers, food presentations, farm-to-table content, botanical brands, natural products.
+````
+
+> 来源 / Source: anthropics/skills · skills/theme-factory/themes/golden-hour.md › Golden Hour · Apache-2.0 (verbatim)
+
+````text
+# Golden Hour
+
+A rich and warm autumnal palette that creates an inviting and sophisticated atmosphere.
+
+## Color Palette
+
+- **Mustard Yellow**: `#f4a900` - Bold primary accent
+- **Terracotta**: `#c1666b` - Warm secondary color
+- **Warm Beige**: `#d4b896` - Neutral backgrounds
+- **Chocolate Brown**: `#4a403a` - Dark text and anchors
+
+## Typography
+
+- **Headers**: FreeSans Bold
+- **Body Text**: FreeSans
+
+## Best Used For
+
+Restaurant presentations, hospitality brands, fall campaigns, cozy lifestyle content, artisan products.
+````
+
+> 来源 / Source: anthropics/skills · skills/theme-factory/themes/ocean-depths.md › Ocean Depths · Apache-2.0 (verbatim)
+
+````text
+# Ocean Depths
+
+A professional and calming maritime theme that evokes the serenity of deep ocean waters.
+
+## Color Palette
+
+- **Deep Navy**: `#1a2332` - Primary background color
+- **Teal**: `#2d8b8b` - Accent color for highlights and emphasis
+- **Seafoam**: `#a8dadc` - Secondary accent for lighter elements
+- **Cream**: `#f1faee` - Text and light backgrounds
+
+## Typography
+
+- **Headers**: DejaVu Sans Bold
+- **Body Text**: DejaVu Sans
+
+## Best Used For
+
+Corporate presentations, financial reports, professional consulting decks, trust-building content.
+````
+
+> 来源 / Source: anthropics/skills · skills/theme-factory/themes/forest-canopy.md › Forest Canopy · Apache-2.0 (verbatim)
+
+````text
+# Forest Canopy
+
+A natural and grounded theme featuring earth tones inspired by dense forest environments.
+
+## Color Palette
+
+- **Forest Green**: `#2d4a2b` - Primary dark green
+- **Sage**: `#7d8471` - Muted green accent
+- **Olive**: `#a4ac86` - Light accent color
+- **Ivory**: `#faf9f6` - Backgrounds and text
+
+## Typography
+
+- **Headers**: FreeSerif Bold
+- **Body Text**: FreeSans
+
+## Best Used For
+
+Environmental presentations, sustainability reports, outdoor brands, wellness content, organic products.
+````
+
+> 来源 / Source: anthropics/skills · skills/theme-factory/SKILL.md › Create your Own Theme · Apache-2.0 (verbatim)
+
+````text
+## Create your Own Theme
+To handle cases where none of the existing themes work for an artifact, create a custom theme. Based on provided inputs, generate a new theme similar to the ones above. Give the theme a similar name describing what the font/color combinations represent. Use any basic description provided to choose appropriate colors/fonts. After generating the theme, show it for review and verification. Following that, apply the theme as described above.
+````
+
+## 本站调整
+
+- 每套主题只有 4 个颜色。品牌 VI 通常还要一个中性深色（文字）和一个中性浅色（背景），不够就补上，并写清 hex。
+- 原文「Best Used For」是海外场景举例，只作参考。

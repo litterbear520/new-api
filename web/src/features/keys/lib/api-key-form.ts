@@ -35,7 +35,10 @@ export function getApiKeyFormSchema(t: TFunction, maxAutoGroups = 5) {
   return z
     .object({
       name: z.string().min(1, t('Please enter a name')),
-      remain_quota_dollars: z.number().optional(),
+      // NaN is what the dialog holds while the number box has bad input
+      remain_quota_dollars: z
+        .number({ error: t('Please enter a valid number') })
+        .optional(),
       expired_time: z.date().nullable(),
       unlimited_quota: z.boolean(),
       model_limits: z.array(z.string()),
@@ -129,6 +132,37 @@ export function getApiKeyFormDefaultValues(
     auto_groups: [],
     cross_group_retry: defaultUseAutoGroup,
   }
+}
+
+/**
+ * Whether a saved key uses anything under 「更多设置」, so the dialog opens
+ * that section on edit. `defaults` are the values a new key starts with:
+ * their group (empty, or Auto when the site defaults to it) and the
+ * `default` group count as no choice.
+ */
+export function keyUsesMoreSettings(
+  values: ApiKeyFormValues,
+  defaults: ApiKeyFormValues
+): boolean {
+  const group = values.group || DEFAULT_GROUP
+  const plainGroups = [
+    DEFAULT_GROUP,
+    'default',
+    defaults.group || DEFAULT_GROUP,
+  ]
+  if (!plainGroups.includes(group)) return true
+  if (
+    group === 'auto' &&
+    (values.auto_groups_mode === 'custom' ||
+      Boolean(values.cross_group_retry) !== Boolean(defaults.cross_group_retry))
+  ) {
+    return true
+  }
+  return (
+    values.model_limits.length > 0 ||
+    Boolean(values.allow_ips?.trim()) ||
+    values.allow_user_quota_query !== defaults.allow_user_quota_query
+  )
 }
 
 // ============================================================================

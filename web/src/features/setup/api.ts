@@ -30,6 +30,20 @@ export async function getSetupStatus(): Promise<SetupResponse> {
   return res.data
 }
 
+let earlySetupStatus: Promise<SetupResponse | null> | null = null
+
+/** Starts the setup check before the first render (main.tsx). */
+export function prefetchSetupStatus(): void {
+  earlySetupStatus ??= getSetupStatus().catch(() => null)
+}
+
+/** The check `prefetchSetupStatus` started, handed out once (null if none). */
+export function takeSetupStatusPrefetch(): Promise<SetupResponse | null> | null {
+  const early = earlySetupStatus
+  earlySetupStatus = null
+  return early
+}
+
 export async function submitSetup(
   payload: Record<string, unknown>
 ): Promise<SetupResponse> {

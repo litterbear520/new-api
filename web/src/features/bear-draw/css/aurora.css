@@ -1,0 +1,195 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/*
+ * The light round the composer while the agent works (components/composer/
+ * aurora.tsx), the drawing page's aurora (features/draw/draw.css): blue,
+ * cyan and violet flow round the whole rim so the ring never breaks; one
+ * brighter streak rides the colours. The gradient turns about the box
+ * centre, so the streak rushes through the corners and slows along the long
+ * edges. The angle of the gradient itself turns (@property): a big square
+ * turned by a transform got only its on-screen part painted in Safari, so the
+ * ring went dark where the square stuck out of the page (the narrow chat
+ * panel beside the canvas). Each read has a fallback angle: without
+ * @property and with reduced motion nothing sets it, and a bare var() would
+ * drop the gradient. One soft flash round the rim when a run ends well.
+ */
+@property --bd-au-a {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.bd-comp {
+  --au1: oklch(0.7 0.15 255);
+  --au2: oklch(0.78 0.12 220);
+  --au3: oklch(0.72 0.14 290);
+  --au4: oklch(0.76 0.12 240);
+  --au-hot: oklch(0.64 0.2 236);
+  --beam-mid: oklch(0.68 0.16 245);
+  --beam-glow: oklch(0.72 0.15 244 / 0.8);
+}
+.dark .bd-comp {
+  --au1: oklch(0.66 0.17 255);
+  --au2: oklch(0.8 0.12 215);
+  --au3: oklch(0.68 0.16 290);
+  --au4: oklch(0.76 0.13 240);
+  --au-hot: oklch(0.96 0.05 215);
+  --beam-mid: oklch(0.86 0.09 236);
+  --beam-glow: oklch(0.64 0.18 251 / 0.9);
+}
+
+/* behind the glass: the composer frame is exactly the box */
+.bd-au-back {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--bd-comp-r);
+  pointer-events: none;
+}
+.bd-au-glow,
+.bd-au-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+.bd-au-ring {
+  z-index: 5;
+}
+.bd-au-glow.bd-on,
+.bd-au-ring.bd-on {
+  opacity: 1;
+}
+.bd-au-g {
+  position: absolute;
+  inset: 0;
+  filter: blur(10px);
+}
+.bd-au-gi,
+.bd-au-r {
+  position: absolute;
+  background: conic-gradient(
+    from var(--bd-au-a, 0deg),
+    var(--au1),
+    var(--au2) 20%,
+    var(--au-hot) 29%,
+    var(--au2) 38%,
+    var(--au3) 60%,
+    var(--au4) 82%,
+    var(--au1)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.bd-au-gi {
+  inset: -6px;
+  padding: 12px;
+  border-radius: calc(var(--bd-comp-r) + 6px);
+  animation:
+    bd-au-breathe 1.7s ease-in-out infinite alternate,
+    bd-au-turn 4.2s linear infinite;
+}
+.bd-au-r {
+  inset: -1px;
+  padding: 1.8px;
+  border-radius: calc(var(--bd-comp-r) + 1px);
+  animation:
+    bd-au-breathe-r 1.7s ease-in-out infinite alternate,
+    bd-au-turn 4.2s linear infinite;
+}
+@keyframes bd-au-turn {
+  to {
+    --bd-au-a: 360deg;
+  }
+}
+@keyframes bd-au-breathe {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes bd-au-breathe-r {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* the flash when a run ends well */
+.bd-au-flash {
+  position: absolute;
+  inset: -1px;
+  z-index: 6;
+  padding: 1.6px;
+  border-radius: calc(var(--bd-comp-r) + 1px);
+  background: var(--beam-mid);
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.bd-au-flash-g {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px var(--beam-glow),
+    0 0 22px 3px var(--beam-glow);
+  opacity: 0;
+  pointer-events: none;
+}
+.bd-au-flash.bd-flashing,
+.bd-au-flash-g.bd-flashing {
+  animation: bd-au-flash 1.1s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes bd-au-flash {
+  0% {
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-au-gi,
+  .bd-au-r {
+    animation: none !important;
+  }
+}

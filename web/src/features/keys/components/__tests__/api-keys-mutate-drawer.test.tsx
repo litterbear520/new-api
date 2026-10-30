@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import type { ApiKey } from '../../types'
@@ -26,6 +27,8 @@ const { I18nextProvider, initReactI18next } = await import('react-i18next')
 const { QueryClient, QueryClientProvider } =
   await import('@tanstack/react-query')
 const { api } = await import('@/lib/api')
+const { parseQuotaFromDollars } = await import('@/lib/format')
+const { apiKeySchema } = await import('../../types')
 const { ApiKeysProvider } = await import('../api-keys-provider')
 const { ApiKeysMutateDrawer } = await import('../api-keys-mutate-drawer')
 
@@ -134,11 +137,98 @@ async function renderCreateDrawer(): Promise<void> {
   )
   await waitFor(
     () => {
-      const saveButton = findButton('Save changes', false)
+      const saveButton = findButton('Create', false)
       expect(saveButton).toBeEnabled()
     },
     { timeout: 1500 }
   )
+  // Group, Auto order, quota query and quantity sit under 「更多设置」
+  fireEvent.click(findButton('More settings', true))
+}
+
+const groupsFixture = {
+  success: true,
+  data: {
+    auto: { desc: 'Automatic routing', ratio: 'auto' },
+    default: { desc: 'Standard access', ratio: 1 },
+    team_a: { desc: 'Own account', ratio: 0 },
+  },
+}
+
+/** Opens the dialog on a saved key; `siteAuto` is the site's default_use_auto_group */
+async function renderEditDrawer(
+  saved: Record<string, unknown>,
+  siteAuto = false
+): Promise<void> {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  const freshAt = Date.now() + 60_000
+  const row = apiKeySchema.parse({
+    id: 9,
+    name: 'saved',
+    key: 'abcd********wxyz',
+    status: 1,
+    remain_quota: 0,
+    used_quota: 0,
+    unlimited_quota: true,
+    expired_time: -1,
+    created_time: 0,
+    accessed_time: 0,
+    group: '',
+    model_limits_enabled: false,
+    allow_user_quota_query: true,
+    ...saved,
+  })
+  queryClient.setQueryData(
+    ['status'],
+    { default_use_auto_group: siteAuto },
+    { updatedAt: freshAt }
+  )
+  queryClient.setQueryData(
+    ['user-models'],
+    { success: true, data: [] },
+    { updatedAt: freshAt }
+  )
+  queryClient.setQueryData(['user-groups'], groupsFixture, {
+    updatedAt: freshAt,
+  })
+  queryClient.setQueryData(
+    ['token-auto-groups'],
+    { success: true, data: { groups: ['default'], max_count: 3 } },
+    { updatedAt: freshAt }
+  )
+  queryClient.setQueryData(
+    ['api-key', row.id],
+    { success: true, data: row },
+    { updatedAt: freshAt }
+  )
+  renderedDrawer = { queryClient }
+
+  render(
+    <QueryClientProvider client={queryClient}>
+      <I18nextProvider i18n={i18n}>
+        <ApiKeysProvider>
+          <ApiKeysMutateDrawer
+            open
+            onOpenChange={() => undefined}
+            currentRow={row}
+          />
+        </ApiKeysProvider>
+      </I18nextProvider>
+    </QueryClientProvider>
+  )
+  await waitFor(() => expect(findButton('Save changes', false)).toBeEnabled(), {
+    timeout: 1500,
+  })
+}
+
+function expirationTrigger(): HTMLElement {
+  return screen.getByRole('combobox', { name: 'Expiration' })
+}
+
+function moreSettings(): HTMLElement {
+  return screen.getByRole('button', { name: 'More settings' })
 }
 
 function findButton(text: string, required: true): HTMLButtonElement
@@ -227,12 +317,14 @@ describe('API keys mutate drawer Auto group integration', () => {
 
     changeInput(getControlByLabel('Name'), 'batch')
     changeInput(getControlByLabel('Quantity'), '2')
-    fireEvent.click(findButton('Save changes', true))
+    fireEvent.click(findButton('Create', true))
     await waitFor(() => expect(createdPayloads).toHaveLength(2))
 
     expect(createdPayloads.length).toBe(2)
     expect(createdPayloads[0]?.name).toBe('batch')
     for (const payload of createdPayloads) {
+      // No quota typed means no limit
+      expect(payload.unlimited_quota).toBe(true)
       expect(payload.group).toBe('auto')
       expect(payload.auto_groups).toEqual([])
       expect(payload.cross_group_retry).toBe(true)
@@ -275,7 +367,7 @@ describe('API keys mutate drawer Auto group integration', () => {
     expect(findButton('Restore global Auto', true).disabled).toBe(false)
 
     changeInput(getControlByLabel('Name'), 'custom')
-    fireEvent.click(findButton('Save changes', true))
+    fireEvent.click(findButton('Create', true))
     await waitFor(() => expect(createdPayloads).toHaveLength(1))
     expect(createdPayloads[0]?.auto_groups).toEqual(['vip'])
   })
@@ -343,6 +435,7 @@ describe('API key expiry across editing sessions', () => {
       await waitFor(() =>
         expect(findButton('Save changes', true)).toBeEnabled()
       )
+      expect(expirationTrigger().textContent).toContain('Custom')
       await waitFor(() => expect(screen.getByLabelText('Time')).toBeEnabled())
 
       if (finish === 'save') {
@@ -353,7 +446,7 @@ describe('API key expiry across editing sessions', () => {
           expired_time: 2000000000,
         })
       } else {
-        fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0])
+        fireEvent.click(findButton('Cancel', true))
       }
       await waitFor(() => expect(close.mock.calls[0]?.[0]).toBe(false))
       view.rerender(tree(first, false))
@@ -369,10 +462,8 @@ describe('API key expiry across editing sessions', () => {
       await waitFor(() =>
         expect(findButton('Save changes', true)).toBeEnabled()
       )
-      expect(
-        screen.getByRole('button', { name: 'Never expires' })
-      ).toBeVisible()
-      expect(screen.getByLabelText('Time')).toBeDisabled()
+      expect(expirationTrigger().textContent).toContain('Never expires')
+      expect(screen.queryByLabelText('Time')).not.toBeInTheDocument()
       fireEvent.click(findButton('Save changes', true))
       await waitFor(() =>
         expect(put).toHaveBeenLastCalledWith(
@@ -383,21 +474,30 @@ describe('API key expiry across editing sessions', () => {
     }
   )
 
-  test.each(['Never', 'Clear'])(
+  test.each(['Never expires', 'Clear'])(
     'submits a non-expiring key when its date is cleared with %s',
     async (action) => {
       const payloads: Array<Record<string, unknown>> = []
       installApiFixtures(payloads)
       await renderCreateDrawer()
       changeInput(getControlByLabel('Name'), 'no-expiry')
-      fireEvent.click(screen.getByRole('button', { name: '1 Month' }))
+      const user = userEvent.setup()
+      // Custom starts 30 days ahead
+      await user.click(expirationTrigger())
+      await user.click(screen.getByRole('option', { name: 'Custom' }))
       expect(screen.getByLabelText('Time')).toBeEnabled()
-      fireEvent.click(screen.getByRole('button', { name: action }))
-      expect(
-        screen.getByRole('button', { name: 'Never expires' })
-      ).toBeVisible()
-      expect(screen.getByLabelText('Time')).toBeDisabled()
-      fireEvent.click(findButton('Save changes', true))
+      if (action === 'Clear') {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+        expect(
+          screen.getByRole('button', { name: 'Never expires' })
+        ).toBeVisible()
+        expect(screen.getByLabelText('Time')).toBeDisabled()
+      } else {
+        await user.click(expirationTrigger())
+        await user.click(screen.getByRole('option', { name: 'Never expires' }))
+        expect(expirationTrigger().textContent).toContain('Never expires')
+      }
+      fireEvent.click(findButton('Create', true))
       await waitFor(() => expect(payloads).toHaveLength(1))
       expect(payloads[0]?.expired_time).toBe(-1)
     }
@@ -410,7 +510,6 @@ describe('API keys mutate drawer user quota query switch', () => {
     installApiFixtures(createdPayloads)
     await renderCreateDrawer()
 
-    fireEvent.click(findButton('Advanced Settings', true))
     const quotaQuerySwitch = await screen.findByRole('switch', {
       name: 'Allow querying user quota',
     })
@@ -419,8 +518,124 @@ describe('API keys mutate drawer user quota query switch', () => {
     expect(quotaQuerySwitch).not.toBeChecked()
 
     changeInput(getControlByLabel('Name'), 'no-user-quota')
-    fireEvent.click(findButton('Save changes', true))
+    fireEvent.click(findButton('Create', true))
     await waitFor(() => expect(createdPayloads).toHaveLength(1))
     expect(createdPayloads[0]?.allow_user_quota_query).toBe(false)
+  })
+})
+
+describe('API keys mutate dialog quota field', () => {
+  test('a typed quota turns the limit on and is sent in quota units', async () => {
+    const createdPayloads: Array<Record<string, unknown>> = []
+    installApiFixtures(createdPayloads)
+    await renderCreateDrawer()
+
+    changeInput(getControlByLabel('Name'), 'limited')
+    changeInput(
+      screen.getByPlaceholderText<HTMLInputElement>('Leave empty for no limit'),
+      '12.5'
+    )
+    fireEvent.click(findButton('Create', true))
+    await waitFor(() => expect(createdPayloads).toHaveLength(1))
+    expect(createdPayloads[0]?.unlimited_quota).toBe(false)
+    expect(Number(createdPayloads[0]?.remain_quota)).toBeGreaterThan(0)
+  })
+})
+
+describe('API keys mutate dialog unparsable quota', () => {
+  test('an entry the number box cannot parse shows an error, keeps the typed limit and blocks saving', async () => {
+    const createdPayloads: Array<Record<string, unknown>> = []
+    installApiFixtures(createdPayloads)
+    await renderCreateDrawer()
+
+    changeInput(getControlByLabel('Name'), 'limited')
+    const quota = screen.getByPlaceholderText<HTMLInputElement>(
+      'Leave empty for no limit'
+    )
+    changeInput(quota, '12')
+    // 「1e」: the browser reports bad input and hands over an empty value
+    Object.defineProperty(quota, 'validity', {
+      configurable: true,
+      value: { badInput: true, valid: false },
+    })
+    changeInput(quota, '')
+    expect(await screen.findByText('Please enter a valid number')).toBeVisible()
+    expect(quota).toHaveAttribute('aria-invalid', 'true')
+
+    fireEvent.click(findButton('Create', true))
+    await waitFor(() =>
+      expect(screen.getByText('Please enter a valid number')).toBeVisible()
+    )
+
+    Object.defineProperty(quota, 'validity', {
+      configurable: true,
+      value: { badInput: false, valid: true },
+    })
+    changeInput(quota, '5')
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Please enter a valid number')
+      ).not.toBeInTheDocument()
+    )
+    fireEvent.click(findButton('Create', true))
+    await waitFor(() => expect(createdPayloads).toHaveLength(1))
+    expect(createdPayloads[0]?.unlimited_quota).toBe(false)
+    expect(createdPayloads[0]?.remain_quota).toBe(parseQuotaFromDollars(5))
+  })
+})
+
+describe('API keys mutate dialog More settings on edit', () => {
+  test('a key in a non-default group opens More settings with its group', async () => {
+    installApiFixtures([])
+    await renderEditDrawer({ group: 'team_a' })
+
+    expect(moreSettings()).toHaveAttribute('aria-expanded', 'true')
+    expect(getControlByLabel('Group').textContent).toContain('team_a')
+  })
+
+  test('a key that uses nothing under More settings keeps it closed', async () => {
+    installApiFixtures([])
+    await renderEditDrawer({ group: 'default' })
+
+    expect(moreSettings()).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('an Auto key opens More settings when Auto is not the site default', async () => {
+    installApiFixtures([])
+    await renderEditDrawer({ group: 'auto', cross_group_retry: true })
+
+    expect(moreSettings()).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+describe('API keys mutate dialog expiry', () => {
+  test('lists the presets with 1 hour first in one casing and 1 hour sets the expiry an hour ahead', async () => {
+    const createdPayloads: Array<Record<string, unknown>> = []
+    installApiFixtures(createdPayloads)
+    await renderCreateDrawer()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', { name: 'Expiration' }))
+    const options = await screen.findAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Never expires',
+      '1 hour',
+      '1 day',
+      '7 days',
+      '30 days',
+      '90 days',
+      '1 year',
+      'Custom',
+    ])
+    await user.click(screen.getByRole('option', { name: '1 hour' }))
+
+    changeInput(getControlByLabel('Name'), 'hourly')
+    const before = Date.now()
+    fireEvent.click(findButton('Create', true))
+    await waitFor(() => expect(createdPayloads).toHaveLength(1))
+    const expiresAt = Number(createdPayloads[0]?.expired_time) * 1000
+    const oneHour = 3_600_000
+    expect(expiresAt).toBeGreaterThan(before + oneHour - 60_000)
+    expect(expiresAt).toBeLessThan(before + oneHour + 60_000)
   })
 })

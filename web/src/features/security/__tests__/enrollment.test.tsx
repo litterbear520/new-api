@@ -29,14 +29,14 @@ import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
+import { PasskeyRow } from '@/features/account-settings/components/passkey-row'
+import { TwoFARow } from '@/features/account-settings/components/two-fa-row'
 import { OAUTH_POPUP_CALLBACK_MESSAGE } from '@/features/auth/constants'
 import type { UserProfile } from '@/features/profile/types'
 import { api } from '@/lib/api'
 import { STATUS_QUERY_KEY } from '@/lib/status-query'
 
 import { AccountBindings } from '../components/account-bindings'
-import { PasskeyCard } from '../components/passkey-card'
-import { TwoFACard } from '../components/two-fa-card'
 
 const credentialsDescriptor = Object.getOwnPropertyDescriptor(
   navigator,
@@ -110,13 +110,7 @@ it.each(['2fa', 'passkey'] as const)(
     }))
     const post = vi.spyOn(api, 'post')
     const user = userEvent.setup()
-    render(
-      factor === '2fa' ? (
-        <TwoFACard loading={false} />
-      ) : (
-        <PasskeyCard loading={false} />
-      )
-    )
+    render(factor === '2fa' ? <TwoFARow /> : <PasskeyRow />)
     const enable = await screen.findByRole('button', {
       name: factor === '2fa' ? 'Enable' : 'Enable Passkey',
     })
@@ -260,7 +254,7 @@ it('shows a retry when the 2FA status query fails instead of offering enrollment
     .spyOn(api, 'get')
     .mockRejectedValue(new Error('Status unavailable'))
   const user = userEvent.setup()
-  render(<TwoFACard loading={false} />)
+  render(<TwoFARow />)
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Status unavailable'
   )
@@ -355,7 +349,7 @@ it('consumes Passkey authorization at setup and activates using only the dedicat
   client.setQueryData(STATUS_QUERY_KEY, { passkey_rp_ids: ['localhost'] })
   render(
     <QueryClientProvider client={client}>
-      <TwoFACard loading={false} />
+      <TwoFARow />
     </QueryClientProvider>
   )
   await user.click(await screen.findByRole('button', { name: 'Enable' }))
@@ -458,7 +452,7 @@ it('reports registration failure without treating a successful password check as
   const success = vi.spyOn(toast, 'success')
   const failure = vi.spyOn(toast, 'error')
   const user = userEvent.setup()
-  render(<PasskeyCard loading={false} />)
+  render(<PasskeyRow />)
   const enable = await screen.findByRole('button', { name: 'Enable Passkey' })
   await waitFor(() => expect(enable).toBeEnabled())
   await user.click(enable)
@@ -558,7 +552,7 @@ it.each(['proof', 'setup'] as const)(
     const user = userEvent.setup()
     const info = vi.spyOn(toast, 'info')
     const success = vi.spyOn(toast, 'success')
-    render(<TwoFACard loading={false} />)
+    render(<TwoFARow />)
     await user.click(await screen.findByRole('button', { name: 'Enable' }))
     await user.type(
       await screen.findByLabelText('Password', { selector: 'input' }),
@@ -682,7 +676,7 @@ it.each(['wrong code', 'response lost'] as const)(
       throw new Error(`Unexpected POST ${url}`)
     })
     const user = userEvent.setup()
-    render(<TwoFACard loading={false} />)
+    render(<TwoFARow />)
     await user.click(await screen.findByRole('button', { name: 'Enable' }))
     await user.type(
       await screen.findByLabelText('Password', { selector: 'input' }),

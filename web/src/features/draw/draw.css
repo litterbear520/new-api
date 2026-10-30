@@ -1,0 +1,3340 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/*
+ * The drawing page (画图): chat on the left, canvas on the right, liquid
+ * glass controls, the night-sea wait and the ripple reveal. Everything is
+ * prefixed dw- and uses the console theme tokens; the accent follows
+ * --primary so theme presets carry over. Animations stick to transform and
+ * opacity where they run for long, so they stay on the compositor.
+ */
+
+.dw {
+  --chat-w: 400px;
+  --dw-fill: color-mix(in oklab, var(--primary), #000 10%);
+  --dw-accent-soft: color-mix(in oklab, var(--primary) 14%, transparent);
+  --dw-accent-ink: color-mix(in oklab, var(--primary), #000 28%);
+  --dw-danger: oklch(0.577 0.245 27.325);
+  --dw-danger-soft: oklch(0.577 0.245 27.325 / 0.08);
+  --dw-canvas: oklch(0.955 0 none);
+  --dw-canvas-rgb: 240 240 240;
+  --dw-bg-rgb: 255 255 255;
+  --dw-scroll: oklch(0.145 0 none / 0.18);
+  --dw-pop-shadow: 0 16px 40px -14px rgb(0 0 0 / 0.25), 0 0 0 1px var(--border);
+  --g-tint: 255 255 255;
+  --g-a: 0.62;
+  --g-edge: rgb(0 0 0 / 0.11);
+  --g-shadow:
+    0 12px 32px -12px rgb(0 0 0 / 0.22), 0 2px 8px -3px rgb(0 0 0 / 0.08);
+  --spec: 255 255 255;
+  --hair: rgb(255 255 255 / 0.5);
+  --beam-mid: oklch(0.68 0.16 245);
+  --beam-glow: oklch(0.72 0.15 244 / 0.8);
+  --au1: oklch(0.7 0.15 255);
+  --au2: oklch(0.78 0.12 220);
+  --au3: oklch(0.72 0.14 290);
+  --au4: oklch(0.76 0.12 240);
+  --au-hot: oklch(0.64 0.2 236);
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.dark .dw {
+  --dw-fill: color-mix(in oklab, var(--primary), #fff 4%);
+  --dw-accent-soft: color-mix(in oklab, var(--primary) 24%, transparent);
+  --dw-accent-ink: color-mix(in oklab, var(--primary), #fff 55%);
+  --dw-danger: oklch(0.704 0.191 22.216);
+  --dw-danger-soft: oklch(0.704 0.191 22.216 / 0.1);
+  --dw-canvas: oklch(0.19 0 none);
+  --dw-canvas-rgb: 20 20 20;
+  --dw-bg-rgb: 30 30 30;
+  --dw-scroll: oklch(1 0 none / 0.16);
+  --dw-pop-shadow: 0 18px 44px -14px rgb(0 0 0 / 0.6), 0 0 0 1px var(--border);
+  --g-tint: 42 42 42;
+  --g-a: 0.55;
+  --g-edge: rgb(0 0 0 / 0.45);
+  --g-shadow:
+    0 14px 36px -12px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.35);
+  --hair: rgb(255 255 255 / 0.14);
+  --beam-mid: oklch(0.86 0.09 236);
+  --beam-glow: oklch(0.64 0.18 251 / 0.9);
+  --au1: oklch(0.66 0.17 255);
+  --au2: oklch(0.8 0.12 215);
+  --au3: oklch(0.68 0.16 290);
+  --au4: oklch(0.76 0.13 240);
+  --au-hot: oklch(0.96 0.05 215);
+}
+.dw button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dw button:disabled {
+  cursor: default;
+}
+.dw svg:not([class]) {
+  flex: none;
+}
+.dw img {
+  display: block;
+}
+.dw-img-wait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--muted);
+}
+
+/* ---------- liquid glass ----------
+   The rim bends what is behind it and splits it into a little colour, the
+   middle is frosted, a hairline of light faces the pointer. Chromium gets the
+   SVG lens (lensed + --lens); other browsers keep the frosted fallback. */
+.dw-glass {
+  position: relative;
+  isolation: isolate;
+  background-color: rgb(var(--g-tint) / var(--g-a));
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
+  box-shadow:
+    0 0 0 0.5px var(--g-edge),
+    var(--g-shadow);
+}
+.dw-glass.lensed {
+  background-color: transparent;
+  -webkit-backdrop-filter: var(--lens);
+  backdrop-filter: var(--lens);
+}
+.dw-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1.2px;
+  pointer-events: none;
+  background: conic-gradient(
+    from calc(var(--la, 320deg) - 80deg),
+    rgb(var(--spec) / 0),
+    rgb(var(--spec) / 0.4) 40deg,
+    rgb(var(--spec) / 1) 80deg,
+    rgb(var(--spec) / 0.4) 120deg,
+    rgb(var(--spec) / 0) 160deg,
+    rgb(var(--spec) / 0) 215deg,
+    rgb(var(--spec) / 0.5) 260deg,
+    rgb(var(--spec) / 0) 305deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.dw-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+
+/* ---------- layout ---------- */
+.dw-chatp {
+  position: relative;
+  flex: none;
+  width: var(--chat-w);
+  border-right: 1px solid var(--border);
+  background: var(--background);
+  view-transition-name: dw-chatp;
+}
+.dw-divider {
+  position: absolute;
+  z-index: 16;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--chat-w) - 4px);
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.dw-divider::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.dw-divider:hover::after,
+.dw-divider.dw-drag::after {
+  opacity: 0.55;
+}
+.dw-canvasp {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: clip;
+  background: var(--dw-canvas);
+  container: dwcv / inline-size;
+  view-transition-name: dw-canvasp;
+}
+.dw-startp {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dw-scroll) transparent;
+}
+.dw-narrow > .dw-chatp {
+  width: 100%;
+  border-right: 0;
+}
+.dw-narrow > .dw-canvasp {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+}
+.dw-cv-off:not(.dw-narrow) > .dw-chatp {
+  width: 100%;
+  border-right: 0;
+}
+
+/* ---------- chat pane ---------- */
+.dw-cp-head {
+  position: absolute;
+  z-index: 8;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 10px 0 8px;
+  background: linear-gradient(var(--background) 72%, rgb(var(--dw-bg-rgb) / 0));
+}
+.dw-cp-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 6px 0 8px;
+  border: 0;
+  border-radius: 0.6rem;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.dw-cp-title span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dw-cp-title svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--muted-foreground);
+}
+.dw-cp-title:hover,
+.dw-cp-title[aria-expanded='true'],
+.dw-cp-title[data-popup-open] {
+  background: var(--muted);
+}
+.dw-rename {
+  width: 220px;
+  border: 1px solid var(--ring);
+  background: var(--background);
+  font-weight: 500;
+  outline: 0;
+}
+.dw-sp {
+  flex: 1;
+  min-width: 8px;
+}
+.dw-bal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin-right: 2px;
+  padding: 0 10px 0 8px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.dw-bal:hover {
+  color: var(--foreground);
+}
+.dw-bal svg {
+  width: 14px;
+  height: 14px;
+}
+.dw-bal.dw-low {
+  background: var(--dw-danger-soft);
+  color: var(--dw-danger);
+}
+.dw-cp-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dw-scroll) transparent;
+}
+.dw-msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 62px 16px calc(var(--dock-h, 170px) + 24px);
+}
+.dw-cv-off:not(.dw-narrow) .dw-msgs {
+  max-width: 820px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  gap: 22px;
+}
+.dw-u {
+  align-self: flex-end;
+  max-width: 88%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.dw-u-att {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.dw-u-th {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  cursor: zoom-in;
+}
+.dw-u-th img,
+.dw-u-th .dw-img-wait {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--border);
+}
+.dw-u-th span:not(.dw-img-wait),
+.dw-badge {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: rgb(10 10 10 / 0.62);
+  color: #fff;
+  font-size: 10.5px;
+  line-height: 15px;
+}
+.dw-bubble {
+  padding: 8px 14px;
+  border-radius: 18px;
+  background: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dw-u-opt {
+  margin-top: -2px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-r {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.dw-r-th {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dw-th {
+  position: relative;
+  height: 96px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--muted);
+  box-shadow: 0 0 0 1px var(--border);
+  transition: box-shadow 0.15s;
+}
+.dw-th > img,
+.dw-th .dw-revealing > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dw-th:hover {
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 6px 16px -8px rgb(0 0 0 / 0.35);
+}
+.dw-th.dw-on {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--primary);
+}
+.dw-th.dw-pend {
+  display: block;
+  background: #0c1a3c;
+  cursor: default;
+}
+button.dw-th.dw-pend {
+  cursor: pointer;
+}
+.dw-th.dw-err {
+  display: grid;
+  place-items: center;
+  background: var(--dw-danger-soft);
+  color: var(--dw-danger);
+}
+.dw-th.dw-err svg {
+  width: 22px;
+  height: 22px;
+}
+.dw-narrow .dw-th {
+  height: 150px;
+}
+.dw-cv-off:not(.dw-narrow) .dw-th {
+  cursor: zoom-in;
+}
+.dw-tbadge {
+  position: absolute;
+  z-index: 2;
+  left: 6px;
+  bottom: 5px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: rgb(6 12 30 / 0.5);
+  color: #dce4f7;
+  font-size: 11px;
+  line-height: 17px;
+}
+.dw-r-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 26px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-r-meta .dw-kb-st {
+  margin-right: -2px;
+}
+.dw-r-err,
+.dw-cv-err {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--dw-danger-soft);
+  font-size: 12.5px;
+}
+.dw-r-err b,
+.dw-cv-err b {
+  font-weight: 600;
+}
+.dw-r-err button,
+.dw-cv-err button {
+  margin-top: 4px;
+}
+.dw-err-detail {
+  color: var(--muted-foreground);
+  word-break: break-word;
+}
+.dw-cv-err {
+  align-items: center;
+  max-width: 360px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: var(--background);
+  box-shadow: var(--dw-pop-shadow);
+  text-align: center;
+  font-size: 13px;
+}
+.dw-cv-err b {
+  font-size: 15px;
+}
+.dw-r-acts {
+  display: flex;
+  gap: 2px;
+  margin: -4px 0 0 -6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.dw-r:hover .dw-r-acts,
+.dw-r:focus-within .dw-r-acts,
+.dw-r.dw-last .dw-r-acts {
+  opacity: 1;
+}
+@media (hover: none) and (pointer: coarse) {
+  .dw-r-acts {
+    opacity: 1;
+  }
+}
+
+/* the waiting status in the chat: bear, what is happening, a playful line or a tip */
+.dw-r-run {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 100%;
+}
+.dw-run1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  font-size: 13px;
+}
+.dw-shim {
+  font-weight: 500;
+  white-space: nowrap;
+  background: linear-gradient(
+    100deg,
+    var(--muted-foreground) 0 38%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 62% 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: dw-shim 2.4s linear infinite;
+}
+@keyframes dw-shim {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+.dw-run1 .dw-t {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.dw-run1 .dw-bell {
+  width: 26px;
+  height: 26px;
+  margin-left: -4px;
+  border-radius: 13px;
+  color: var(--muted-foreground);
+}
+.dw-run1 .dw-bell svg {
+  width: 14px;
+  height: 14px;
+}
+.dw-bell.dw-on {
+  color: var(--dw-accent-ink);
+}
+.dw-run2 {
+  min-height: 20px;
+  padding-left: 29px;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.dw-run2 > span {
+  display: block;
+  animation: dw-line-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dw-run2 > span.dw-still {
+  animation: none;
+}
+.dw-tipk {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--dw-accent-soft);
+  color: var(--dw-accent-ink);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 17px;
+  vertical-align: 1px;
+}
+@keyframes dw-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* "↳" follow-up suggestions under the newest picture (Lovart) */
+.dw-sugs {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: -8px;
+  max-width: 100%;
+}
+/* Quiet until pointed at. */
+.dw-sug {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 3px 9px 3px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: color-mix(in oklab, var(--muted-foreground) 75%, transparent);
+  font-size: 13px;
+  text-align: left;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
+}
+.dw-sug:hover,
+.dw-sug:focus-visible {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.dw-sug svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  opacity: 0.6;
+}
+.dw-sug span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* a request split into separate pictures: legend, numbered thumbnails, the plan that waits */
+.dw-r-plan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.dw-r-plan-p {
+  color: var(--foreground);
+}
+.dw-r-plan small {
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.dw-th-n {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  left: 6px;
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: rgb(6 12 30 / 0.55);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+}
+.dw-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 460px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--muted);
+  font-size: 13px;
+}
+.dw-plan > b {
+  font-weight: 600;
+}
+.dw-plan-sub {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+.dw-plan-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.dw-plan-n {
+  flex: none;
+  width: 18px;
+  padding-top: 2px;
+  color: var(--muted-foreground);
+}
+.dw-plan-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.dw-plan-body b {
+  font-weight: 600;
+}
+.dw-plan-body textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.dw-plan-body textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.dw-plan-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.dw-plan-acts .tabular-nums {
+  margin-left: 6px;
+  opacity: 0.8;
+}
+
+/* folded: the description a picture was drawn from */
+.dw-desc {
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-desc summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 24px;
+  padding-right: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.dw-desc summary::-webkit-details-marker {
+  display: none;
+}
+.dw-desc summary:hover {
+  color: var(--foreground);
+}
+.dw-desc summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.dw-desc summary svg {
+  width: 13px;
+  height: 13px;
+  transition: transform 0.15s;
+}
+.dw-desc[open] > summary svg {
+  transform: rotate(90deg);
+}
+.dw-desc p {
+  margin: 2px 0 4px 16px;
+  color: var(--foreground);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dw-desc-in {
+  margin-left: 16px;
+}
+.dw-desc-in p {
+  color: var(--muted-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dw-desc summary svg {
+    transition: none;
+  }
+}
+
+/* ---------- dock and composer ---------- */
+.dw-dock {
+  position: absolute;
+  z-index: 9;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 12px 6px;
+  pointer-events: none;
+}
+.dw-dock > * {
+  pointer-events: auto;
+}
+.dw-cv-off:not(.dw-narrow) .dw-dock {
+  padding-left: max(12px, calc(50% - 386px));
+  padding-right: max(12px, calc(50% - 386px));
+}
+.dw-edge-b {
+  position: absolute;
+  z-index: 7;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--dock-h, 170px) * 0.4 + 12px);
+  pointer-events: none;
+  background: linear-gradient(
+    rgb(var(--dw-bg-rgb) / 0),
+    rgb(var(--dw-bg-rgb) / 0.9) 62%,
+    rgb(var(--dw-bg-rgb))
+  );
+}
+.dw-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px -16px;
+  padding: 7px 8px 22px 12px;
+  border-radius: 14px 14px 0 0;
+  background: var(--dw-accent-soft);
+  font-size: 12.5px;
+}
+.dw-notice > svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--dw-accent-ink);
+}
+.dw-notice > button {
+  margin-left: auto;
+}
+.dw-cwrap {
+  position: relative;
+}
+.dw-composer {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 10px 8px 12px;
+  border-radius: 20px;
+  view-transition-name: dw-composer;
+}
+.dw-composer:focus-within,
+.dw-composer.lensed:focus-within {
+  background-color: rgb(var(--g-tint) / 0.16);
+}
+.dw-ta-wrap {
+  position: relative;
+}
+.dw .dw-ta {
+  display: block;
+  width: 100%;
+  min-height: 26px;
+  max-height: min(200px, 30dvh);
+  padding: 2px 4px 4px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  resize: none;
+  background: none;
+  box-shadow: none;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.dw .dw-ta:focus-visible {
+  box-shadow: none;
+}
+.dw-phr {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 2px;
+  display: flex;
+  gap: 4px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.dw-phr .dw-k {
+  flex: none;
+}
+.dw-phr .dw-v {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: dw-ph-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes dw-ph-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+/* "Tab" puts the grey example into the box; hidden on touch screens. */
+.dw-tabk {
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: rgb(0 0 0 / 0.06);
+  color: var(--muted-foreground);
+  font: 11px/17px inherit;
+  pointer-events: none;
+}
+.dark .dw-tabk {
+  background: rgb(255 255 255 / 0.1);
+}
+.dw-has-tab .dw-ta {
+  padding-right: 44px;
+}
+.dw-has-tab .dw-phr {
+  right: 44px;
+}
+@media (hover: none) and (pointer: coarse) {
+  .dw-tabk {
+    display: none;
+  }
+  .dw-has-tab .dw-ta {
+    padding-right: 4px;
+  }
+  .dw-has-tab .dw-phr {
+    right: 4px;
+  }
+}
+.dw-crow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.dw-cb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0.6rem;
+  background: none;
+  color: var(--foreground);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dw-cb > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.dw-cb:hover,
+.dw-cb[data-popup-open] {
+  background: rgb(0 0 0 / 0.05);
+}
+.dark .dw-cb:hover,
+.dark .dw-cb[data-popup-open] {
+  background: rgb(255 255 255 / 0.08);
+}
+.dw-cb.dw-sq {
+  width: 32px;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.dw-cb.dw-clear {
+  padding: 0 7px;
+}
+.dw-cb[aria-pressed='true'] {
+  background: var(--dw-accent-soft);
+  color: var(--dw-accent-ink);
+}
+.dw-cb .dw-chev {
+  width: 13px;
+  height: 13px;
+  margin-left: -2px;
+  color: var(--muted-foreground);
+}
+.dw-shape {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.dw-shape i {
+  display: block;
+  border: 1.6px solid currentColor;
+  border-radius: 3px;
+}
+.dw-est {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  cursor: default;
+}
+.dw-send {
+  width: 32px;
+  height: 32px;
+  margin-left: 2px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  border-radius: 0.6rem;
+  background: var(--dw-fill);
+  color: var(--primary-foreground);
+  transition:
+    opacity 0.15s,
+    background-color 0.15s;
+}
+.dw-send:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--dw-fill), #000 10%);
+}
+.dw-send:disabled {
+  opacity: 0.38;
+}
+.dw-send.dw-wait {
+  opacity: 1;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.dw-send svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2.4;
+}
+.dw-att {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 4px 6px 0;
+  scrollbar-width: none;
+}
+.dw-a-card {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 12px;
+  background: rgb(var(--g-tint) / 0.6);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.dw-a-card img,
+.dw-a-card .dw-img-wait {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.dw-a-card .dw-l {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.dw-a-card b {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.dw-a-card small {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.dw-a-thumb {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 48px;
+}
+.dw-a-thumb img,
+.dw-a-thumb .dw-img-wait {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--border);
+}
+.dw-a-x {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+  box-shadow: 0 0 0 2px var(--background);
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
+}
+.dw-a-x svg {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.8;
+}
+.dw-a-card:hover .dw-a-x,
+.dw-a-thumb:hover .dw-a-x,
+.dw-a-x:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+.dw-a-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: rgb(var(--g-tint) / 0.5);
+  box-shadow: 0 0 0 1px var(--border);
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.dw-a-note svg {
+  width: 14px;
+  height: 14px;
+}
+.dw-mks {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+.dw-mk {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+.dw-mk:hover {
+  box-shadow: 0 0 0 2px rgb(255 59 48 / 0.3);
+}
+.dw-mks small {
+  margin-left: 4px;
+}
+.dw-foot {
+  margin: 5px 0 0;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.dw-jump {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--foreground);
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dw-dock > .dw-jump {
+  pointer-events: none;
+}
+.dw-jump svg {
+  width: 16px;
+  height: 16px;
+}
+.dw-dock > .dw-jump.dw-show {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.dw-jump .dw-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--background);
+  display: none;
+}
+.dw-jump.dw-new .dw-dot {
+  display: block;
+}
+
+/* the light around the composer while a picture draws (see composer-halo.tsx);
+   the gradient angle turns, not a big square (Safari painted only its on-screen part);
+   its reads keep a fallback angle for browsers without @property */
+@property --dw-au-a {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.dw-cwrap > .dw-composer {
+  z-index: 1;
+}
+.dw-cglow,
+.dw-cring {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.dw-cglow {
+  z-index: 0;
+  border-radius: 20px;
+}
+.dw-cring {
+  z-index: 5;
+}
+.dw-cglow.dw-on,
+.dw-cring.dw-on {
+  opacity: 1;
+}
+.dw-au-g {
+  position: absolute;
+  inset: 0;
+  filter: blur(10px);
+}
+.dw-au-gi,
+.dw-au-r {
+  position: absolute;
+  background: conic-gradient(
+    from var(--dw-au-a, 0deg),
+    var(--au1),
+    var(--au2) 20%,
+    var(--au-hot) 29%,
+    var(--au2) 38%,
+    var(--au3) 60%,
+    var(--au4) 82%,
+    var(--au1)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.dw-au-gi {
+  inset: -6px;
+  border-radius: 26px;
+  padding: 12px;
+  animation:
+    dw-breathe 1.7s ease-in-out infinite alternate,
+    dw-turn 4.2s linear infinite;
+}
+.dw-au-r {
+  inset: -1px;
+  border-radius: 21px;
+  padding: 1.8px;
+  animation:
+    dw-breathe-r 1.7s ease-in-out infinite alternate,
+    dw-turn 4.2s linear infinite;
+}
+@keyframes dw-turn {
+  to {
+    --dw-au-a: 360deg;
+  }
+}
+@keyframes dw-breathe {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dw-breathe-r {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* one soft flash round the rim when the picture is ready */
+.dw-cflash {
+  position: absolute;
+  inset: -1px;
+  z-index: 6;
+  border-radius: 21px;
+  padding: 1.6px;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--beam-mid);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.dw-cflash-g {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    0 0 0 1px var(--beam-glow),
+    0 0 22px 3px var(--beam-glow);
+}
+.dw-cflash.dw-flash,
+.dw-cflash-g.dw-flash {
+  animation: dw-cflash 1.1s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes dw-cflash {
+  0% {
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- canvas ---------- */
+.dw-amb {
+  position: absolute;
+  inset: -80px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(56px) saturate(1.3);
+  opacity: 0.6;
+  transition: opacity 0.5s;
+}
+.dw-amb.dw-night {
+  background:
+    radial-gradient(70% 60% at 70% 80%, rgb(64 104 190 / 0.7), transparent 70%),
+    linear-gradient(#0a1430, #16306a);
+}
+.dw-wash {
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--dw-canvas-rgb) / 0.45);
+}
+.dark .dw-wash {
+  background: rgb(var(--dw-canvas-rgb) / 0.55);
+}
+.dw-stage {
+  position: absolute;
+  top: 70px;
+  left: 28px;
+  right: 28px;
+  bottom: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.dw-pair {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.dw-frame {
+  position: relative;
+  flex: none;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--muted);
+  box-shadow:
+    0 22px 60px -22px rgb(0 0 0 / 0.45),
+    0 0 0 1px rgb(0 0 0 / 0.05);
+  cursor: zoom-in;
+}
+.dw-frame > img,
+.dw-frame .dw-revealing > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.dw-frame.dw-wait {
+  cursor: default;
+}
+.dw-frame.dw-clear,
+.dw-lb img.dw-clear {
+  background-color: #fff;
+  background-image: conic-gradient(
+    #ececec 25%,
+    transparent 0 50%,
+    #ececec 0 75%,
+    transparent 0
+  );
+  background-size: 18px 18px;
+}
+.dw-frame.dw-clear img {
+  object-fit: contain;
+}
+.dw-frame.dw-marking {
+  cursor: crosshair;
+}
+.dw-ink {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.dw-frame.dw-cmp {
+  cursor: ew-resize;
+  touch-action: none;
+}
+.dw-frame.dw-cmp .dw-after {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 0 0 var(--split, 50%));
+}
+.dw-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--split, 50%);
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+.dw-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  --g-tint: 30 30 30;
+  --g-a: 0.35;
+  --hair: rgb(255 255 255 / 0.25);
+}
+.dw-knob svg {
+  width: 16px;
+  height: 16px;
+}
+.dw-cmp-l {
+  position: absolute;
+  top: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgb(10 10 10 / 0.55);
+  color: #fff;
+  font-size: 12px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+.dw-cmp-l.dw-l {
+  left: 10px;
+}
+.dw-cmp-l.dw-r {
+  right: 10px;
+}
+.dw-tag-cap {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-cap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* floating canvas controls */
+.dw-ctool {
+  position: absolute;
+  z-index: 6;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(100% - 24px);
+  padding: 4px;
+  border-radius: 22px;
+  white-space: nowrap;
+}
+.dw-tb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 17px;
+  background: none;
+  font-size: 13px;
+}
+.dw-tb svg {
+  width: 16px;
+  height: 16px;
+}
+.dw-tb:hover:not(:disabled) {
+  background: rgb(0 0 0 / 0.06);
+}
+.dark .dw-tb:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+}
+.dw-tb:disabled {
+  opacity: 0.4;
+}
+.dw-tb.dw-primary {
+  background: var(--dw-fill);
+  color: #fff;
+}
+.dw-tb.dw-primary:hover {
+  background: color-mix(in oklab, var(--dw-fill), #000 10%);
+}
+.dw-ib {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 17px;
+  background: none;
+  color: var(--foreground);
+}
+.dw-ib svg {
+  width: 16px;
+  height: 16px;
+}
+.dw-ib:hover:not(:disabled) {
+  background: rgb(0 0 0 / 0.06);
+}
+.dark .dw-ib:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+}
+.dw-ib:disabled {
+  opacity: 0.35;
+}
+.dw-tsep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: rgb(0 0 0 / 0.12);
+}
+.dark .dw-tsep {
+  background: rgb(255 255 255 / 0.14);
+}
+.dw-hint {
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.dw-hint kbd {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: rgb(0 0 0 / 0.06);
+  font: 11px/17px inherit;
+}
+.dark .dw-hint kbd {
+  background: rgb(255 255 255 / 0.1);
+}
+@container dwcv (max-width: 560px) {
+  .dw-ctool .dw-tb .dw-lbl {
+    display: none;
+  }
+  .dw-ctool .dw-tb {
+    padding: 0 10px;
+  }
+  .dw-hint {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+.dw-film {
+  position: absolute;
+  z-index: 6;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  max-width: calc(100% - 32px);
+  padding: 7px;
+  border-radius: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dw-film > button {
+  position: relative;
+  flex: none;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.08);
+  transition: transform 0.15s;
+}
+.dw-film > button:hover {
+  transform: translateY(-2px);
+}
+.dw-film > button img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dw-film > button.dw-on {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.dw-film > button.dw-cmpd {
+  box-shadow: 0 0 0 2px #ffb020;
+}
+.dw-film > button.dw-err {
+  display: grid;
+  place-items: center;
+  color: var(--dw-danger);
+  background: var(--dw-danger-soft);
+}
+.dw-film > button.dw-err svg {
+  width: 18px;
+  height: 18px;
+}
+.dw-film > button.dw-picking:not(.dw-on) {
+  outline: 2px dashed #ffb020;
+  outline-offset: -2px;
+}
+.dw-film > button.dw-pend {
+  display: block;
+  background: #0c1a3c;
+}
+.dw-nd {
+  position: absolute;
+  z-index: 3;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 2px #fff;
+}
+.dw-cv-new {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  bottom: 94px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 22px;
+  font-size: 13px;
+  white-space: nowrap;
+  animation: dw-pop-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dw-cv-new img {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+.dw-cv-new b {
+  font-weight: 600;
+}
+.dw-cv-new .dw-go {
+  padding: 0 10px 0 2px;
+  color: var(--dw-accent-ink);
+  font-weight: 600;
+}
+@keyframes dw-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+.dw-cv-hide,
+.dw-cv-close {
+  position: absolute;
+  z-index: 7;
+  top: 14px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--foreground);
+}
+.dw-cv-hide {
+  right: 14px;
+}
+.dw-cv-close {
+  left: 14px;
+}
+.dw-cv-hide svg,
+.dw-cv-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- waiting scenes ----------
+   New picture: the night sea; the boat bobs in place, the waves drift past.
+   Edit: the original stays, frosted, a light sweeps and the marks glow.
+   Every loop is offset by --ph so a re-render never restarts it. */
+.dw-scene {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: inherit;
+  color: #eef2fb;
+  text-align: left;
+  --ph: 0s;
+}
+.dw-sea {
+  background:
+    radial-gradient(
+      90% 60% at 72% 112%,
+      rgb(64 104 190 / 0.5),
+      transparent 70%
+    ),
+    linear-gradient(#070e24 0%, #0c1a3c 58%, #13295a 100%);
+}
+.dw-sea .dw-sky {
+  position: absolute;
+  inset: 0 0 34% 0;
+  background-image:
+    radial-gradient(1.2px 1.2px at 9% 18%, #fff 50%, transparent 52%),
+    radial-gradient(1px 1px at 21% 44%, #cfe0ff 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 33% 12%, #fff 50%, transparent 52%),
+    radial-gradient(1px 1px at 46% 30%, #dfe8ff 50%, transparent 52%),
+    radial-gradient(1px 1px at 58% 8%, #fff 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 66% 40%, #fff 50%, transparent 52%);
+  animation: dw-twinkle 5s ease-in-out var(--ph) infinite alternate;
+}
+.dw-sea .dw-sky.dw-s2 {
+  background-image:
+    radial-gradient(1px 1px at 88% 26%, #cfe0ff 50%, transparent 52%),
+    radial-gradient(1px 1px at 94% 52%, #fff 50%, transparent 52%),
+    radial-gradient(1px 1px at 4% 56%, #fff 50%, transparent 52%),
+    radial-gradient(1.3px 1.3px at 40% 58%, #fff 50%, transparent 52%),
+    radial-gradient(1px 1px at 76% 14%, #fff 50%, transparent 52%),
+    radial-gradient(1px 1px at 14% 74%, #dfe8ff 50%, transparent 52%),
+    radial-gradient(1.1px 1.1px at 27% 28%, #fff 50%, transparent 52%),
+    radial-gradient(1px 1px at 52% 46%, #cfe0ff 50%, transparent 52%);
+  animation: dw-twinkle 3.6s ease-in-out var(--ph) infinite alternate-reverse;
+}
+@keyframes dw-twinkle {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.dw-sea .dw-shoot {
+  position: absolute;
+  top: 9%;
+  left: 12%;
+  width: 90px;
+  height: 1.2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0), #fff);
+  opacity: 0;
+  transform: rotate(17deg);
+  transform-origin: 100% 50%;
+  animation: dw-shoot 14s cubic-bezier(0.25, 0.1, 0.25, 1) calc(var(--ph) + 3s)
+    infinite;
+}
+@keyframes dw-shoot {
+  0%,
+  91% {
+    opacity: 0;
+    translate: 0 0;
+  }
+  92.5% {
+    opacity: 0.85;
+  }
+  97%,
+  100% {
+    opacity: 0;
+    translate: 150px 46px;
+  }
+}
+/* the moon's halo is a separate glow that breathes with opacity, not box-shadow, so it never repaints */
+.dw-sea .dw-moon {
+  position: absolute;
+  right: 16%;
+  top: 13%;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f7ead0;
+  box-shadow: 0 0 30px 8px rgb(247 234 208 / 0.26);
+}
+.dw-sea .dw-moon::after {
+  content: '';
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(247 234 208 / 0.34),
+    transparent
+  );
+  opacity: 0;
+  animation: dw-halo 6s ease-in-out var(--ph) infinite alternate;
+}
+@keyframes dw-halo {
+  to {
+    opacity: 1;
+  }
+}
+.dw-sea .dw-water {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  overflow: hidden;
+  border-top: 1px solid rgb(170 195 255 / 0.22);
+  background: linear-gradient(rgb(40 70 140 / 0.35), rgb(10 20 50 / 0.1));
+}
+.dw-sea .dw-wv {
+  position: absolute;
+  left: 0;
+  width: calc(100% + var(--tw));
+  background-repeat: repeat-x;
+  background-size: var(--tw) 100%;
+  will-change: transform;
+}
+.dw-sea .dw-w1 {
+  top: 5%;
+  height: 6px;
+  --tw: 180px;
+  opacity: 0.38;
+  animation: dw-drift 40s linear var(--ph) infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='6'%3E%3Cpath d='M8 3h10M52 3h5M96 3h14M150 3h8' fill='none' stroke='%23C4D3FF' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.dw-sea .dw-w2 {
+  top: 22%;
+  height: 8px;
+  --tw: 260px;
+  opacity: 0.5;
+  animation: dw-drift 30s linear var(--ph) infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='8'%3E%3Cpath d='M14 4h18M90 4.5h9M150 4h24M222 4.5h12' fill='none' stroke='%23B9CCFF' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.dw-sea .dw-w3 {
+  top: 46%;
+  height: 10px;
+  --tw: 340px;
+  opacity: 0.62;
+  animation: dw-drift 21s linear var(--ph) infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='10'%3E%3Cpath d='M10 5.5q14 -2.5 28 0M132 5h18M212 5.5q18 -3 36 0M300 5h10' fill='none' stroke='%23AFC4FF' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.dw-sea .dw-w4 {
+  top: 72%;
+  height: 12px;
+  --tw: 420px;
+  opacity: 0.72;
+  animation: dw-drift 14s linear var(--ph) infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='12'%3E%3Cpath d='M30 6.5q20 -3.5 40 0M196 6.5q14 -2.5 28 0M318 6h24' fill='none' stroke='%23A6BCF5' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+@keyframes dw-drift {
+  to {
+    transform: translateX(calc(-1 * var(--tw)));
+  }
+}
+.dw-sea .dw-glint {
+  position: absolute;
+  right: calc(16% - 4px);
+  bottom: 2%;
+  width: 34px;
+  height: 31%;
+  background: repeating-linear-gradient(
+    transparent 0 6px,
+    rgb(247 234 208 / 0.5) 6px 7.5px
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 50% 55% at 50% 35%,
+    #000 20%,
+    transparent 75%
+  );
+  mask-image: radial-gradient(
+    ellipse 50% 55% at 50% 35%,
+    #000 20%,
+    transparent 75%
+  );
+  filter: blur(0.5px);
+  animation: dw-glint 2.6s ease-in-out var(--ph) infinite alternate;
+}
+@keyframes dw-glint {
+  from {
+    opacity: 0.35;
+    transform: scaleX(0.7);
+  }
+  to {
+    opacity: 0.85;
+    transform: scaleX(1.3);
+  }
+}
+.dw-sea .dw-boat {
+  position: absolute;
+  left: 34%;
+  bottom: calc(34% - 9px);
+  width: 46px;
+}
+.dw-sea .dw-boat > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  animation: dw-bob 3.2s ease-in-out var(--ph) infinite;
+  filter: drop-shadow(0 0 6px rgb(255 210 122 / 0.45));
+}
+.dw-sea .dw-refl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 5px);
+  transform: scaleY(-0.62);
+  transform-origin: 50% 0;
+  opacity: 0.3;
+  filter: blur(1.2px);
+  -webkit-mask-image: linear-gradient(to top, #000 25%, transparent 85%);
+  mask-image: linear-gradient(to top, #000 25%, transparent 85%);
+}
+.dw-sea .dw-refl svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  animation: dw-bob 3.2s ease-in-out var(--ph) infinite;
+}
+.dw-sea .dw-lamp {
+  animation: dw-flicker 2.4s ease-in-out var(--ph) infinite;
+}
+@keyframes dw-bob {
+  0%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translateY(-2px) rotate(-7deg);
+  }
+  70% {
+    transform: translateY(1px) rotate(6deg);
+  }
+}
+@keyframes dw-flicker {
+  50% {
+    opacity: 0.55;
+  }
+}
+.dw-fog {
+  background: #101a33;
+}
+.dw-fog .dw-fog-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(9px) saturate(0.85) brightness(0.78);
+  transform: scale(1.06);
+}
+.dw-fog .dw-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 46% at 50% 50%, rgb(8 14 32 / 0.4), transparent 75%),
+    linear-gradient(rgb(220 232 255 / 0.12), rgb(10 18 40 / 0.24));
+}
+.dw-fog .dw-beam {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    rgb(220 232 255 / 0),
+    rgb(220 232 255 / 0.26) 50%,
+    rgb(220 232 255 / 0)
+  );
+  mix-blend-mode: screen;
+  animation: dw-beam 4.6s cubic-bezier(0.45, 0, 0.55, 1) var(--ph) infinite
+    alternate;
+}
+@keyframes dw-beam {
+  from {
+    transform: translateX(-70%) skewX(-14deg);
+  }
+  to {
+    transform: translateX(230%) skewX(-14deg);
+  }
+}
+.dw-mk-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 5px rgb(255 86 72 / 0.95));
+  animation: dw-mk-glow 1.6s ease-in-out var(--ph) infinite alternate;
+}
+.dw-mk-svg path {
+  fill: none;
+  stroke: #ff6e61;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+@keyframes dw-mk-glow {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.dw-pin {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff;
+  font: 600 11px/1 sans-serif;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 14px rgb(255 59 48 / 0.8);
+}
+/* the pill in the middle */
+.dw-sea-c {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: 21%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  text-align: center;
+}
+.dw-fog .dw-sea-c {
+  top: auto;
+  bottom: 7%;
+}
+.dw-sea-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px 0 14px;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 14px;
+  white-space: nowrap;
+  --g-tint: 12 18 40;
+  --g-a: 0.25;
+  --g-edge: rgb(255 255 255 / 0.06);
+  --g-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.6);
+  --hair: rgb(255 255 255 / 0.16);
+}
+.dw-sea-pill b {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.dw-sea-pill .dw-t {
+  opacity: 0.85;
+}
+.dw-sea-pill .dw-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffd27a;
+  box-shadow: 0 0 10px #ffd27a;
+  animation: dw-pulse 1.4s ease-in-out infinite;
+}
+.dw-sea-pill .dw-dot.dw-ok {
+  background: #8be0b0;
+  box-shadow: 0 0 10px #8be0b0;
+  animation: none;
+}
+@keyframes dw-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.dw-sea-c small {
+  font-size: 12px;
+  color: #b5c3e6;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
+}
+.dw-fog .dw-sea-c small {
+  color: #e8eefb;
+}
+.dw-bl {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  margin-top: -2px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 13px;
+  background: rgb(255 255 255 / 0.08);
+  color: #c9d6f5;
+  font-size: 12px;
+}
+.dw-bl:hover {
+  background: rgb(255 255 255 / 0.15);
+  color: #fff;
+}
+.dw-bl svg {
+  width: 13px;
+  height: 13px;
+}
+.dw-bl.dw-on {
+  color: #ffd27a;
+}
+/* smaller copies for the chat thumbnails and the filmstrip */
+.dw-mini .dw-moon {
+  width: 11px;
+  height: 11px;
+  top: 15%;
+  right: 14%;
+  box-shadow: 0 0 14px 3px rgb(247 234 208 / 0.25);
+}
+.dw-mini .dw-moon::after,
+.dw-tiny .dw-moon::after {
+  display: none;
+}
+.dw-mini .dw-boat {
+  width: 22px;
+  bottom: calc(34% - 4px);
+}
+.dw-mini .dw-glint {
+  width: 14px;
+  right: calc(14% - 1px);
+}
+.dw-mini .dw-w1,
+.dw-mini .dw-w2 {
+  display: none;
+}
+.dw-mini .dw-w3 {
+  --tw: 170px;
+  height: 6px;
+  top: 30%;
+}
+.dw-mini .dw-w4 {
+  --tw: 210px;
+  height: 7px;
+  top: 66%;
+}
+.dw-tiny .dw-moon {
+  width: 7px;
+  height: 7px;
+  top: 14%;
+  right: 16%;
+  box-shadow: 0 0 8px 2px rgb(247 234 208 / 0.25);
+}
+.dw-tiny .dw-boat {
+  width: 17px;
+  left: 30%;
+  bottom: calc(34% - 3px);
+}
+.dw-tiny .dw-glint,
+.dw-tiny .dw-w1,
+.dw-tiny .dw-w2,
+.dw-tiny .dw-w3,
+.dw-tiny .dw-sky.dw-s2 {
+  display: none;
+}
+.dw-tiny .dw-w4 {
+  --tw: 150px;
+  height: 6px;
+  top: 48%;
+}
+.dw-mini .dw-fog-img,
+.dw-tiny .dw-fog-img {
+  filter: blur(5px) saturate(0.85) brightness(0.8);
+}
+.dw-tiny .dw-pin {
+  display: none;
+}
+
+/* ---------- the finished picture ripples out of one point ----------
+   --p runs 0 → 1; each origin's radius is p × (distance to its farthest
+   corner). The sharp picture shows inside the circle, a warped bright copy
+   rides the front, a light ring and a fainter second ring follow. */
+@property --p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+.dw-revealing {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.dw-revealing > .dw-rv-main {
+  position: relative;
+  z-index: 1;
+  animation: dw-rv-main 1.3s cubic-bezier(0.3, 0.55, 0.25, 1) var(--rd, 0s) both;
+}
+.dw-rv-under {
+  z-index: 0;
+  animation: dw-rv-out 1.45s linear var(--rd, 0s) both;
+}
+.dw-rv-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  filter: url(#dw-warp) brightness(1.16) saturate(1.15);
+  animation:
+    dw-rv-p 1.3s cubic-bezier(0.3, 0.55, 0.25, 1) var(--rd, 0s) both,
+    dw-rv-fade 1.3s linear var(--rd, 0s) both;
+}
+.dw-rv-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation:
+    dw-rv-p 1.3s cubic-bezier(0.3, 0.55, 0.25, 1) var(--rd, 0s) both,
+    dw-rv-fade 1.45s linear var(--rd, 0s) both;
+}
+@keyframes dw-rv-main {
+  from {
+    --p: 0;
+    transform: scale(1.03);
+  }
+  to {
+    --p: 1;
+    transform: none;
+  }
+}
+@keyframes dw-rv-p {
+  from {
+    --p: 0;
+  }
+  to {
+    --p: 1;
+  }
+}
+@keyframes dw-rv-out {
+  0%,
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes dw-rv-fade {
+  0%,
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes dw-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- the jumping bear ---------- */
+.dw-kb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: var(--foreground);
+}
+.dw-kb-hop,
+.dw-kb-shadow,
+.dw-kb-arm-l,
+.dw-kb-arm-r,
+.dw-kb-ear-l,
+.dw-kb-ear-r,
+.dw-kb-eyes {
+  transform-box: fill-box;
+}
+.dw-kb-hop,
+.dw-kb-ear-l,
+.dw-kb-ear-r {
+  transform-origin: 50% 100%;
+}
+.dw-kb-shadow,
+.dw-kb-eyes {
+  transform-origin: 50% 50%;
+}
+.dw-kb-arm-l {
+  transform-origin: 83.33% 50%;
+}
+.dw-kb-arm-r {
+  transform-origin: 16.67% 50%;
+}
+/* hop, then rest: 2.6 s cycle */
+.dw-hopping .dw-kb-hop {
+  animation: dw-kb-hop-r 2.6s var(--ph, 0s) infinite;
+}
+.dw-hopping .dw-kb-shadow {
+  animation: dw-kb-shadow-r 2.6s var(--ph, 0s) infinite;
+}
+.dw-hopping .dw-kb-arm-l {
+  animation: dw-kb-arm-l-r 2.6s var(--ph, 0s) infinite;
+}
+.dw-hopping .dw-kb-arm-r {
+  animation: dw-kb-arm-r-r 2.6s var(--ph, 0s) infinite;
+}
+.dw-hopping .dw-kb-ear-l {
+  animation: dw-kb-ear-r 2.6s var(--ph, 0s) infinite;
+}
+.dw-hopping .dw-kb-ear-r {
+  animation: dw-kb-ear-r 2.6s calc(var(--ph, 0s) + 0.06s) infinite;
+}
+.dw-hopping .dw-kb-eyes,
+.dw-cheer .dw-kb-eyes {
+  animation: dw-kb-blink 3.6s var(--ph, 0s) infinite;
+}
+/* one happy hop: a picture is ready, or someone pokes the bear */
+.dw-cheer .dw-kb-hop {
+  animation: dw-kb-hop 1.4s var(--cd, 0s) 1;
+}
+.dw-cheer .dw-kb-shadow {
+  animation: dw-kb-shadow 1.4s var(--cd, 0s) 1;
+}
+.dw-cheer .dw-kb-arm-l {
+  animation: dw-kb-arm-l 1.4s var(--cd, 0s) 1;
+}
+.dw-cheer .dw-kb-arm-r {
+  animation: dw-kb-arm-r 1.4s var(--cd, 0s) 1;
+}
+.dw-cheer .dw-kb-ear-l {
+  animation: dw-kb-ear 1.4s var(--cd, 0s) 1;
+}
+.dw-cheer .dw-kb-ear-r {
+  animation: dw-kb-ear 1.4s calc(var(--cd, 0s) + 0.06s) 1;
+}
+@keyframes dw-kb-hop {
+  0%,
+  92%,
+  100% {
+    transform: none;
+  }
+  14% {
+    transform: scale(1.08, 0.9);
+    animation-timing-function: ease-out;
+  }
+  34% {
+    transform: translateY(-3.6px) scale(0.94, 1.08);
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: translateY(-4.4px);
+    animation-timing-function: ease-in;
+  }
+  66% {
+    transform: translateY(-0.6px) scale(0.97, 1.04);
+    animation-timing-function: ease-in;
+  }
+  72% {
+    transform: scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  82% {
+    transform: scale(0.97, 1.03);
+  }
+}
+@keyframes dw-kb-shadow {
+  0%,
+  92%,
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+  14% {
+    transform: scaleX(1.12);
+    animation-timing-function: ease-out;
+  }
+  34% {
+    transform: scale(0.7);
+    opacity: 0.6;
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: scale(0.55);
+    opacity: 0.45;
+    animation-timing-function: ease-in;
+  }
+  66% {
+    transform: scale(0.9);
+    opacity: 0.85;
+    animation-timing-function: ease-in;
+  }
+  72% {
+    transform: scaleX(1.15);
+    opacity: 1;
+  }
+}
+@keyframes dw-kb-arm-l {
+  0%,
+  92%,
+  100% {
+    transform: none;
+  }
+  14% {
+    transform: rotate(-18deg);
+  }
+  34% {
+    transform: rotate(30deg);
+  }
+  44% {
+    transform: rotate(12deg);
+  }
+  54% {
+    transform: rotate(30deg);
+  }
+  72% {
+    transform: rotate(-14deg);
+  }
+}
+@keyframes dw-kb-arm-r {
+  0%,
+  92%,
+  100% {
+    transform: none;
+  }
+  14% {
+    transform: rotate(18deg);
+  }
+  34% {
+    transform: rotate(-30deg);
+  }
+  44% {
+    transform: rotate(-12deg);
+  }
+  54% {
+    transform: rotate(-30deg);
+  }
+  72% {
+    transform: rotate(14deg);
+  }
+}
+@keyframes dw-kb-ear {
+  0%,
+  92%,
+  100% {
+    transform: none;
+  }
+  14% {
+    transform: scaleY(0.72);
+  }
+  34% {
+    transform: scaleY(1.28);
+  }
+  50% {
+    transform: none;
+  }
+  72% {
+    transform: scaleY(0.7);
+  }
+  82% {
+    transform: scaleY(1.12);
+  }
+}
+@keyframes dw-kb-hop-r {
+  0%,
+  49.54%,
+  53.85% {
+    transform: none;
+  }
+  7.54% {
+    transform: scale(1.08, 0.9);
+    animation-timing-function: ease-out;
+  }
+  18.31% {
+    transform: translateY(-3.6px) scale(0.94, 1.08);
+    animation-timing-function: ease-out;
+  }
+  26.92% {
+    transform: translateY(-4.4px);
+    animation-timing-function: ease-in;
+  }
+  35.54% {
+    transform: translateY(-0.6px) scale(0.97, 1.04);
+    animation-timing-function: ease-in;
+  }
+  38.77% {
+    transform: scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  44.15% {
+    transform: scale(0.97, 1.03);
+  }
+}
+@keyframes dw-kb-shadow-r {
+  0%,
+  49.54%,
+  53.85% {
+    transform: none;
+    opacity: 1;
+  }
+  7.54% {
+    transform: scaleX(1.12);
+    animation-timing-function: ease-out;
+  }
+  18.31% {
+    transform: scale(0.7);
+    opacity: 0.6;
+    animation-timing-function: ease-out;
+  }
+  26.92% {
+    transform: scale(0.55);
+    opacity: 0.45;
+    animation-timing-function: ease-in;
+  }
+  35.54% {
+    transform: scale(0.9);
+    opacity: 0.85;
+    animation-timing-function: ease-in;
+  }
+  38.77% {
+    transform: scaleX(1.15);
+    opacity: 1;
+  }
+}
+@keyframes dw-kb-arm-l-r {
+  0%,
+  49.54%,
+  53.85% {
+    transform: none;
+  }
+  7.54% {
+    transform: rotate(-18deg);
+  }
+  18.31% {
+    transform: rotate(30deg);
+  }
+  23.69% {
+    transform: rotate(12deg);
+  }
+  29.08% {
+    transform: rotate(30deg);
+  }
+  38.77% {
+    transform: rotate(-14deg);
+  }
+}
+@keyframes dw-kb-arm-r-r {
+  0%,
+  49.54%,
+  53.85% {
+    transform: none;
+  }
+  7.54% {
+    transform: rotate(18deg);
+  }
+  18.31% {
+    transform: rotate(-30deg);
+  }
+  23.69% {
+    transform: rotate(-12deg);
+  }
+  29.08% {
+    transform: rotate(-30deg);
+  }
+  38.77% {
+    transform: rotate(14deg);
+  }
+}
+@keyframes dw-kb-ear-r {
+  0%,
+  49.54%,
+  53.85% {
+    transform: none;
+  }
+  7.54% {
+    transform: scaleY(0.72);
+  }
+  18.31% {
+    transform: scaleY(1.28);
+  }
+  26.92% {
+    transform: none;
+  }
+  38.77% {
+    transform: scaleY(0.7);
+  }
+  44.15% {
+    transform: scaleY(1.12);
+  }
+}
+@keyframes dw-kb-blink {
+  0%,
+  88%,
+  100% {
+    transform: none;
+  }
+  92% {
+    transform: scaleY(0.12);
+  }
+  96% {
+    transform: none;
+  }
+}
+.dw-kb-btn {
+  width: 40px;
+  height: 40px;
+  margin: -6px -2px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.dw-kb-st {
+  display: block;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  margin: -5px -1px 0 -4px;
+}
+.dw-kb-mini {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin: -4px 1px -3px -2px;
+  vertical-align: -1px;
+}
+
+/* ---------- start page ---------- */
+.dw-st {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 13vh 24px 56px;
+}
+.dw-hello {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.dw-hello h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.dw-sub {
+  margin: 6px 0 22px;
+  text-align: center;
+  font-size: 14.5px;
+  color: var(--muted-foreground);
+}
+.dw-guide {
+  color: var(--dw-accent-ink);
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+.dw-guide:hover {
+  text-decoration: underline;
+}
+.dw-slot .dw-notice {
+  margin-bottom: -16px;
+}
+.dw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.dw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dw-chip:hover {
+  background: var(--muted);
+}
+.dw-chip[aria-expanded='true'] {
+  background: var(--sidebar-accent);
+  border-color: transparent;
+  color: var(--sidebar-accent-foreground);
+}
+.dw-chip svg {
+  width: 15px;
+  height: 15px;
+}
+.dw-ideas {
+  margin-top: 12px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--background);
+  box-shadow: 0 10px 30px -18px rgb(0 0 0 / 0.25);
+  animation: dw-rise 0.18s ease-out;
+}
+@keyframes dw-rise {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.dw-ideas-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 2px 4px 10px;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.dw-ideas-hd > svg {
+  width: 15px;
+  height: 15px;
+}
+.dw-idea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+  font-size: 14px;
+}
+.dw-idea:hover,
+.dw-idea:focus-visible {
+  background: var(--muted);
+}
+.dw-idea span {
+  flex: 1;
+  min-width: 0;
+}
+.dw-idea small {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-recent {
+  margin-top: 48px;
+}
+.dw-rh {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.dw-rh h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.dw-rh span {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+}
+.dw-rc {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  min-width: 0;
+}
+.dw-rc .dw-cv {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--muted);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.dw-rc .dw-cv img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dw-rc:hover .dw-cv img {
+  transform: scale(1.04);
+}
+.dw-rc .dw-n {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgb(10 10 10 / 0.55);
+  color: #fff;
+  font-size: 11.5px;
+  line-height: 20px;
+}
+.dw-rc b {
+  margin-top: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dw-rc small {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* ---------- drop target, notes ---------- */
+.dw-drop {
+  position: absolute;
+  z-index: 40;
+  inset: 8px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  border-radius: 18px;
+  border: 1.5px dashed var(--primary);
+  background: rgb(var(--dw-bg-rgb) / 0.85);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.dw-drop.dw-on {
+  opacity: 1;
+}
+.dw-drop svg {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto;
+  color: var(--dw-accent-ink);
+}
+.dw-drop b {
+  display: block;
+  margin-top: 8px;
+  font-size: 15px;
+}
+.dw-drop small {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.dw-storage-note {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  top: 8px;
+  translate: -50% 0;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--dw-danger-soft);
+  color: var(--dw-danger);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ---------- menus (portaled, so they use only console tokens) ---------- */
+.dw-mi {
+  align-items: flex-start !important;
+  gap: 10px !important;
+  min-height: 34px;
+  padding: 7px 10px !important;
+  border-radius: 9px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.dw-mi > svg {
+  margin-top: 1px;
+  color: var(--muted-foreground);
+}
+.dw-mi-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dw-mi-tx > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dw-mi-tx small {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-mi-tx small.dw-mi-id {
+  font-size: 11px;
+  opacity: 0.8;
+}
+.dw-mi-pr {
+  flex: none;
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-mi .dw-shape {
+  margin-top: 1px;
+}
+.dw-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+  color: color-mix(in oklab, var(--primary), var(--foreground) 35%);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  vertical-align: 1px;
+}
+.dw-menu-note {
+  margin: 0;
+  padding: 5px 10px 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.dw-rimg {
+  width: 30px;
+  height: 30px;
+  margin: -2px 0;
+  flex: none;
+  border-radius: 7px;
+  object-fit: cover;
+  background: var(--muted);
+}
+.dw-q {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  margin: 2px 2px 4px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.dw-q svg {
+  width: 15px;
+  height: 15px;
+  color: var(--muted-foreground);
+}
+.dw-q input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font-size: 13px;
+}
+.dw-pick {
+  display: grid !important;
+  grid-template-columns: repeat(4, 60px);
+  gap: 6px;
+}
+.dw-pick-item {
+  width: 60px;
+  height: 60px;
+  padding: 0 !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  background: var(--muted);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.dw-pick-item:hover,
+.dw-pick-item[data-highlighted] {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.dw-pick-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dw-bell-panel {
+  display: flex;
+  flex-direction: column;
+}
+.dw-bell-title {
+  padding: 8px 10px 2px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.dw-bell-note {
+  margin: 0;
+  padding: 2px 10px 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.dw-swr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 13.5px;
+}
+.dw-swr-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dw-swr-tx small {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.dw-try {
+  margin-left: 8px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--muted);
+  color: var(--primary);
+  font-size: 11.5px;
+  line-height: 19px;
+  cursor: pointer;
+}
+.dw-try:hover {
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+}
+
+/* ---------- lightbox (portaled) ---------- */
+.dw-lb {
+  --g-tint: 40 40 40;
+  --g-a: 0.42;
+  --g-edge: rgb(0 0 0 / 0.3);
+  --g-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.5);
+  --hair: rgb(255 255 255 / 0.16);
+  --spec: 255 255 255;
+  display: block !important;
+  background: rgb(12 12 12 / 0.86) !important;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  color: #fff;
+}
+.dw-lb-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 70px 16px 96px;
+}
+.dw-lb-stage img {
+  max-width: min(92vw, 1400px);
+  max-height: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6);
+}
+.dw-lb .dw-round {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+}
+.dw-lb .dw-round:disabled {
+  opacity: 0.3;
+}
+.dw-lb .dw-round svg {
+  width: 18px;
+  height: 18px;
+}
+.dw-lb-x {
+  top: 16px;
+  right: 16px;
+}
+.dw-lb-prev {
+  left: 16px;
+  top: 50%;
+  margin-top: -22px;
+}
+.dw-lb-next {
+  right: 16px;
+  top: 50%;
+  margin-top: -22px;
+}
+.dw-lb-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 24px;
+  white-space: nowrap;
+}
+.dw-lb-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 18px;
+  background: none;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+.dw-lb-bar button svg {
+  width: 16px;
+  height: 16px;
+}
+.dw-lb-bar button:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+.dw-cnt {
+  padding: 0 10px 0 8px;
+  font-size: 12px;
+  color: rgb(255 255 255 / 0.7);
+}
+
+/* ---------- small screens, touch, reduced motion ---------- */
+@media (max-width: 767px) {
+  .dw-st {
+    padding-top: 9vh;
+  }
+  .dw-hello h1 {
+    font-size: 22px;
+  }
+  .dw-chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    margin: 14px -24px 0;
+    padding: 0 24px;
+    scrollbar-width: none;
+  }
+  .dw-chip {
+    flex: none;
+  }
+  .dw-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .dw-est {
+    display: none;
+  }
+  .dw-lb-bar button span {
+    display: none;
+  }
+  .dw-lb-prev,
+  .dw-lb-next {
+    display: none !important;
+  }
+  .dw-stage {
+    left: 12px;
+    right: 12px;
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  .dw-a-x {
+    opacity: 1;
+    transform: none;
+  }
+  .dw-cb,
+  .dw-send {
+    height: 40px;
+    min-width: 40px;
+  }
+  .dw-cb.dw-sq,
+  .dw-send {
+    width: 40px;
+  }
+  .dw-tb,
+  .dw-ib {
+    height: 40px;
+  }
+  .dw-ib {
+    width: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dw *,
+  .dw *::before,
+  .dw *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+  .dw-kb * {
+    animation: none !important;
+  }
+  .dw-au-gi,
+  .dw-au-r {
+    animation: none !important;
+  }
+  .dw-composer,
+  .dw-chatp,
+  .dw-canvasp {
+    view-transition-name: none;
+  }
+  /* the finished picture only fades in */
+  .dw-rv-under,
+  .dw-rv-rim,
+  .dw-rv-ring {
+    display: none !important;
+  }
+  .dw-revealing > .dw-rv-main {
+    -webkit-mask: none !important;
+    mask: none !important;
+    animation: dw-fade-in 0.35s ease both !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dw-glass {
+    background-color: var(--card) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}

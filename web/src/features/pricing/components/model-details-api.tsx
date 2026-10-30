@@ -16,36 +16,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import {
-  ChevronRight,
-  Gauge,
-  KeyRound,
-  ScrollText,
-  Sigma,
-  Zap,
-} from 'lucide-react'
+import { ChevronRight, KeyRound, ScrollText, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import type { BundledLanguage } from 'shiki/bundle/web'
 
 import {
   CodeBlock,
   CodeBlockCopyButton,
 } from '@/components/ai-elements/code-block'
-import {
-  StaticDataTable,
-  staticDataTableClassNames as tableStyles,
-} from '@/components/data-table'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useStatus } from '@/hooks/use-status'
 
-import {
-  buildRateLimits,
-  buildSupportedParameters,
-  formatRateLimit,
-  type SupportedParameter,
-} from '../lib/mock-stats'
 import { replaceModelInPath } from '../lib/model-helpers'
 import type { PricingModel } from '../types'
 
@@ -109,17 +91,18 @@ function buildChatSample(lang: Lang, ctx: SampleContext): string {
       `curl ${url} \\`,
       `  -H "Authorization: Bearer $${ctx.apiKeyEnv}" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${bodyJson.replace(/\n/g, '\n     ')}'`,
+      `  -d '${bodyJson.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
 
   if (lang === 'python') {
     return [
+      'import os',
       'from openai import OpenAI',
       '',
       'client = OpenAI(',
       `    base_url="${ctx.baseUrl}/v1",`,
-      `    api_key="<YOUR_API_KEY>",`,
+      `    api_key=os.environ["${ctx.apiKeyEnv}"],`,
       ')',
       '',
       isResponses
@@ -177,16 +160,17 @@ function buildAnthropicSample(lang: Lang, ctx: SampleContext): string {
       `  -H "x-api-key: $${ctx.apiKeyEnv}" \\`,
       `  -H "anthropic-version: 2023-06-01" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
     return [
+      'import os',
       'import anthropic',
       '',
       'client = anthropic.Anthropic(',
       `    base_url="${ctx.baseUrl}",`,
-      `    api_key="<YOUR_API_KEY>",`,
+      `    api_key=os.environ["${ctx.apiKeyEnv}"],`,
       ')',
       '',
       `message = client.messages.create(`,
@@ -237,7 +221,7 @@ function buildAnthropicSample(lang: Lang, ctx: SampleContext): string {
 }
 
 function buildGeminiSample(lang: Lang, ctx: SampleContext): string {
-  const url = `${ctx.baseUrl}${ctx.endpointPath}?key=$${ctx.apiKeyEnv}`
+  const url = `${ctx.baseUrl}${ctx.endpointPath}`
   const userMessage = 'Explain quantum entanglement in one paragraph.'
 
   if (lang === 'curl') {
@@ -248,37 +232,53 @@ function buildGeminiSample(lang: Lang, ctx: SampleContext): string {
     )
     return [
       `curl '${url}' \\`,
+      `  -H "x-goog-api-key: $${ctx.apiKeyEnv}" \\`,
       `  -H 'Content-Type: application/json' \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
     return [
-      'import google.generativeai as genai',
+      'import os',
+      'from google import genai',
+      'from google.genai import types',
       '',
-      `genai.configure(api_key="<YOUR_API_KEY>")`,
+      'client = genai.Client(',
+      `    api_key=os.environ["${ctx.apiKeyEnv}"],`,
+      `    http_options=types.HttpOptions(base_url="${ctx.baseUrl}"),`,
+      ')',
       '',
-      `model = genai.GenerativeModel("${ctx.modelName}")`,
-      `response = model.generate_content("${userMessage}")`,
+      'response = client.models.generate_content(',
+      `    model="${ctx.modelName}",`,
+      `    contents="${userMessage}",`,
+      ')',
       '',
-      `print(response.text)`,
+      'print(response.text)',
     ].join('\n')
   }
   if (lang === 'typescript') {
     return [
-      `import { GoogleGenerativeAI } from '@google/generative-ai'`,
+      `import { GoogleGenAI } from '@google/genai'`,
       '',
-      `const genAI = new GoogleGenerativeAI(process.env.${ctx.apiKeyEnv}!)`,
-      `const model = genAI.getGenerativeModel({ model: '${ctx.modelName}' })`,
+      `const ai = new GoogleGenAI({`,
+      `  apiKey: process.env.${ctx.apiKeyEnv},`,
+      `  httpOptions: { baseUrl: '${ctx.baseUrl}' },`,
+      `})`,
       '',
-      `const result = await model.generateContent('${userMessage}')`,
-      `console.log(result.response.text())`,
+      `const response = await ai.models.generateContent({`,
+      `  model: '${ctx.modelName}',`,
+      `  contents: '${userMessage}',`,
+      `})`,
+      `console.log(response.text)`,
     ].join('\n')
   }
   return [
     `const response = await fetch('${url}', {`,
     `  method: 'POST',`,
-    `  headers: { 'Content-Type': 'application/json' },`,
+    `  headers: {`,
+    `    'Content-Type': 'application/json',`,
+    `    'x-goog-api-key': process.env.${ctx.apiKeyEnv},`,
+    `  },`,
     `  body: JSON.stringify({`,
     `    contents: [{ parts: [{ text: '${userMessage}' }] }],`,
     `  }),`,
@@ -299,14 +299,15 @@ function buildEmbeddingSample(lang: Lang, ctx: SampleContext): string {
       `curl ${url} \\`,
       `  -H "Authorization: Bearer $${ctx.apiKeyEnv}" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
     return [
+      'import os',
       'from openai import OpenAI',
       '',
-      `client = OpenAI(base_url="${ctx.baseUrl}/v1", api_key="<YOUR_API_KEY>")`,
+      `client = OpenAI(base_url="${ctx.baseUrl}/v1", api_key=os.environ["${ctx.apiKeyEnv}"])`,
       '',
       'response = client.embeddings.create(',
       `    model="${ctx.modelName}",`,
@@ -365,14 +366,15 @@ function buildImageSample(lang: Lang, ctx: SampleContext): string {
       `curl ${url} \\`,
       `  -H "Authorization: Bearer $${ctx.apiKeyEnv}" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
     return [
+      'import os',
       'from openai import OpenAI',
       '',
-      `client = OpenAI(base_url="${ctx.baseUrl}/v1", api_key="<YOUR_API_KEY>")`,
+      `client = OpenAI(base_url="${ctx.baseUrl}/v1", api_key=os.environ["${ctx.apiKeyEnv}"])`,
       '',
       'response = client.images.generate(',
       `    model="${ctx.modelName}",`,
@@ -430,8 +432,9 @@ function buildSample(
 ): string {
   if (endpointType === 'anthropic') return buildAnthropicSample(lang, ctx)
   if (endpointType === 'gemini') return buildGeminiSample(lang, ctx)
-  if (endpointType === 'embeddings' || endpointType === 'jina-rerank')
+  if (endpointType === 'embeddings' || endpointType === 'jina-rerank') {
     return buildEmbeddingSample(lang, ctx)
+  }
   if (endpointType === 'image-generation') return buildImageSample(lang, ctx)
   return buildChatSample(lang, ctx)
 }
@@ -439,6 +442,9 @@ function buildSample(
 // ---------------------------------------------------------------------------
 // Code samples section
 // ---------------------------------------------------------------------------
+
+/** The variable the docs tell users to set (快速开始) */
+const API_KEY_ENV = 'XIAOXIONG_API_KEY'
 
 function CodeSamplesSection(props: {
   model: PricingModel
@@ -489,7 +495,7 @@ function CodeSamplesSection(props: {
 
   const code = buildSample(lang, activeEndpoint.type, {
     baseUrl,
-    apiKeyEnv: 'NEW_API_KEY',
+    apiKeyEnv: API_KEY_ENV,
     modelName: props.model.model_name || '',
     endpointType: activeEndpoint.type,
     endpointPath: activeEndpoint.path,
@@ -538,191 +544,19 @@ function CodeSamplesSection(props: {
       </div>
 
       <p className='text-muted-foreground mt-2 text-xs'>
-        {t('Replace')}{' '}
-        <code className='bg-muted rounded px-1 py-0.5 font-mono text-[11px]'>
-          {'<YOUR_API_KEY>'}
-        </code>{' '}
-        {t('with the API key from your token settings.')}
+        <Trans
+          i18nKey='The key is read from the environment variable <code>{{env}}</code>; create one on the API keys page.'
+          values={{ env: API_KEY_ENV }}
+          components={{
+            code: (
+              <code className='bg-muted rounded px-1 py-0.5 font-mono text-[11px]' />
+            ),
+          }}
+        />
       </p>
     </section>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Supported parameters table
-// ---------------------------------------------------------------------------
-
-function SupportedParametersSection(props: { model: PricingModel }) {
-  const { t } = useTranslation()
-  const params = useMemo(
-    () => buildSupportedParameters(props.model),
-    [props.model]
-  )
-
-  if (params.length === 0) return null
-
-  return (
-    <section>
-      <SectionTitle icon={Sigma}>{t('Supported parameters')}</SectionTitle>
-      <StaticDataTable
-        className={tableStyles.sectionContainer}
-        headerRowClassName={tableStyles.mutedHeaderRow}
-        data={params}
-        getRowKey={(param) => param.name}
-        getRowClassName={() => 'hover:bg-muted/20'}
-        columns={[
-          {
-            id: 'parameter',
-            header: t('Parameter'),
-            className: 'h-9 w-44',
-            cellClassName: tableStyles.topCell,
-            cell: (p) => (
-              <div className='flex items-center gap-1.5'>
-                <code className='font-mono text-sm font-medium'>{p.name}</code>
-                {p.required && (
-                  <Badge
-                    variant='outline'
-                    className='h-6 border-rose-500/40 px-2 text-sm text-rose-600 dark:text-rose-400'
-                  >
-                    {t('required')}
-                  </Badge>
-                )}
-              </div>
-            ),
-          },
-          {
-            id: 'type',
-            header: t('Type'),
-            className: 'h-9 w-24',
-            cellClassName: tableStyles.topCell,
-            cell: (p) => (
-              <Badge
-                variant='secondary'
-                className='h-7 rounded-full px-2.5 font-mono text-sm font-normal'
-              >
-                {p.type}
-              </Badge>
-            ),
-          },
-          {
-            id: 'range',
-            header: t('Default / range'),
-            className: 'h-9 w-32',
-            cellClassName: tableStyles.topCell,
-            cell: (p) => <ParamRangeCell param={p} />,
-          },
-          {
-            id: 'description',
-            header: t('Description'),
-            className: 'h-9',
-            cellClassName: tableStyles.topMutedCell,
-            cell: (p) => t(p.descriptionKey),
-          },
-        ]}
-      />
-    </section>
-  )
-}
-
-function ParamRangeCell(props: { param: SupportedParameter }) {
-  const { defaultValue, range, enumValues } = props.param
-  if (defaultValue !== undefined) {
-    return (
-      <div className='flex flex-wrap items-center gap-1'>
-        <span className='text-muted-foreground text-sm'>=</span>
-        <code className='bg-muted rounded px-1.5 py-0.5 font-mono text-sm'>
-          {String(defaultValue)}
-        </code>
-        {range && (
-          <span className='text-muted-foreground text-sm'>{range}</span>
-        )}
-      </div>
-    )
-  }
-  if (range) {
-    return (
-      <span className='text-muted-foreground font-mono text-sm'>{range}</span>
-    )
-  }
-  if (enumValues && enumValues.length > 0) {
-    return (
-      <div className='flex flex-wrap gap-0.5'>
-        {enumValues.map((v) => (
-          <code
-            key={v}
-            className='bg-muted text-muted-foreground rounded px-1.5 py-0.5 font-mono text-sm'
-          >
-            {v}
-          </code>
-        ))}
-      </div>
-    )
-  }
-  return <span className='text-muted-foreground/60 text-sm'>—</span>
-}
-
-// ---------------------------------------------------------------------------
-// Rate-limits table
-// ---------------------------------------------------------------------------
-
-function RateLimitsSection(props: { model: PricingModel }) {
-  const { t } = useTranslation()
-  const limits = useMemo(() => buildRateLimits(props.model), [props.model])
-
-  if (limits.length === 0) return null
-
-  return (
-    <section>
-      <SectionTitle icon={Gauge}>{t('Rate limits')}</SectionTitle>
-      <StaticDataTable
-        className={tableStyles.sectionContainer}
-        headerRowClassName={tableStyles.mutedHeaderRow}
-        data={limits}
-        getRowKey={(limit) => limit.group}
-        getRowClassName={() => 'hover:bg-muted/20'}
-        columns={[
-          {
-            id: 'group',
-            header: t('Group'),
-            className: 'h-9',
-            cellClassName: 'py-2 font-mono',
-            cell: (limit) => limit.group,
-          },
-          {
-            id: 'rpm',
-            header: 'RPM',
-            className: 'h-9 text-right',
-            cellClassName: tableStyles.topNumericCell,
-            cell: (limit) => formatRateLimit(limit.rpm),
-          },
-          {
-            id: 'tpm',
-            header: 'TPM',
-            className: 'h-9 text-right',
-            cellClassName: tableStyles.topNumericCell,
-            cell: (limit) => formatRateLimit(limit.tpm),
-          },
-          {
-            id: 'rpd',
-            header: 'RPD',
-            className: 'h-9 text-right',
-            cellClassName: tableStyles.topNumericCell,
-            cell: (limit) => formatRateLimit(limit.rpd),
-          },
-        ]}
-      />
-      <p className='text-muted-foreground mt-2 text-[11px] leading-relaxed'>
-        {t(
-          'RPM = requests per minute, TPM = tokens per minute, RPD = requests per day. Limits apply per token group.'
-        )}
-      </p>
-    </section>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Authentication preview
-// ---------------------------------------------------------------------------
 
 function AuthSection() {
   const { t } = useTranslation()
@@ -744,9 +578,7 @@ function AuthSection() {
             {t('header instead.')}
           </p>
           <p className='text-muted-foreground'>
-            {t(
-              'Generate tokens from the Tokens page; you can scope them to specific models, groups, IPs, and rate-limits.'
-            )}
+            {t('Each key can be limited to certain models, groups or IPs.')}
           </p>
         </div>
       </div>
@@ -766,8 +598,6 @@ export function ModelDetailsApi(props: {
     <div className='space-y-6'>
       <CodeSamplesSection model={props.model} endpointMap={props.endpointMap} />
       <AuthSection />
-      <SupportedParametersSection model={props.model} />
-      <RateLimitsSection model={props.model} />
     </div>
   )
 }

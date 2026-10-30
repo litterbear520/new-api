@@ -19,10 +19,16 @@ For commercial licensing, please contact support@quantumnous.com
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 
-import { Wallet } from '@/features/wallet'
+import { BearWallet } from '@/features/bear-wallet'
+import { WALLET_TABS } from '@/features/bear-wallet/constants'
 
 const walletSearchSchema = z.object({
   show_history: z.boolean().optional(),
+  // Top-up amount picked elsewhere (the overview's quick amounts)
+  amount: z.number().positive().optional().catch(undefined),
+  tab: z.enum(WALLET_TABS).optional().catch(undefined),
+  // Order number pay-bridge sends the payer back with
+  paid: z.string().max(64).optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_authenticated/wallet/')({
@@ -31,6 +37,12 @@ export const Route = createFileRoute('/_authenticated/wallet/')({
 })
 
 function RouteComponent() {
-  const { show_history } = Route.useSearch()
-  return <Wallet initialShowHistory={show_history} />
+  const { show_history, amount, tab, paid } = Route.useSearch()
+  return (
+    <BearWallet
+      initialTab={show_history ? 'history' : tab}
+      initialAmount={amount}
+      paid={paid}
+    />
+  )
 }

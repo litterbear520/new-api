@@ -27,20 +27,41 @@ import type { HomePageContentResult } from '../types'
 
 const STORAGE_KEY = 'home_page_content'
 
+// Blocked site data (private mode, browser settings) makes storage throw;
+// the page then works without the cache.
+function readCache(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writeCache(value: string): void {
+  try {
+    if (value) localStorage.setItem(STORAGE_KEY, value)
+    else localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Storage unavailable: the next visit fetches again.
+  }
+}
+
 /**
  * Hook to load and manage custom home page content
  * Supports both Markdown/HTML content and iframe URLs
  */
 export function useHomePageContent(): HomePageContentResult {
   const [content, setContent] = useState<string>('')
-  const [isLoaded, setIsLoaded] = useState(false)
+  // With nothing cached, the default home page shows at once instead of
+  // waiting a round trip to learn there is no custom content.
+  const [isLoaded, setIsLoaded] = useState(() => !readCache())
 
   useEffect(() => {
     let mounted = true
 
     const loadContent = async () => {
       // Load from localStorage first for immediate display
-      const cached = localStorage.getItem(STORAGE_KEY)
+      const cached = readCache()
       if (cached && mounted) {
         setContent(cached)
       }
@@ -53,11 +74,11 @@ export function useHomePageContent(): HomePageContentResult {
 
         if (success && data) {
           setContent(data)
-          localStorage.setItem(STORAGE_KEY, data)
+          writeCache(data)
         } else {
           // Clear content if API returns empty
           setContent('')
-          localStorage.removeItem(STORAGE_KEY)
+          writeCache('')
         }
       } catch (error) {
         if (!mounted) return

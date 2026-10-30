@@ -52,6 +52,7 @@ import {
   ERROR_MESSAGES,
 } from '../constants'
 import type { ApiKey } from '../types'
+import { ApiKeyNotes } from './api-key-notes'
 import { ApiKeyQuotaCell } from './api-key-quota-cell'
 import { ApiKeyActivityCell } from './api-key-timestamp-cell'
 import {
@@ -137,9 +138,6 @@ function ApiKeysMobileList({
       {rows.map((row) => {
         const apiKey = row.original
         const statusConfig = API_KEY_STATUSES[apiKey.status]
-        const groupCell = row
-          .getAllCells()
-          .find((cell) => cell.column.id === 'group')
         const expiryCell = row
           .getAllCells()
           .find((cell) => cell.column.id === 'expired_time')
@@ -157,6 +155,11 @@ function ApiKeysMobileList({
                 <div className='text-sm leading-5 font-semibold break-words'>
                   {apiKey.name}
                 </div>
+                {/* the group and limits line the desktop name cell has */}
+                <ApiKeyNotes
+                  apiKey={apiKey}
+                  className='mt-0.5 block break-words'
+                />
               </div>
               {statusConfig && (
                 <StatusBadge
@@ -175,14 +178,7 @@ function ApiKeysMobileList({
               <DataTableRowActions row={row} />
             </div>
 
-            <div className='min-w-0 space-y-3 py-1'>
-              <div className='min-w-0'>
-                {groupCell &&
-                  flexRender(
-                    groupCell.column.columnDef.cell,
-                    groupCell.getContext()
-                  )}
-              </div>
+            <div className='min-w-0 py-1'>
               <ApiKeyQuotaCell apiKey={apiKey} now={now} variant='card' />
             </div>
 

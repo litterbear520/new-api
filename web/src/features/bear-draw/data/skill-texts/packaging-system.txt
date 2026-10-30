@@ -1,0 +1,280 @@
+---
+name: packaging-system
+description: 做一整套包装效果图：主包装、标签平面稿、礼盒、手提袋和货架陈列，同一品牌锁下统一字体、色彩和版式，也能扩展到多个口味/SKU。用户提到「包装设计」「包装效果图」「礼盒」「手提袋」「标签」「瓶贴」「系列包装」「货架陈列」时使用。Designs a packaging family (primary pack, label flat, gift box, carry bag, shelf scene) under one brand lock.
+---
+
+# 包装系统
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 新品包装提案：先看整套效果，再交给设计师出印刷文件。
+- 已有包装，想做礼盒版、节日版或新口味 SKU，要和原包装保持一个家族。
+- 不适用：只要白底商品图（用 `white-background`）；只要 Logo（用 `logo-mockup`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 品牌名、品名、规格（如「净含量 100g」），包装上要出现的字一字不差地给出来。
+   - 包装形式：罐 / 袋 / 盒 / 瓶，材质偏好（牛皮纸、哑光铝罐、玻璃瓶…）。
+   - 风格方向，或已有的 Logo、色板（有 Brand Kit 就直接用）。
+2. **定品牌锁**：Logo 位置、主色和辅助色（写 hex）、字体气质、版式网格、插画或纹样风格，写成 6 行，整套共用。多 SKU 时只换「主色 + 口味名 + 插画元素」。
+3. **列交付清单**，确认后出图：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 主包装 | 1:1 | 1024×1024 | gpt-image-2.5-sunburst | 正面 + 45° 两个罐/袋，标签文字逐字 |
+   | 2 | 标签平面稿 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 展开的标签正面，平视，无透视 |
+   | 3 | 礼盒 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 打开的礼盒 + 内托 + 2–3 个单品 |
+   | 4 | 手提袋 | 2:3 | 1024×1536 | gpt-image-2 | 纸袋立放，Logo 清楚 |
+   | 5 | 货架陈列 | 3:2 | 1536×1024 | gpt-image-2 | 整个系列在货架上，看家族感 |
+
+4. **一张图调用一次**：已有包装实拍时用 `edit_image`（Image 1 = 现有包装，加保真指令）；新设计用 `generate_image`。第 1 张定稿后，后面几张都把它作为 Image 1 参考，保证一致。
+5. **检查**：标签文字逐字核对，品牌名不能变形；整套颜色和字体一致；跑 `data/ad-law-words.json`；提醒用户：法定标注（配料表、生产许可证编号、条码等）由设计师按实际信息排版，AI 图里只留位置。
+
+## 最佳实践原文
+
+### 包装与商品样机
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Generate › product-mockup · Apache-2.0 (verbatim)
+
+````text
+### product-mockup
+```
+Use case: product-mockup
+Primary request: premium product photo of a matte black shampoo bottle with a minimal label
+Scene/backdrop: clean studio gradient from light gray to white
+Subject: single bottle centered with subtle reflection
+Style/medium: premium product photography
+Composition/framing: centered, slight three-quarter angle, generous padding
+Lighting/mood: softbox lighting, clean highlights, controlled shadows
+Materials/textures: matte plastic, crisp label printing
+Constraints: no logos or trademarks; no watermark
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Use-case tips · Apache-2.0 (verbatim)
+
+````text
+- product-mockup: Describe the product/packaging and materials; ensure clean silhouette and label clarity; if in-image text is needed, require verbatim rendering and specify typography.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.4 Product Mockups · MIT (verbatim)
+
+````text
+Product extraction and mockup prep is commonly used for catalogs, marketplaces, and design systems. Success depends on edge quality (clean silhouette, no fringing/halos) and label integrity (text stays sharp and unchanged). Transparent backgrounds are available in preview for `gpt-image-2`; request `background="transparent"` with `output_format="png"` (the default) or `output_format="webp"` to create a reusable product cutout directly. `jpeg` does not support transparent backgrounds. Ask for an isolated subject, preserve the existing product geometry and label, and omit solid backdrops, checkerboards, and unnecessary shadows. Omit `output_compression` for PNG output; WebP supports optional compression.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.3 Collectible / merch concept · MIT (verbatim)
+
+````text
+## 6.3 Collectible Action Figure / Plush Keychain (merch concept)
+
+Used for early merch ideation and pitch visuals. Focuses on premium product photography cues (materials, packaging, print clarity) while keeping designs original and non-infringing. Works well for testing multiple character or packaging variants quickly.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.3 Collectible (prompt) · MIT (verbatim)
+
+````text
+Create a collectible action figure of {character_description}, in blister packaging.
+
+Concept:
+A nostalgic holiday collectible inspired by the simple toy airplanes
+children used to play with during winter holidays.
+Evokes warmth, imagination, and childhood wonder.
+
+Style:
+Premium toy photography, realistic plastic and painted metal textures,
+studio lighting, shallow depth of field,
+sharp label printing, high-end retail presentation.
+
+Constraints:
+- Original design only
+- No trademarks
+- No watermarks
+- No logos
+
+Include ONLY this packaging text (verbatim):
+"{short_copy}"
+````
+
+### 已有包装要保真
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – fidelity lock · Apache-2.0 (verbatim)
+
+````text
+Every prompt must include this product fidelity instruction near the top:
+
+```text
+Preserve the exact product identity from the reference image: shape,
+silhouette, color, material, logo/label placement, visible construction
+details, and proportions. Do not redesign the product. Do not add, remove,
+or relocate product features.
+```
+````
+
+### 系列与陈列
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 16 Grid Static · MIT (verbatim)
+
+````text
+### 16. Grid Static (Multi-SKU / Bundle)
+
+A tidy grid of your product line, a bundle, or a collection — one clean frame, multiple SKUs. Optional "shop the set" line.
+
+- **Tier**: A — **Role**: cold-scaler. Easy to make and a proven low-hanging-fruit test — a top performer at a 9-figure brand. Scales because it shows range and lets a cold viewer self-select the SKU that fits them. First static to try when you have more than one product.
+- **Structure**: 4–9 product tiles on a neutral ground, consistent lighting/crop, small logo + optional bundle price
+- **Copy slot**: Minimal — a collection name or a "build your bundle" line; the products do the talking
+- **DTC example**: A 3×3 grid of every flavor with a "Try the whole lineup" bundle price
+- **SaaS example**: A grid of the plan's included tools/integrations — "one subscription, all of it"
+- **Source it from**: Which SKUs/bundles reviews and comments cluster around; lead with the requested combinations
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › MOCKUP DIRECTION · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# MOCKUP DIRECTION
+
+Mockups should be minimal and believable.
+
+Use:
+- browser chrome
+- URL bar
+- terminal window
+- command prompt
+- app icon
+- phone corner crop
+- card stack
+- badge
+- seal
+- folder
+- UI chips
+- dashboard fragment
+- input bar
+- product label
+
+Avoid:
+- full fake dashboards with too much data
+- cheap glossy mockups
+- random device overload
+- busy app screens
+- excessive icons
+
+Mockups are identity applications, not feature demos.
+````
+
+### 多语言标签
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 4.2 Translation in Images · MIT (verbatim)
+
+````text
+## 4.2 Translation in Images
+
+Used for localizing existing designs (ads, UI screenshots, packaging, infographics) into another language without rebuilding the layout from scratch. The key is to preserve everything except the text—keep typography style, placement, spacing, and hierarchy consistent—while translating verbatim and accurately, with no extra words, no reflow unless necessary, and no unintended edits to logos, icons, or imagery.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › text-localization · Apache-2.0 (verbatim)
+
+````text
+### text-localization
+```
+Use case: text-localization
+Input images: Image 1: original infographic
+Primary request: replace "Bean Hopper", "Grinder", "Brew Group", "Boiler", "Water Tank", and "Drip Tray" with "Tolva", "Molino", "Grupo de infusión", "Caldera", "Depósito de agua", and "Bandeja de goteo"
+Constraints: change only the text; preserve layout, typography, spacing, and hierarchy; no extra words; do not alter logos or imagery
+```
+````
+
+### 标签结构与执行规则
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Decision tree · Apache-2.0 (verbatim)
+
+````text
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Text in images · Apache-2.0 (verbatim)
+
+````text
+## Text in images
+- Put literal text in quotes or ALL CAPS and specify typography (font style, size, color, placement).
+- Spell uncommon words letter-by-letter if accuracy matters.
+- For in-image copy, require verbatim rendering and no extra characters.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Iterate deliberately · Apache-2.0 (verbatim)
+
+````text
+## Iterate deliberately
+- Start with a clean base prompt, then make small single-change edits.
+- Re-specify critical constraints when you iterate.
+- Prefer one targeted follow-up at a time over rewriting the whole prompt.
+````
+
+## 本站调整
+
+- **效果图，不是印刷文件**：AI 出的是提案和效果图，颜色不保证 CMYK 准确，结构不是刀版。定稿后要设计师出矢量稿、刀版和印刷文件。
+- **法定信息不让模型编**：食品、化妆品等包装上的配料表、生产许可证编号（SC 码）、执行标准、条码、二维码、厂址，AI 图里只画灰色占位块，不生成具体内容。
+- **原文的 Constraints 写「no logos or trademarks」**：用户自己的品牌名和 Logo 要出现；别家的品牌、IP 角色、明星形象不出现。
+- **原文的盲盒/手办包装示例**（Collectible）保留原文，作为「包装文字只放一句」的写法参考；我们的包装通常要放品牌名、品名、规格三行，每行都写进 Text (verbatim)。
+- **多 SKU**：原文 Grid Static 的「同光线、同裁切」规则用在系列图上；每个 SKU 单独一次调用，只改主色、口味名和插画元素。
+- **广告法**：包装上不写「最」「第一」「顶级」「特供」「专供」「国家级」，食品不写治疗、保健功效。详见 `data/ad-law-words.json`。
+- **模型**：带字的主包装、标签、礼盒用 gpt-image-2.5-sunburst；手提袋、货架场景用 gpt-image-2；要透明底包装图（放到别的背景上）用 gpt-image-2.5-flare。
+- **尺寸**：本站出图通常是 1024×1024、1536×1024、1024×1536，比例写进提示词。
+- **导出**：ZIP 里按 `包装-1-主包装.jpg`、`包装-2-标签平面.jpg` … 命名。
+- **示例**：原文的洗发水、玩具飞机只是示意；我们的示例用虚构品牌「拾叶茶事」。
+
+### 示例（虚构品牌「拾叶茶事」，货架陈列）
+
+```text
+Use case: product-mockup
+Asset type: packaging family shelf scene, landscape 3:2
+Primary request: the full SHIYE TEA tin family displayed on a boutique shop shelf
+Input images: Image 1: approved primary tin design (keep label layout, logo and typography exactly)
+Scene/backdrop: pale ash-wood shelving in a bright tea shop, soft plaster wall
+Subject: five matte tins in five flavor colors (jasmine white, oolong amber, black tea brick red, green tea sage, white tea pearl grey), two gift boxes, one kraft carry bag
+Style/medium: premium retail interior photography, photorealistic
+Composition/framing: landscape 3:2; tins in one tidy row at eye level; gift boxes and bag on the lower shelf; generous breathing room
+Lighting/mood: soft daylight from the left, calm and clean
+Color palette: the five flavor colors plus warm white and ash wood
+Text (verbatim): on every tin "拾叶茶事" and its flavor name: "茉莉白", "乌龙", "红茶", "绿茶", "白茶"
+Constraints: identical label layout across all tins; render each text exactly once per tin; leave the back-label area blank; no other brands; no watermark
+Avoid: barcodes, QR codes, ingredient text, warped or melted lettering
+```

@@ -1,0 +1,263 @@
+---
+name: taobao-main-set
+description: 给淘宝/天猫商品出一套 5 张 800×800 主图（首图、卖点图、场景图、细节图、白底图），整套风格统一，商品外观不走样。用户提到「主图」「主图套图」「五张主图」「淘宝主图」「天猫主图」「上新做图」，或者发来一张商品照想要整套主图时使用。也可以顺手改成京东 800×800、拼多多 750×750 的版本。Generates a consistent five-image 1:1 main-image set for Taobao/Tmall listings.
+---
+
+# 淘宝/天猫主图套图
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 淘宝、天猫新品上架或换图，需要一整套 5 张主图。
+- 有商品实拍图最好；只有文字描述也能做，但出的是概念图，要提醒用户上架前换成实物图。
+- 同一套图可以改尺寸给京东（800×800）、拼多多（750×750）、抖店（800×800 以上）用。
+- 不适用：只要白底图（用 `white-background`）、详情页长图（用 `detail-page`）、活动海报（用 `promo-poster`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题，用澄清卡；用户说过的不再问）
+   - 有没有商品实拍图？没有就问能不能补一张，或者说清楚「这次出的是概念图」。
+   - 3 个卖点是什么？只用用户确认过的卖点，不替用户编参数、销量、认证。
+   - 整套风格：干净棚拍 / 生活场景 / 撞色国潮，或者给一张参考图。
+2. **列交付清单**，5 张一起给用户确认，计划卡上写张数和预估金额：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 首图 | 1:1 | 800×800 | gpt-image-2.5-sunburst | 商品占画面 60–70%，干净背景，最多品牌名 + 一句 ≤8 字卖点 |
+   | 2 | 卖点图 | 1:1 | 800×800 | gpt-image-2.5-sunburst | 只讲一个卖点，配 2–3 个短标注，每个 ≤6 字 |
+   | 3 | 场景图 | 1:1 | 800×800 | gpt-image-2 | 真实使用场景，商品仍是视觉中心，不加字 |
+   | 4 | 细节图 | 1:1 | 800×800 | gpt-image-2 | 材质、做工、接口等特写，最多一个短标注 |
+   | 5 | 白底图 | 1:1 | 800×800 | gpt-image-2.5-sunburst | 纯白 #FFFFFF，无字、无水印、无道具，商品完整居中 |
+
+3. **先建两把锁，再写提示词**
+   - **商品锁**：看实拍图，按下面原文 Step 1 写下外形、颜色、材质、Logo/标签位置、比例和不能改的部分。5 段提示词开头都放同一段保真指令（原文 Step 3 那段）。
+   - **风格锁**：背景色系、光线方向、色温、镜头高度、字体风格、强调色，写成 6 行，5 张共用。单张图只改「场景、构图、文字」这三项。
+   - 每张图按标签结构写一段：Use case / Asset type / Primary request / Input images / Scene/backdrop / Subject / Style/medium / Composition/framing / Lighting/mood / Color palette / Text (verbatim) / Constraints / Avoid。用不上的行删掉。
+4. **一张图调用一次**：5 张就调用 5 次。有实拍图时用编辑工具（`edit_image`，Image 1 = 商品图），没有时用 `generate_image`。哪张失败只重试哪张，失败和没开始的图不收费。
+5. **检查后交付**
+   - 商品有没有走样：颜色、Logo 位置、零件数量。走样就带着商品锁重出这一张。
+   - 图内文字逐字核对；文案先过 `data/ad-law-words.json`，命中的词换成建议说法。
+   - 首图和白底图按 `data/platform-specs.json` 里淘宝、天猫的条目查一遍。
+   - 要改就一次只改一处，并把商品锁和风格锁原样带上。
+
+## 最佳实践原文
+
+### 商品保真与套图分工
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 1 – identity anchors · Apache-2.0 (verbatim)
+
+````text
+### Step 1 - Extract product identity anchors
+
+Inspect the reference image and write a short internal identity lock:
+
+- Product category and form factor.
+- Shape and silhouette.
+- Primary colors and materials.
+- Logo, label, pattern, fasteners, ports, straps, handles, or other fixed
+  details.
+- Scale cues and proportions.
+- What must not change.
+
+Use these anchors in every generation prompt.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – fidelity lock · Apache-2.0 (verbatim)
+
+````text
+Every prompt must include this product fidelity instruction near the top:
+
+```text
+Preserve the exact product identity from the reference image: shape,
+silhouette, color, material, logo/label placement, visible construction
+details, and proportions. Do not redesign the product. Do not add, remove,
+or relocate product features.
+```
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – slot prompts · Apache-2.0 (verbatim)
+
+````text
+#### Main image prompt
+
+- Product centered and fully visible.
+- White, off-white, or very light grey background.
+- Soft studio lighting with clean shadow.
+- No props unless the user asked for them.
+- No in-frame marketing text.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – slot prompts · Apache-2.0 (verbatim)
+
+````text
+#### Feature image prompt
+
+- Focus on one user-provided or safely inferred feature.
+- Use close-up composition, cutaway-style crop, or clean negative space for
+  later designer-added labels.
+- Keep the product visually balanced in the frame. If no explicit callout
+  structure is being generated, center the product. If label space is needed,
+  offset the product only slightly and make the empty space feel intentional.
+- Do not invent certifications, performance numbers, materials, or claims.
+- Avoid tiny rendered text; leave label space instead.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – slot prompts · Apache-2.0 (verbatim)
+
+````text
+#### Lifestyle image prompt
+
+- Use a realistic environment matched to the product category.
+- Keep the product the focal point.
+- Show human interaction only if it helps explain use and does not obscure the
+  product.
+- Preserve product scale and structure.
+````
+
+### 标签结构与执行规则
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Decision tree · Apache-2.0 (verbatim)
+
+````text
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Prompting best practices · Apache-2.0 (verbatim)
+
+````text
+## Prompting best practices
+- Structure prompt as scene/backdrop -> subject -> details -> constraints.
+- Include intended use (ad, UI mock, infographic) to set the mode and polish level.
+- Use camera/composition language for photorealism.
+- Only use SVG/vector stand-ins when the user explicitly asked for vector output or a non-image placeholder.
+- Quote exact text and specify typography + placement.
+- For tricky words, spell them letter-by-letter and require verbatim rendering.
+- For multi-image inputs, reference images by index and describe how they should be used.
+- For edits, repeat invariants every iteration to reduce drift.
+- Iterate with single-change follow-ups.
+- If the prompt is generic, add only the extra detail that will materially help.
+- If the prompt is already detailed, normalize it instead of expanding it.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Text in images · Apache-2.0 (verbatim)
+
+````text
+## Text in images
+- Put literal text in quotes or ALL CAPS and specify typography (font style, size, color, placement).
+- Spell uncommon words letter-by-letter if accuracy matters.
+- For in-image copy, require verbatim rendering and no extra characters.
+````
+
+### 卖点图版式
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 17 Callout · MIT (verbatim)
+
+````text
+### 17. Callout
+
+Product hero with 3–5 short labels pointing at specific parts — the "what makes this different" annotated directly on the image.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. One of the most durable static levers; pairs with Headline Statement and underpins Feature Spotlight. Cheap to iterate, reads fast.
+- **Structure**: Center product, leader lines to 3–5 labels, each label 2–5 words
+- **Copy slot**: The attributes buyers actually ask about — not spec-sheet filler
+- **DTC example**: A shoe with callouts on the sole, the material, the weight
+- **SaaS example**: A dashboard screenshot with callouts on the three features reviews cite most
+- **Source it from**: The features/attributes that recur in reviews and ad comments
+````
+
+### 交付前检查
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/references/checklist.md › Checklist P0 · Apache-2.0 (verbatim)
+
+````text
+- [ ] **No fabricated claims.** The feature image does not invent
+  certifications, measurements, materials, ingredients, performance numbers,
+  awards, or compliance promises.
+- [ ] **No tiny rendered text dependency.** Prompts avoid relying on small
+  in-image text for selling points; they leave clean label space when copy will
+  be added later.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/references/checklist.md › Checklist P1 · Apache-2.0 (verbatim)
+
+````text
+## P1 - should pass
+
+- [ ] **Slot roles are visually distinct.** Main is a clean packshot, feature is
+  detail/benefit focused, lifestyle is contextual.
+- [ ] **Backgrounds fit ecommerce use.** Main image uses white/off-white/light
+  grey; feature and lifestyle avoid noisy backgrounds that hide product details.
+- [ ] **Scale is plausible.** Product size and proportions remain credible across all slots.
+- [ ] **Human interaction is controlled.** Hands/models do not hide the product
+  or alter its construction.
+- [ ] **File names are predictable.** Outputs use `<product-slug>-main.png`,
+  `<product-slug>-feature.png`, and `<product-slug>-lifestyle.png` or similarly
+  readable names.
+````
+
+## 本站调整
+
+- **从 3 张扩到 5 张**：open-design 原文默认 main / feature / lifestyle 三张、比例 1:1 和 4:5。我们按淘宝习惯改成 5 张，全部 1:1，加了细节图和白底图。
+- **没有实拍图也能做**：原文 V1 要求必须有参考图。我们允许纯文字出图，但计划卡和交付说明都要写「概念图，上架前请换成实物图」。
+- **风格锁是我们加的**：原文只有商品保真锁。套图要统一，所以多一把风格锁，单张只许改场景、构图、文字。
+- **文字**：原文主图要求「No in-frame marketing text」，特征图要求不放小字、留白给设计师加字。国内主图习惯直接带字，我们允许（白底图仍然一个字都不放），但限制字数：首图 ≤8 字一句，卖点标注每个 ≤6 字，细节图最多一个标注。字越少越准；用户要大段文字时，先出无字版并留好位置。
+- **原文的 Constraints 写「no logos or trademarks」**：用户自己的品牌名和 Logo 可以出现；别家的品牌、Logo、明星形象一律不出现。
+- **模型**：gpt-image-2.5-sunburst 用在带字的首图、卖点图和白底精修；gpt-image-2 用在场景图和细节图；需要透明底抠图时用 gpt-image-2.5-flare。用户在「模型偏好」里指定了就按用户的。
+- **尺寸**：比例写进 Composition/framing 行（例如 `square 1:1 composition`）。本站出图接口不保证按 size 参数出图，出来的方图由页面缩放到 800×800；拼多多版缩到 750×750。主体和文字离四边至少留 6%。
+- **广告法**：不写「最」「第一」「100%」「全网最低」这类词，不编造销量、检测报告、获奖、认证。详见 `data/ad-law-words.json`。
+- **导出**：ZIP 里按 `淘宝-主图-1-首图.jpg` … `淘宝-主图-5-白底.jpg` 命名，单张不超过 3MB。
+
+### 示例（虚构品牌「暖山」保温杯，首图）
+
+```text
+Use case: product-mockup
+Asset type: Taobao main image #1 (hero), square 1:1
+Primary request: hero shot of the NUANSHAN 500ml stainless steel vacuum bottle in matte sage green
+Input images: Image 1: product photo (edit target reference; keep the product exactly)
+Scene/backdrop: seamless warm off-white studio sweep with a soft sage-to-cream gradient
+Subject: one bottle standing upright, cap on, logo facing camera
+Style/medium: premium e-commerce product photography, photorealistic
+Composition/framing: square 1:1, bottle centered and filling about 65% of the height, slight low angle, 6% safe margin on every edge
+Lighting/mood: large softbox from upper left, gentle rim light on the right edge, clean reflection on the steel lip
+Color palette: sage green, cream, warm white; one accent of deep forest green for text
+Text (verbatim): "暖山" top-left in a clean bold sans-serif; "一杯热水 带上山" small, under the brand name
+Constraints: preserve the exact product shape, color, logo placement and proportions from Image 1; render the text exactly once; no other logos; no watermark
+Avoid: props covering the bottle, extra text, fake badges or seals
+```

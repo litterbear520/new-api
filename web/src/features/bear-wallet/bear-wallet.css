@@ -1,0 +1,512 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/*
+ * The wallet (「钱包」): three figures, one deals line and the top-up history
+ * on the page; the top-up form lives in a dialog after OpenModel's, with
+ * grey amount buttons that turn solid when picked. Colour only for the bonus
+ * (green), the starter pack (red) and a low balance (red). The dialog is
+ * portalled, so it carries the tokens itself (.bw-dlg). Classes are
+ * prefixed bw-.
+ */
+
+/* ---------- tokens ---------- */
+.bw-page,
+.bw-dlg {
+  --bw-ink: var(--foreground);
+  --bw-ink2: color-mix(in oklab, var(--foreground) 74%, var(--background));
+  --bw-ink3: var(--muted-foreground);
+  --bw-bd: var(--border);
+  --bw-s2: var(--card);
+  --bw-hov: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --bw-sel: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --bw-accent: var(--primary);
+  --bw-on-accent: var(--primary-foreground);
+  --bw-good: #1f7a4d;
+  --bw-good-bg: color-mix(in oklab, #1f7a4d 9%, transparent);
+  --bw-bear: #d97757;
+  /* 新人礼包 red: the card edge and price, and the tag behind white text */
+  --bw-gift: #d93a3d;
+  --bw-gift-ink: #b4232a;
+  --bw-gift-tag: #d93a3d;
+  --bw-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+.dark .bw-page,
+.dark .bw-dlg {
+  --bw-good: #7fd1a5;
+  --bw-good-bg: color-mix(in oklab, #7fd1a5 10%, transparent);
+  --bw-gift: #ff6b6b;
+  --bw-gift-ink: #ff9592;
+}
+
+/* ---------- page ---------- */
+.bw-page {
+  color: var(--bw-ink);
+  font-size: 14px;
+}
+.bw {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.bw button,
+.bw-dlg button {
+  cursor: pointer;
+}
+.bw button:disabled,
+.bw-dlg button:disabled {
+  cursor: not-allowed;
+}
+/* In the components layer so a Button's own focus ring (its outline-none
+   utility) wins; the hand-styled controls here have no focus style of their
+   own and take this outline. */
+@layer components {
+  .bw :focus-visible,
+  .bw-dlg :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+.bw-dim {
+  color: var(--bw-ink3);
+  font-weight: 400;
+}
+
+/* ---------- paid banner ---------- */
+.bw-paid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 12px;
+  background: var(--bw-good-bg);
+  color: var(--bw-ink);
+}
+.bw-paid p {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+}
+.bw-paid b {
+  font-weight: 600;
+}
+.bw-paid b.bw-bonus {
+  color: var(--bw-good);
+}
+.bw-paid-ic {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--bw-good);
+}
+/* A failed or expired order: no green, nothing arrived */
+.bw-paid[data-failed] {
+  background: var(--muted);
+}
+.bw-paid[data-failed] .bw-paid-ic {
+  color: var(--bw-ink3);
+}
+.bw-x {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--bw-ink3);
+}
+.bw-x:hover {
+  background: var(--bw-hov);
+  color: var(--bw-ink);
+}
+.bw-x svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- deals line ---------- */
+.bw-deal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px 8px 16px;
+  border: 1px solid var(--bw-bd);
+  border-radius: var(--radius-lg, 10px);
+  background: var(--bw-s2);
+  color: var(--bw-ink2);
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.12s;
+}
+.bw-deal:hover {
+  background: color-mix(in oklab, var(--foreground) 3%, var(--bw-s2));
+}
+.bw-deal-gift {
+  border-color: color-mix(in oklab, var(--bw-gift) 30%, transparent);
+  background: color-mix(in oklab, var(--bw-gift) 5%, var(--bw-s2));
+}
+.bw-deal-gift:hover {
+  background: color-mix(in oklab, var(--bw-gift) 9%, var(--bw-s2));
+}
+.bw-deal-ic {
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+.bw-deal-text {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  min-width: 0;
+}
+.bw-deal-text b {
+  color: var(--bw-gift-ink);
+  font-weight: 600;
+}
+.bw-deal-tiers {
+  color: var(--bw-good);
+  font-weight: 500;
+}
+.bw-deal-go {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  color: var(--bw-ink);
+  font-weight: 500;
+}
+.bw-deal-go svg {
+  width: 16px;
+  height: 16px;
+}
+.bw-deal-more {
+  display: inline-flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 1px;
+  margin-top: -8px;
+  color: var(--bw-ink3);
+  font-size: 13px;
+}
+.bw-deal-more:hover {
+  color: var(--bw-ink);
+}
+.bw-deal-more svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- top-up dialog ---------- */
+.bw-dlg {
+  color: var(--bw-ink);
+}
+.bw-form {
+  display: flex;
+  flex-direction: column;
+}
+.bw-lbl {
+  display: block;
+  margin: 18px 0 8px;
+  font-size: 13px;
+  color: var(--bw-ink3);
+}
+.bw-chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.bw-chip {
+  position: relative;
+  height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--bw-hov);
+  color: var(--bw-ink);
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.12s;
+}
+.bw-chip:hover {
+  background: var(--bw-sel);
+}
+.bw-chip sup {
+  margin-left: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bw-good);
+  vertical-align: 5px;
+}
+.bw-chip[aria-checked='true'] {
+  background: var(--bw-accent);
+  color: var(--bw-on-accent);
+}
+.bw-chip[aria-checked='true'] sup {
+  color: color-mix(in oklab, var(--bw-good) 55%, var(--bw-on-accent));
+}
+.bw-giftchip {
+  grid-column: 1 / -1;
+  background: color-mix(in oklab, var(--bw-bear) 9%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--bw-bear) 45%, transparent);
+}
+.bw-giftchip:hover {
+  background: color-mix(in oklab, var(--bw-bear) 15%, transparent);
+}
+/* 新人礼包: the one red thing in the dialog, a wrapped present */
+.bw-starter {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  padding: 10px 14px 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--bw-gift) 7%, var(--bw-s2));
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--bw-gift) 32%, transparent);
+  color: var(--bw-ink);
+  text-align: left;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+}
+.bw-starter:hover {
+  background: color-mix(in oklab, var(--bw-gift) 11%, var(--bw-s2));
+}
+.bw-starter[aria-checked='true'] {
+  box-shadow: inset 0 0 0 2px var(--bw-gift);
+}
+.bw-starter-ic {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+.bw-starter-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.bw-starter-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.bw-starter-tag {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--bw-gift-tag);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+.bw-starter-sub {
+  font-size: 12.5px;
+  color: var(--bw-ink2);
+}
+.bw-starter-sub b {
+  color: var(--bw-ink);
+  font-weight: 600;
+}
+.bw-starter-sub b.bw-bonus {
+  color: var(--bw-good);
+}
+.bw-starter-price {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+.bw-starter-price b {
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.15;
+  color: var(--bw-gift-ink);
+}
+.bw-starter-price s {
+  font-size: 12px;
+  color: var(--bw-ink3);
+}
+/* Any other amount, OpenModel style: one field under the buttons */
+.bw-cin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  margin-top: 8px;
+  padding: 0 12px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--bw-bd);
+  font-size: 15px;
+}
+.bw-cin span {
+  color: var(--bw-ink3);
+}
+.bw-cin input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  /* the field's frame shows focus, not the input inside it */
+  outline: 0;
+  background: none;
+  color: var(--bw-ink);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.bw-cin input::placeholder {
+  color: var(--bw-ink3);
+}
+.bw-cin-on {
+  box-shadow: inset 0 0 0 1.5px var(--bw-ink);
+}
+.bw-cin:focus-within {
+  box-shadow:
+    inset 0 0 0 1.5px var(--bw-ink),
+    0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+}
+.bw-res {
+  min-height: 21px;
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--bw-ink2);
+}
+.bw-res b {
+  color: var(--bw-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bw-res b.bw-bonus {
+  color: var(--bw-good);
+}
+.bw-fine {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--bw-ink3);
+}
+.bw-meths {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.bw-meth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--bw-s2);
+  box-shadow: inset 0 0 0 1px var(--bw-bd);
+  color: var(--bw-ink);
+  font-size: 14px;
+  font-weight: 500;
+}
+.bw-meth:hover {
+  box-shadow: inset 0 0 0 1px var(--bw-ink3);
+}
+.bw-meth[aria-checked='true'] {
+  box-shadow: inset 0 0 0 2px var(--bw-ink);
+}
+.bw-pm {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+.bw-pm-ic {
+  width: 20px;
+  height: 20px;
+}
+.bw-meth[data-type='alipay'] .bw-pm {
+  color: #1677ff;
+}
+.bw-meth[data-type='wxpay'] .bw-pm {
+  color: #07c160;
+}
+.bw-acct {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--bw-ink3);
+}
+.bw-note {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--bw-ink3);
+}
+
+/* ---------- history ---------- */
+.bw-trade {
+  display: block;
+  overflow: hidden;
+  font-family: var(--bw-mono);
+  font-size: 12px;
+  color: var(--bw-ink3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
+}
+
+/* ---------- loading ---------- */
+.bw-skel {
+  height: 300px;
+  border-radius: 10px;
+  background: var(--bw-hov);
+  animation: bw-pulse 1.4s ease-in-out infinite;
+}
+@keyframes bw-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bw-skel {
+    animation: none;
+  }
+  .bw-chip,
+  .bw-deal {
+    transition: none;
+  }
+}
+
+/* ---------- phone ---------- */
+@media (max-width: 640px) {
+  .bw {
+    gap: 12px;
+  }
+  .bw-deal-go {
+    display: none;
+  }
+}

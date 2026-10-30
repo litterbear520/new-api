@@ -1,0 +1,237 @@
+# Logo 与样机提示词（参考）
+
+> 本文件由小熊API整理，是 `logo-mockup` 技能的附属参考。下面的英文段落是开源项目的原文摘录，每段上方标了来源和许可证。许可证全文见 `../../LICENSES/`，致谢清单见 `../../../CREDITS.md`。
+
+## 怎么用
+
+- 写方向图提示词时，从「Logo 示例」和「按风格的关键词」里挑词，不要整段堆上去。
+- 写样机提示词时，用「样机修饰词」里对应交付物的那一行，再加上 Image 1 = 选定 Logo。
+- 原文里的「8k」「high resolution」这类质量词对 gpt-image 系列作用不大，可以省掉。
+
+## 原文
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Logo examples · Apache-2.0 (verbatim)
+
+````text
+### Logo example: abstract symbol mark
+```
+Use case: logo-brand
+Asset type: logo concept
+Primary request: geometric leaf symbol suggesting sustainability and growth
+Style/medium: vector logo mark; flat colors; minimal
+Composition/framing: centered mark; clear silhouette
+Color palette: deep green and off-white
+Constraints: no text unless requested; no gradients; no mockups; no 3D; no watermark
+```
+
+### Logo example: monogram mark
+```
+Use case: logo-brand
+Asset type: logo concept
+Primary request: interlocking monogram of the letters "AV"
+Style/medium: vector logo mark; flat colors; minimal
+Composition/framing: centered mark; balanced spacing
+Color palette: black on white
+Constraints: no gradients; no mockups; no 3D; no watermark
+```
+
+### Logo example: wordmark
+```
+Use case: logo-brand
+Asset type: logo concept
+Primary request: clean wordmark for a modern studio
+Style/medium: vector wordmark; flat colors; minimal
+Text (verbatim): "Studio North"
+Composition/framing: centered text; even letter spacing
+Constraints: no gradients; no mockups; no 3D; no watermark
+```
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/logo-prompt-engineering.md › Effective Keywords by Style · MIT (verbatim)
+
+````text
+## Effective Keywords by Style
+
+### Minimalist
+```
+minimalist, clean lines, simple geometric shapes, essential elements only,
+high white space, flat design, single color, modern, uncluttered,
+negative space, subtle, refined
+```
+
+### Vintage/Retro
+```
+vintage, retro, heritage, established, classic, nostalgic, weathered,
+distressed texture, badge style, hand-lettered, craft, artisan,
+sepia tones, muted colors, aged paper effect
+```
+
+### Luxury/Premium
+```
+luxury, elegant, sophisticated, premium, refined, exclusive, high-end,
+gold accents, metallic, minimal, tasteful, upscale, prestige,
+thin lines, serif typography, foil effect
+```
+
+### Modern/Tech
+```
+modern, innovative, digital, tech-forward, sleek, futuristic,
+gradient colors, geometric, abstract, dynamic, cutting-edge,
+clean sans-serif, circuit-like, data visualization
+```
+
+### Playful/Fun
+```
+playful, fun, colorful, friendly, approachable, cheerful, whimsical,
+bouncy, rounded shapes, bright colors, cartoon-like, energetic,
+bubbly, hand-drawn elements
+```
+
+### Organic/Natural
+```
+organic, natural, flowing, botanical, eco-friendly, sustainable,
+earth tones, leaf elements, hand-drawn, imperfect lines, growth,
+green, nature-inspired, biophilic
+```
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/logo-prompt-engineering.md › Technical Requirements · MIT (verbatim)
+
+````text
+## Technical Requirements to Include
+
+### Scalability
+```
+vector-style, scalable at any size, clear silhouette,
+works as favicon, recognizable small scale, simple shapes
+```
+
+### Versatility
+```
+works on light and dark backgrounds, single color version possible,
+horizontal and stacked layouts, brand mark can stand alone
+```
+
+### Quality
+```
+professional quality, print-ready, high resolution,
+crisp edges, balanced composition, centered design
+```
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/logo-prompt-engineering.md › Prompt Templates · MIT (verbatim)
+
+````text
+## Prompt Templates
+
+### Quick Generation
+```
+Professional [industry] logo, [style] design, [color] colors,
+clean modern aesthetic, scalable vector style
+```
+
+### Detailed Brief
+```
+Professional logo design for [brand name], a [industry] company.
+
+Visual style: [style keywords]
+Primary colors: [hex codes]
+Mood: [emotional keywords]
+Symbols: [iconography hints]
+
+Technical: Vector-style illustration, scalable, works in single color,
+centered on plain background, no text unless specified.
+```
+
+### Variation Request
+```
+Alternative version of [brand] logo:
+Keep: [elements to preserve]
+Change: [elements to modify]
+Style direction: [new style keywords]
+```
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/cip-prompt-engineering.md › Style / Lighting / Context Modifiers · MIT (verbatim)
+
+````text
+## Style Modifiers
+
+### Corporate Minimal
+```
+clean minimal aesthetic, white space, subtle shadows, matte finish, professional
+```
+
+### Luxury Premium
+```
+dark background, dramatic rim lighting, gold accents, premium materials, sophisticated
+```
+
+### Modern Tech
+```
+gradient colors, geometric elements, clean surfaces, futuristic, innovative
+```
+
+### Warm Organic
+```
+natural materials, kraft paper texture, warm lighting, authentic, artisan
+```
+
+## Lighting Modifiers
+
+- **Studio:** `professional studio lighting, even illumination`
+- **Natural:** `soft natural daylight, window light`
+- **Dramatic:** `dramatic rim light, dark background, high contrast`
+- **Warm:** `warm golden hour lighting, cozy atmosphere`
+
+## Context Modifiers
+
+- **Marble desk:** `white marble surface, soft shadows, luxury`
+- **Wooden table:** `warm wood grain, natural, artisan`
+- **Office interior:** `modern office environment, architectural`
+- **Flat lay:** `overhead view, organized arrangement`
+- **Lifestyle:** `in-use context, human element`
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/cip-deliverable-guide.md › Stationery Set · MIT (verbatim)
+
+````text
+## Stationery Set
+
+### Business Card
+- Standard: 3.5x2 inches / 85x55mm
+- Premium paper stock (300-400gsm)
+- Finishes: matte, spot UV, foil, emboss
+
+### Letterhead
+- A4 or Letter size
+- Header area for logo/contact
+- Digital and print versions
+
+### Envelope
+- DL, C4, C5 sizes
+- Logo on flap or front
+- Return address styling
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/cip-deliverable-guide.md › Digital Assets · MIT (verbatim)
+
+````text
+## Digital Assets
+
+### Social Media
+- Profile pictures (icon version)
+- Cover images (platform-specific)
+- Post templates
+
+### Email Signature
+- HTML responsive
+- Max 600px width
+- Essential contact only
+````
+
+## 本站调整
+
+- 原文的名片尺寸 85×55mm 是国际常见尺寸；国内名片常用 90×54mm，做样机时按用户所在地区说明。
+- 原文的 Logo 关键词是英文，直接写进英文提示词即可；中文品牌名放在 Text (verbatim) 里。
+- 原文模板里的「no text unless specified」：中文字标单独出更稳，图形和字标可以分两次出。

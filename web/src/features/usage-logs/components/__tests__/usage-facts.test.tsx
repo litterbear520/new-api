@@ -152,6 +152,13 @@ test('keeps one cache write row and no cache prices for OpenAI logs without 12-h
   queryClient.clear()
 })
 
+test('labels the key row Key, as the log table does', () => {
+  const queryClient = renderDetails({})
+  expect(rowValue('Key')).toBe('token')
+  expect(screen.queryByText('Token')).not.toBeInTheDocument()
+  queryClient.clear()
+})
+
 describe('usage facts billing details', () => {
   test('shows the settled image count and a per-image price', () => {
     const queryClient = renderDetails({

@@ -20,6 +20,7 @@ import { Languages, Check } from 'lucide-react'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { LanguageFlag } from '@/components/language-flag'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -35,10 +36,15 @@ import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
-export function LanguageSwitcher() {
-  const { i18n, t } = useTranslation()
+/**
+ * The interface languages as menu items, each with a small flag and a check
+ * on the current one.
+ */
+function LanguageMenuItems() {
+  const { i18n } = useTranslation()
   const user = useAuthStore((s) => s.auth.user)
   const currentLanguage = normalizeInterfaceLanguage(i18n.language)
+
   const handleChangeLanguage = useCallback(
     async (code: string) => {
       await i18n.changeLanguage(code)
@@ -54,6 +60,28 @@ export function LanguageSwitcher() {
   )
 
   return (
+    <>
+      {INTERFACE_LANGUAGE_OPTIONS.map((lang) => (
+        <DropdownMenuItem
+          key={lang.code}
+          onClick={() => handleChangeLanguage(lang.code)}
+        >
+          <LanguageFlag code={lang.code} />
+          {lang.label}
+          <Check
+            size={14}
+            className={cn('ms-auto', currentLanguage !== lang.code && 'hidden')}
+          />
+        </DropdownMenuItem>
+      ))}
+    </>
+  )
+}
+
+export function LanguageSwitcher() {
+  const { t } = useTranslation()
+
+  return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         render={<Button variant='ghost' size='icon' className='h-9 w-9' />}
@@ -62,21 +90,7 @@ export function LanguageSwitcher() {
         <span className='sr-only'>{t('Change language')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
-        {INTERFACE_LANGUAGE_OPTIONS.map((lang) => (
-          <DropdownMenuItem
-            key={lang.code}
-            onClick={() => handleChangeLanguage(lang.code)}
-          >
-            {lang.label}
-            <Check
-              size={14}
-              className={cn(
-                'ms-auto',
-                currentLanguage !== lang.code && 'hidden'
-              )}
-            />
-          </DropdownMenuItem>
-        ))}
+        <LanguageMenuItems />
       </DropdownMenuContent>
     </DropdownMenu>
   )

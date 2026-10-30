@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { LayoutDashboard } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -29,7 +28,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { IconBadge } from '@/components/ui/icon-badge'
 import { Switch } from '@/components/ui/switch'
 import { api } from '@/lib/api'
 import { handleServerError } from '@/lib/handle-server-error'
@@ -64,12 +62,17 @@ export function SidebarModulesCard() {
       modules: [
         {
           key: 'playground',
-          title: t('Playground'),
+          title: t('Chat'),
           description: t('AI model testing environment'),
         },
         {
+          key: 'draw',
+          title: t('Draw pictures'),
+          description: t('Make and edit pictures by chatting'),
+        },
+        {
           key: 'chat',
-          title: t('Chat'),
+          title: t('Chat apps'),
           description: t('Chat session management'),
         },
       ],
@@ -214,22 +217,13 @@ export function SidebarModulesCard() {
 
   return (
     <Card data-card-hover='false' className='gap-0 overflow-hidden py-0'>
-      <CardHeader className='border-b p-3 !pb-3 sm:p-5 sm:!pb-5'>
-        <div className='flex items-center gap-3'>
-          <IconBadge tone='info' size='title'>
-            <LayoutDashboard />
-          </IconBadge>
-          <div className='min-w-0'>
-            <CardTitle className='text-lg tracking-tight sm:text-xl'>
-              {t('Sidebar Personal Settings')}
-            </CardTitle>
-            <CardDescription className='text-xs sm:text-sm'>
-              {t('Customize sidebar display content')}
-            </CardDescription>
-          </div>
-        </div>
+      <CardHeader className='border-b p-4'>
+        <CardTitle>{t('Sidebar Personal Settings')}</CardTitle>
+        <CardDescription>
+          {t('Customize sidebar display content')}
+        </CardDescription>
       </CardHeader>
-      <CardContent className='space-y-4 p-3 sm:space-y-5 sm:p-5'>
+      <CardContent className='space-y-4 p-4'>
         {sectionDefs.map((section) => {
           const sectionEnabled = config[section.key]?.enabled !== false
           return (

@@ -1,0 +1,31 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/*
+ * The 活动 page's two colours, the same as the wallet's deals
+ * (bear-wallet.css): red for the 新人礼包, green for bonus credit.
+ */
+.act-page {
+  --act-gift: #b4232a;
+  --act-good: #1f7a4d;
+}
+.dark .act-page {
+  --act-gift: #ff9592;
+  --act-good: #7fd1a5;
+}

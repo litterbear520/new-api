@@ -52,7 +52,9 @@ export function Hero(props: HeroProps) {
     (status?.docs_link as string | undefined) || 'https://docs.newapi.pro'
 
   const renderDocsButton = () => {
-    const isExternal = docsUrl.startsWith('http')
+    // The docs site is served by Caddy beside the SPA, so a /docs path needs a
+    // full page load rather than a router navigation.
+    const isExternal = docsUrl.startsWith('http') || docsUrl.startsWith('/docs')
     if (isExternal) {
       return (
         <Button

@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -42,12 +42,15 @@ import {
   LOG_TYPE_ALL_VALUE,
   LOG_TYPE_ENUM,
 } from '../constants'
+import type { UsageLog } from '../data/schema'
 import { shouldShowBillingSource } from '../lib/billing-source'
 import { useColumnsByCategory } from '../lib/columns'
 import { parseLogOther } from '../lib/format'
 import { fetchLogsByCategory } from '../lib/utils'
 import type { LogCategory } from '../types'
 import { CommonLogsFilterBar } from './common-logs-filter-bar'
+import { DetailsDialog } from './dialogs/details-dialog'
+import { LogsEmpty } from './logs-empty'
 import { TaskLogsFilterBar } from './task-logs-filter-bar'
 import { UsageLogsMobileList } from './usage-logs-mobile-card'
 import { useLogsViewScope, type LogsViewAccess } from './usage-logs-provider'
@@ -59,6 +62,31 @@ const logTypeRowTint: Record<number, string> = {
   [LOG_TYPE_ENUM.REFUND]: 'bg-blue-50/30 dark:bg-blue-950/15',
 }
 
+// Number columns of the common logs line up on the right.
+const NUMERIC_COLUMNS = new Set([
+  'prompt_tokens',
+  'completion_tokens',
+  'cache_tokens',
+  'quota',
+  'frt',
+  'use_time',
+])
+
+/**
+ * A row click opens the log, except clicks on the row's own buttons and
+ * links, clicks inside popovers that React bubbles up from a portal, and the
+ * end of a text selection.
+ */
+function isRowClick(e: React.MouseEvent<HTMLElement>): boolean {
+  const target = e.target as HTMLElement
+  if (!e.currentTarget.contains(target)) return false
+  const control = target.closest(
+    'button, a, input, select, textarea, [role="button"], [role="menuitem"]'
+  )
+  if (control && control !== e.currentTarget) return false
+  return !window.getSelection()?.toString()
+}
+
 // Warning tint for logs where a quota conversion saturated (admin-only marker).
 // Takes precedence over the per-type tint since it flags a billing anomaly.
 const quotaSaturationRowTint = 'bg-amber-50/60 dark:bg-amber-950/25'
@@ -67,7 +95,9 @@ function getColumnVisibilityStorageKey(
   logCategory: LogCategory,
   viewAccess: LogsViewAccess
 ): string {
-  return `usage-logs:${logCategory}:${viewAccess}:column-visibility`
+  // v2: prompt_tokens turned from the combined 「Tokens」 column into
+  // 「Input」, so choices saved for the old columns no longer apply.
+  return `usage-logs:${logCategory}:${viewAccess}:column-visibility:v2`
 }
 
 function deserializeLogTypeFilter(value: unknown): unknown[] {
@@ -87,8 +117,19 @@ interface UsageLogsTableProps {
 export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const { t } = useTranslation()
   const getColumnClassName = useCallback(
-    () => (logCategory === 'common' ? 'py-2' : 'py-3.5'),
+    (columnId: string) =>
+      logCategory === 'common'
+        ? cn('py-2', NUMERIC_COLUMNS.has(columnId) && 'text-right')
+        : 'py-3.5',
     [logCategory]
+  )
+  const [detail, setDetail] = useState<{
+    log: UsageLog
+    open: boolean
+  } | null>(null)
+  const openDetail = useCallback(
+    (log: UsageLog) => setDetail({ log, open: true }),
+    []
   )
   const {
     isAdminView: isAdmin,
@@ -228,60 +269,103 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const isCommon = logCategory === 'common'
 
   return (
-    <DataTablePage
-      table={table}
-      compactPagination={isMobile && isCommon}
-      columns={columns as ColumnDef<Record<string, unknown>>[]}
-      isLoading={isLoadingData}
-      isFetching={isFetching}
-      emptyTitle={t('No Logs Found')}
-      emptyDescription={t(
-        'No usage logs available. Logs will appear here once API calls are made.'
-      )}
-      skeletonKeyPrefix='usage-log-skeleton'
-      applyHeaderSize
-      tableClassName={cn(
-        '[&_[data-slot=table]]:text-[13px] [&_[data-slot=table]_td]:text-[13px] [&_[data-slot=table]_td_*]:text-[13px] [&_[data-slot=table]_th]:text-[13px] [&_[data-slot=table]_th_*]:text-[13px]'
-      )}
-      mobile={
-        <UsageLogsMobileList
-          table={table}
-          isLoading={isLoadingData}
-          logCategory={logCategory}
-        />
-      }
-      toolbar={
-        isCommon ? (
-          <CommonLogsFilterBar table={table} />
-        ) : (
-          <TaskLogsFilterBar table={table} logCategory={logCategory} />
-        )
-      }
-      renderRow={(row) => {
-        const logType = (row.original as Record<string, unknown>).type as
-          | number
-          | undefined
-        let tintClass =
-          isCommon && logType != null ? (logTypeRowTint[logType] ?? '') : ''
-        if (isCommon && isAdmin) {
-          const other = parseLogOther(
-            ((row.original as Record<string, unknown>).other as string) ?? ''
-          )
-          if (other?.admin_info?.quota_saturation) {
-            tintClass = quotaSaturationRowTint
-          }
-        }
-
-        return (
-          <DataTableRow
-            key={row.id}
-            row={row}
-            className={cn('transition-colors', tintClass)}
-            getColumnClassName={getColumnClassName}
-            cellRenderColumns={table.options.columns}
+    <>
+      <DataTablePage
+        table={table}
+        compactPagination={isMobile && isCommon}
+        columns={columns as ColumnDef<Record<string, unknown>>[]}
+        isLoading={isLoadingData}
+        isFetching={isFetching}
+        // One even-cornered clip round the toolbar and the table. Clipping the
+        // table itself with uneven corners (rounded-t-none) made Chrome add a
+        // mask layer the size of the table per composited cell (~1 GB of tiles
+        // with 100 admin rows), and parts of the page were left blank.
+        className='gap-2.5 sm:gap-0 sm:overflow-hidden sm:rounded-lg sm:border'
+        emptyContent={<LogsEmpty section={logCategory} />}
+        emptyTitle={t('No Logs Found')}
+        emptyDescription={t(
+          'No usage logs available. Logs will appear here once API calls are made.'
+        )}
+        skeletonKeyPrefix='usage-log-skeleton'
+        applyHeaderSize
+        tableClassName={cn(
+          '[&_[data-slot=table]]:text-[13px] [&_[data-slot=table]_td]:text-[13px] [&_[data-slot=table]_td_*]:text-[13px] [&_[data-slot=table]_th]:text-[13px] [&_[data-slot=table]_th_*]:text-[13px]',
+          'rounded-none border-0',
+          isCommon && '[&_tbody>tr]:h-11'
+        )}
+        getColumnClassName={getColumnClassName}
+        mobile={
+          <UsageLogsMobileList
+            table={table}
+            isLoading={isLoadingData}
+            logCategory={logCategory}
+            emptyContent={
+              <div className='bg-card rounded-lg border'>
+                <LogsEmpty section={logCategory} />
+              </div>
+            }
           />
-        )
-      }}
-    />
+        }
+        toolbar={
+          isCommon ? (
+            <CommonLogsFilterBar table={table} total={data?.total} />
+          ) : (
+            <TaskLogsFilterBar table={table} logCategory={logCategory} />
+          )
+        }
+        renderRow={(row) => {
+          const logType = (row.original as Record<string, unknown>).type as
+            | number
+            | undefined
+          let tintClass =
+            isCommon && logType != null ? (logTypeRowTint[logType] ?? '') : ''
+          if (isCommon && isAdmin) {
+            const other = parseLogOther(
+              ((row.original as Record<string, unknown>).other as string) ?? ''
+            )
+            if (other?.admin_info?.quota_saturation) {
+              tintClass = quotaSaturationRowTint
+            }
+          }
+
+          return (
+            <DataTableRow
+              key={row.id}
+              row={row}
+              className={cn(
+                'transition-colors',
+                tintClass,
+                isCommon &&
+                  'focus-visible:bg-muted/60 cursor-pointer outline-none'
+              )}
+              getColumnClassName={getColumnClassName}
+              cellRenderColumns={table.options.columns}
+              {...(isCommon && {
+                tabIndex: 0,
+                onClick: (e: React.MouseEvent<HTMLTableRowElement>) => {
+                  if (isRowClick(e)) openDetail(row.original as UsageLog)
+                },
+                onKeyDown: (e: React.KeyboardEvent<HTMLTableRowElement>) => {
+                  if (e.key === 'Enter' && e.target === e.currentTarget) {
+                    openDetail(row.original as UsageLog)
+                  }
+                },
+              })}
+            />
+          )
+        }}
+      />
+      {detail && (
+        <DetailsDialog
+          log={detail.log}
+          isAdmin={isAdmin}
+          isRoot={isRoot}
+          open={detail.open}
+          onOpenChange={(open) =>
+            setDetail((current) => (current ? { ...current, open } : null))
+          }
+        />
+      )}
+    </>
   )
 }

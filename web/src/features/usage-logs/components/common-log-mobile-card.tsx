@@ -25,11 +25,14 @@ import { CopyButton } from '@/components/copy-button'
 import { Dialog } from '@/components/dialog'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge, type StatusVariant } from '@/components/status-badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
+import { toIntlLocale } from '@/i18n/languages'
 import dayjs from '@/lib/dayjs'
-import { formatLogQuota, formatTimestampToDate } from '@/lib/format'
+import {
+  formatLogQuota,
+  formatNumber,
+  formatTimestampToDate,
+} from '@/lib/format'
 
 import type { UsageLog } from '../data/schema'
 import { formatModelName, logTokenName, parseLogOther } from '../lib/format'
@@ -38,9 +41,12 @@ import {
   isDisplayableLogType,
   isTimingLogType,
 } from '../lib/utils'
+import { useLogDetailSegments } from './columns/common-logs-columns'
+import { LogDetailsCell } from './log-details-cell'
+import { LogUserAvatar } from './log-user-avatar'
 import { ModelBadge, ResponseModelDetails } from './model-badge'
 import { StreamTpsCell, TimingMetricsCell } from './timing-metrics-cell'
-import { useUsageLogsContext } from './usage-logs-provider'
+import { useLogsViewScope, useUsageLogsContext } from './usage-logs-provider'
 
 type FieldName =
   | 'model'
@@ -62,8 +68,10 @@ export function CommonLogMobileCard<TData>(props: {
   log: UsageLog
   cells: Map<string, Cell<TData, unknown>>
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
   const context = useUsageLogsContext()
+  const scope = useLogsViewScope()
   const [selectedField, setSelectedField] = useState<FieldName | null>(null)
   const log = props.log
   const other = parseLogOther(log.other)
@@ -105,7 +113,7 @@ export function CommonLogMobileCard<TData>(props: {
       sensitive: true,
     },
     token: {
-      label: t('Token'),
+      label: t('Key'),
       value: logTokenName(log, t),
       visible: displayable && props.cells.has('token_name') && !!log.token_name,
       sensitive: true,
@@ -125,7 +133,6 @@ export function CommonLogMobileCard<TData>(props: {
   const metadata: FieldName[] = ['user', 'channel', 'token', 'group']
   const visibleMetadata = metadata.filter((id) => fields[id].visible)
   const costCell = props.cells.get('quota')
-  const contentCell = props.cells.get('content')
   const channelCell = props.cells.get('channel')
   const cacheRead = other?.cache_tokens || 0
   const cacheWrite =
@@ -133,6 +140,7 @@ export function CommonLogMobileCard<TData>(props: {
       (other?.cache_creation_tokens_1h || 0) ||
     other?.cache_creation_tokens ||
     0
+  const detailSegments = useLogDetailSegments(log, scope.isAdminView)
   const showTokens =
     displayable &&
     props.cells.has('prompt_tokens') &&
@@ -185,37 +193,34 @@ export function CommonLogMobileCard<TData>(props: {
             </Button>
           </div>
         )}
-        {timing &&
-          (props.cells.has('use_time') || props.cells.has('is_stream')) && (
-            <div className='col-start-2 flex min-w-0 flex-col items-end gap-1 [overflow-wrap:anywhere]'>
-              {props.cells.has('is_stream') && (
-                <StreamTpsCell
-                  compact
-                  className='min-h-5 max-w-full min-w-0 justify-end'
-                  isStream={log.is_stream}
-                  isTask={other?.is_task === true}
-                  isSyncTask={other?.task_sync === true}
-                  tokensPerSecond={
-                    log.use_time > 0 && log.completion_tokens > 0
-                      ? log.completion_tokens / log.use_time
-                      : null
-                  }
-                  streamStatus={other?.stream_status}
-                />
-              )}
-              {props.cells.has('use_time') && (
-                <TimingMetricsCell
-                  useTimeSec={log.use_time}
-                  completionTokens={log.completion_tokens}
-                  frtMs={other?.frt}
-                  isStream={log.is_stream}
-                  indicator='dot'
-                  compact
-                  className='min-h-6 max-w-full min-w-0 items-center justify-end [&>div]:justify-end'
-                />
-              )}
-            </div>
-          )}
+        {timing && props.cells.has('use_time') && (
+          <div className='col-start-2 flex min-w-0 flex-col items-end gap-1 [overflow-wrap:anywhere]'>
+            <StreamTpsCell
+              compact
+              className='min-h-5 max-w-full min-w-0 justify-end'
+              isStream={log.is_stream}
+              isTask={other?.is_task === true}
+              isSyncTask={other?.task_sync === true}
+              tokensPerSecond={
+                log.use_time > 0 && log.completion_tokens > 0
+                  ? log.completion_tokens / log.use_time
+                  : null
+              }
+              streamStatus={other?.stream_status}
+            />
+            {props.cells.has('use_time') && (
+              <TimingMetricsCell
+                useTimeSec={log.use_time}
+                completionTokens={log.completion_tokens}
+                frtMs={other?.frt}
+                isStream={log.is_stream}
+                indicator='dot'
+                compact
+                className='min-h-6 max-w-full min-w-0 items-center justify-end [&>div]:justify-end'
+              />
+            )}
+          </div>
+        )}
       </div>
       {visibleMetadata.length > 0 && (
         <div className='grid min-w-0 grid-cols-2 gap-x-4 gap-y-0.5'>
@@ -244,20 +249,11 @@ export function CommonLogMobileCard<TData>(props: {
               <div key={id} className='flex min-w-0 items-center gap-2'>
                 <span className='text-muted-foreground max-w-[40%] shrink-0 text-xs [overflow-wrap:anywhere]'>
                   {id === 'user' ? (
-                    <Avatar className='ring-border/60 size-6 shrink-0 ring-1'>
-                      <AvatarFallback
-                        className='text-[11px] font-semibold'
-                        style={
-                          context.sensitiveVisible
-                            ? getUserAvatarStyle(log.username)
-                            : undefined
-                        }
-                      >
-                        {context.sensitiveVisible
-                          ? getUserAvatarFallback(log.username)
-                          : '•'}
-                      </AvatarFallback>
-                    </Avatar>
+                    <LogUserAvatar
+                      name={log.username}
+                      visible={context.sensitiveVisible}
+                      className='shrink-0'
+                    />
                   ) : (
                     field.label
                   )}
@@ -293,39 +289,41 @@ export function CommonLogMobileCard<TData>(props: {
           <span>
             {t('Input')}{' '}
             <span className='text-foreground tabular-nums'>
-              {log.prompt_tokens.toLocaleString()}
+              {formatNumber(log.prompt_tokens, locale)}
             </span>
           </span>
           <span>
             {t('Output')}{' '}
             <span className='text-foreground tabular-nums'>
-              {log.completion_tokens.toLocaleString()}
+              {formatNumber(log.completion_tokens, locale)}
             </span>
           </span>
           {cacheRead > 0 && (
             <span>
-              {t('Cache')} ↓ {cacheRead.toLocaleString()}
+              {t('Cache')} ↓ {formatNumber(cacheRead, locale)}
             </span>
           )}
           {cacheWrite > 0 && (
             <span>
-              {t('Cache')} ↑ {cacheWrite.toLocaleString()}
+              {t('Cache')} ↑ {formatNumber(cacheWrite, locale)}
             </span>
           )}
         </div>
       )}
-      {contentCell && (
-        <div className='relative min-w-0 border-t pt-2 [&_button]:min-h-8 [&_button]:w-full [&_button]:max-w-full [&_button]:pr-5 [&_button]:text-sm [&_button>span]:line-clamp-2 [&_button>span]:[overflow-wrap:anywhere] [&_button>span]:whitespace-normal'>
-          {flexRender(
-            contentCell.column.columnDef.cell,
-            contentCell.getContext()
-          )}
-          <ChevronRight
-            aria-hidden='true'
-            className='text-primary pointer-events-none absolute top-4 right-0 size-4'
-          />
-        </div>
-      )}
+      {/* Every card ends with the log's summary line (the 详情 column's
+          content, which users do not have), and it opens the full details. */}
+      <div className='relative min-w-0 border-t pt-2 [&_button]:min-h-8 [&_button]:w-full [&_button]:max-w-full [&_button]:pr-5 [&_button]:text-sm [&_button>span]:line-clamp-2 [&_button>span]:[overflow-wrap:anywhere] [&_button>span]:whitespace-normal'>
+        <LogDetailsCell
+          log={log}
+          segments={detailSegments}
+          isAdmin={scope.isAdminView}
+          isRoot={scope.isRootView}
+        />
+        <ChevronRight
+          aria-hidden='true'
+          className='text-primary pointer-events-none absolute top-4 right-0 size-4'
+        />
+      </div>
       <Dialog
         open={!!activeField}
         onOpenChange={(open) => {

@@ -1,0 +1,237 @@
+---
+name: before-after
+description: 做诚实的前后对比图：左右或上下分栏，用用户的真实照片排版，必要时加清楚的「示意」标注；功效类商品（化妆品、保健、医疗、减肥）不用 AI 编造使用后效果。用户提到「前后对比」「对比图」「使用前后」「效果对比」「改造前后」「新旧对比」时使用。Lays out honest before/after comparisons from real photos, with compliance rules for regulated categories.
+---
+
+# 前后对比
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 收纳、清洁、家居改造、修图服务、装修、软件界面这类「看得见」的变化，并且用户有真实的前后照片。
+- 新旧款对比、和普通做法对比（只比能证明的差别）。
+- 不适用（要先停下来说明）：化妆品、护肤、祛痘、美白、减肥、生发、保健食品、医疗器械、医美。这些类目的效果对比必须有真实依据，不能用 AI 生成「使用后」的样子；可以改做使用步骤图、成分说明图或真实买家秀排版。
+
+## 工作流程
+
+1. **先判断类目**：属于上面「不适用」的类目，就告诉用户原因，并给出可做的替代方案，不出效果对比。
+2. **先问缺的**（最多 3 个问题）
+   - 有没有真实的「前」和「后」照片（同一角度、同一光线最好）？
+   - 对比放在哪里：主图 / 详情页 / 广告 / 小红书。
+   - 两边的标签怎么写（用顾客自己的话，如「抽屉乱成一团」→「拉开就找到」）。
+3. **列交付清单**，确认后出图：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 左右对比 | 1:1 | 800×800 | gpt-image-2.5-sunburst | Image 1 = 前，Image 2 = 后，中间分隔线 + 箭头 |
+   | 2 | 上下对比 | 3:4 | 750×1000 | gpt-image-2.5-sunburst | 上前下后，适合手机竖屏 |
+   | 3 | 详情页对比屏（可选） | 2:3 | 750×1125 | gpt-image-2.5-sunburst | 标题 + 对比 + 一句说明 |
+
+4. **一张图调用一次**（`edit_image`，带两张真实照片）。提示词写清「只做排版、统一色温和裁切，不改照片里的内容」。只有一张「前」的照片、用户又要展示改造思路时，必须在图上标「效果示意」。
+5. **检查**：两边是不是同一个场景、同一角度；有没有偷偷美化「后」或丑化「前」；标签是否属实；跑 `data/ad-law-words.json`。
+
+## 最佳实践原文
+
+### 前后对比模板与合规提醒
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 6 Before / After · MIT (verbatim)
+
+````text
+### 6. Before / After
+
+Split image with arrow between. Transformation framing — product results, workflow, or visual proof.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. Before/afters (and their cousin, progression ads) convert well for people already problem-aware; they show the payoff but rarely open cold reach on their own.
+- **Structure**: Two panels, arrow or divider, minimal copy labeling each state
+- **Copy slot**: Label the states in the customer's words ("Sunday-night spreadsheet dread" → "Reports send themselves")
+- **DTC example**: Skin, energy, space — the classic visual transformation
+- **SaaS example**: Cluttered 6-tab workflow → one clean dashboard
+- **Compliance note**: Before/after claims are regulated in health, finance, and beauty — verify platform policy before using
+- **Source it from**: Transformation language in reviews ("I used to X, now I Y")
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 2 Us vs. Them · MIT (verbatim)
+
+````text
+### 2. Us vs. Them
+
+Side-by-side comparison. Competitor or "old way" on the left (grayed out), your product on the right (full color). 4-6 comparison rows.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. "Us vs. them" reliably sneaks into a brand's top 8; converts well for people already weighing you against an alternative, but rarely the format that opens cold net-new reach.
+- **Structure**: Two columns, check/cross marks per row, your side visually alive
+- **Copy slot**: Comparison rows — each row a real differentiator, not filler
+- **DTC example**: "Their multivitamin: 13 ingredients. Ours: 60."
+- **SaaS example**: "Spreadsheets: 6 hours a week. Us: 6 minutes."
+- **Source it from**: Reviews that mention switching, or comments comparing you to a competitor
+````
+
+### 不编造
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Generation Rules · MIT (verbatim)
+
+````text
+## Generation Rules
+
+- Every variation must include: **template name, headline copy, body copy, visual description, source grounding**
+- Source grounding = which review, winning ad, or comment this concept is based on
+- Never produce a variation without source grounding — no invented claims, stats, or testimonials
+- Pull copy directly from customer language whenever possible; don't paraphrase reviews into marketing-speak
+- Match the brand voice doc on tone, not generic direct-response voice
+- Real names, real stats, real quotes only — fabricated social proof is a compliance and trust violation
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/SKILL.md › Grounded Inputs · MIT (verbatim)
+
+````text
+**Grounding rules:**
+- Every concept cites its source (which review, winning ad, or comment it traces to)
+- No invented claims, stats, or testimonials — ever
+- If `inputs/winning-ads/` or `inputs/reviews/` is empty, stop and ask the user to populate it before generating. Do not generate ungrounded concepts as a fallback.
+- Inputs decay: refresh `inputs/winning-ads/` as new ads scale; refresh `inputs/reviews/` and `inputs/comments/` monthly
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/references/checklist.md › Checklist P0 · Apache-2.0 (verbatim)
+
+````text
+- [ ] **No fabricated claims.** The feature image does not invent
+  certifications, measurements, materials, ingredients, performance numbers,
+  awards, or compliance promises.
+- [ ] **No tiny rendered text dependency.** Prompts avoid relying on small
+  in-image text for selling points; they leave clean label space when copy will
+  be added later.
+````
+
+### 多图排版与精确编辑
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Input images and references · Apache-2.0 (verbatim)
+
+````text
+## Input images and references
+- Do not assume that every provided image is an edit target.
+- Label each image by index and role (`Image 1: edit target`, `Image 2: style reference`).
+- If the user provides images for style, composition, or mood guidance and does not ask to modify them, treat the request as generation with references.
+- If the user asks to preserve an existing image while changing specific parts, treat the request as an edit.
+- For compositing, describe how the images interact (`place the subject from Image 2 into Image 1`).
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › compositing · Apache-2.0 (verbatim)
+
+````text
+### compositing
+```
+Use case: compositing
+Input images: Image 1: base scene; Image 2: subject to insert
+Primary request: place the subject from Image 2 next to the person in Image 1
+Constraints: match lighting, perspective, and scale; keep the base framing unchanged; no extra elements
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › precise-object-edit · Apache-2.0 (verbatim)
+
+````text
+### precise-object-edit
+```
+Use case: precise-object-edit
+Input images: Image 1: room photo
+Primary request: replace only the white chairs with wooden chairs
+Constraints: preserve camera angle, room lighting, floor shadows, and surrounding objects; keep all other aspects unchanged
+```
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.1 Interior design swap · MIT (verbatim)
+
+````text
+## 6.1 Interior design “swap” (precision edits)
+Used for visualizing furniture or decor changes in real spaces without re-rendering the entire scene. The goal is surgical realism: swap a single object while preserving camera angle, lighting, shadows, and surrounding context so the edit looks like a real photograph, not a redesign.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 6.1 Interior design swap (prompt) · MIT (verbatim)
+
+````text
+In this room photo, replace ONLY white with chairs made of wood.
+Preserve camera angle, room lighting, floor shadows, and surrounding objects.
+Keep all other aspects of the image unchanged.
+Photorealistic contact shadows and fabric texture.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Constraints and invariants · Apache-2.0 (verbatim)
+
+````text
+## Constraints and invariants
+- State what must not change (`keep background unchanged`).
+- For edits, say `change only X; keep Y unchanged` and repeat invariants on every iteration to reduce drift.
+````
+
+### 标签结构
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Iterate deliberately · Apache-2.0 (verbatim)
+
+````text
+## Iterate deliberately
+- Start with a clean base prompt, then make small single-change edits.
+- Re-specify critical constraints when you iterate.
+- Prefer one targeted follow-up at a time over rewriting the whole prompt.
+````
+
+## 本站调整
+
+- **原文的合规提醒升级成硬规则**：marketingskills 原文写「健康、金融、美容类的前后对比受监管，用前查平台政策」。我们直接规定：化妆品、保健、医疗、减肥、生发、医美类不做 AI 效果对比；其他类目优先用真实照片。
+- **依据从哪来**：原文要求每个概念引用 `inputs/` 里的真实评价或素材。本站没有这个文件夹，依据就是用户上传的真实前后照片和用户提供的顾客原话。
+- **真实照片优先**：对比图默认是「排版两张真实照片」，不是「生成两张图」。模型只负责拼版、统一色温、加分隔线和标签，不改照片内容。
+- **示意要标出来**：用户只有「前」的照片、想展示改造方向时，可以用编辑生成一张方案图，但图上必须写「效果示意」，交付说明里也写清。不能把示意图当作真实效果宣传。
+- **竞品对比**：原文 Us vs. Them 模板把「对方」做成灰色。我们不点名真实竞品，用「普通款」「传统做法」代替，只比能证明的差别。
+- **广告法**：标签里不写「100% 去除」「彻底根除」「永久」「立竿见影」等；数字要有出处。详见 `data/ad-law-words.json`。
+- **模型**：拼版和精修用 gpt-image-2.5-sunburst；只做方案示意草图时可用 gpt-image-2。
+- **尺寸**：本站出图通常是 1024×1024 或 1024×1536，比例写进提示词，页面再缩放到交付尺寸。
+- **导出**：ZIP 里按 `对比-左右-1x1.jpg`、`对比-上下-3x4.jpg` 命名。
+- **示例**：原文的房间换椅子只是示意；我们的示例用虚构品牌「方寸收纳」抽屉分隔盒。
+
+### 示例（虚构品牌「方寸收纳」，左右对比）
+
+```text
+Use case: compositing
+Asset type: before/after comparison, square 1:1
+Input images: Image 1: real photo of a messy kitchen drawer (before); Image 2: real photo of the same drawer with FANGCUN organizer trays (after)
+Primary request: place Image 1 on the left half and Image 2 on the right half with a thin white divider and a small arrow
+Composition/framing: square 1:1; both photos cropped to the same drawer edges and the same height; labels in a top band
+Lighting/mood: match the color temperature of both photos to neutral daylight
+Text (verbatim): left label "之前：找把勺子翻半天"; right label "之后：一拉开就看到"
+Constraints: do not change the contents of either photo; do not tidy the left photo or add items to the right photo; render each label exactly once; no other text; no watermark
+Avoid: beautifying filters on only one side, sparkles, exaggerated arrows
+```

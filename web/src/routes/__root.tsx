@@ -28,12 +28,13 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { useEffect } from 'react'
 
 import { NavigationProgress } from '@/components/navigation-progress'
+import { SiteBar } from '@/components/site-bar/site-bar'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeCustomizationProvider } from '@/context/theme-customization-provider'
 import { saveAffiliateCode } from '@/features/auth/lib/storage'
 import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
-import { getSetupStatus } from '@/features/setup/api'
+import { getSetupStatus, takeSetupStatusPrefetch } from '@/features/setup/api'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import {
   bootstrapAuthentication,
@@ -95,6 +96,7 @@ function RootComponent() {
   return (
     <ThemeCustomizationProvider>
       <NavigationProgress />
+      <SiteBar />
       <Outlet />
       <Toaster closeButton duration={5000} position='top-center' richColors />
       {import.meta.env.MODE === 'development' && (
@@ -128,7 +130,7 @@ export const Route = createRootRouteWithContext<{
     // 只检查 setup 状态（如果需要）
     if (needsSetupCheck) {
       const [status] = await Promise.all([
-        getSetupStatus().catch((error) => {
+        (takeSetupStatusPrefetch() ?? getSetupStatus()).catch((error) => {
           if (import.meta.env.DEV) {
             // eslint-disable-next-line no-console
             console.warn('[root.beforeLoad] setup status check failed', error)

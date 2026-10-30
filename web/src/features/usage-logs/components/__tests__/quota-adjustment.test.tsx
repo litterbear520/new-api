@@ -71,8 +71,9 @@ function QuotaLogPreview(props: { log: UsageLog }) {
   const cell = table
     .getRowModel()
     .rows[0].getAllCells()
-    .find((item) => item.column.id === 'content')
-  if (!cell) throw new Error('The quota log must have a content column')
+    .find((item) => item.column.id === 'model_name')
+  // Logs without a model show what happened in the model column.
+  if (!cell) throw new Error('The quota log must have a model column')
 
   return (
     <>

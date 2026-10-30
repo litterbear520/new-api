@@ -1,0 +1,115 @@
+# 静态广告版式（参考）
+
+> 本文件由小熊API整理，是 `ad-creative` 技能的附属参考。下面的英文段落是开源项目的原文摘录，每段上方标了来源和许可证。许可证全文见 `../../LICENSES/`，致谢清单见 `../../../CREDITS.md`。
+
+## 怎么用
+
+- 每个角度挑一个版式，3 个角度尽量用 3 种不同版式。
+- 原文里每个模板都标了 Tier（S–F）和作用（拉新 / 转化）。这是海外 Meta 投放的经验，国内平台只作参考。
+- 需要真实评价、真实数据的模板（Review Card、Stat Callout、Testimonial），没有真实来源就不用。
+
+## 原文
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 16 Grid Static · MIT (verbatim)
+
+````text
+### 16. Grid Static (Multi-SKU / Bundle)
+
+A tidy grid of your product line, a bundle, or a collection — one clean frame, multiple SKUs. Optional "shop the set" line.
+
+- **Tier**: A — **Role**: cold-scaler. Easy to make and a proven low-hanging-fruit test — a top performer at a 9-figure brand. Scales because it shows range and lets a cold viewer self-select the SKU that fits them. First static to try when you have more than one product.
+- **Structure**: 4–9 product tiles on a neutral ground, consistent lighting/crop, small logo + optional bundle price
+- **Copy slot**: Minimal — a collection name or a "build your bundle" line; the products do the talking
+- **DTC example**: A 3×3 grid of every flavor with a "Try the whole lineup" bundle price
+- **SaaS example**: A grid of the plan's included tools/integrations — "one subscription, all of it"
+- **Source it from**: Which SKUs/bundles reviews and comments cluster around; lead with the requested combinations
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 11 Lifestyle Hero · MIT (verbatim)
+
+````text
+### 11. Lifestyle Hero
+
+Product in use in a real environment. Minimal copy. Aspirational, not salesy.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. The organic-native look (mirror-selfie / flat-lay / "hot-girl IG story" energy for consumer brands) reads native and supports well, but doesn't reliably open cold reach by itself. For apparel specifically, see the Mood Board variant below.
+- **Structure**: One photograph does the work; a short line and logo at most
+- **Copy slot**: 5-8 words, identity-flavored ("Mornings, handled.")
+- **DTC example**: Product on a kitchen counter mid-routine
+- **SaaS example**: The tool on-screen in a real work moment (standup, close call, ship day)
+- **Source it from**: Winning ads' visual patterns; identity language in reviews
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 17 Callout · MIT (verbatim)
+
+````text
+### 17. Callout
+
+Product hero with 3–5 short labels pointing at specific parts — the "what makes this different" annotated directly on the image.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. One of the most durable static levers; pairs with Headline Statement and underpins Feature Spotlight. Cheap to iterate, reads fast.
+- **Structure**: Center product, leader lines to 3–5 labels, each label 2–5 words
+- **Copy slot**: The attributes buyers actually ask about — not spec-sheet filler
+- **DTC example**: A shoe with callouts on the sole, the material, the weight
+- **SaaS example**: A dashboard screenshot with callouts on the three features reviews cite most
+- **Source it from**: The features/attributes that recur in reviews and ad comments
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 7 Problem / Solution · MIT (verbatim)
+
+````text
+### 7. Problem / Solution
+
+Pain point on top (text or image), product as the answer below.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. Close kin to objection-handling, which "works fast" and lands in most brands' top 15. Strongest when the pain is phrased in the customer's exact words.
+- **Structure**: Two zones — tension above, relief below
+- **Copy slot**: The pain in the customer's exact words, then the product's one-line answer
+- **DTC example**: "Tired of 6 supplements every morning?" → one scoop visual
+- **SaaS example**: "Your CRM knows nothing about product usage." → integration screenshot
+- **Source it from**: The most common pain phrasing in `inputs/reviews/` — verbatim beats paraphrase
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 22 Ugly / Post-it · MIT (verbatim)
+
+````text
+### 22. Ugly / Handwriting / Post-it
+
+Deliberately low-polish — handwritten note, sticky note, or plain-text-on-a-photo. The anti-designed look reads native and urgent.
+
+- **Tier**: B — **Role**: supporting cast, and a sales-period specialist. These crush during sales/promo windows precisely because they look thrown-together and time-sensitive. Rotate in for BFCM, launches, and flash sales; don't run them as an always-on default.
+- **Structure**: One scrappy element (post-it, marker note, screenshot) over product or plain ground
+- **Copy slot**: A blunt, human line — the offer or the reason, in plain words
+- **DTC example**: A post-it reading "40% off ends tonight. Don't forget." slapped on the product
+- **SaaS example**: A "note to self: cancel the other tool" scrawl before the switch
+- **Source it from**: The offer itself; the plain way a customer would remind a friend
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/generative-tools.md › Platform-Specific Image Specs · MIT (verbatim)
+
+````text
+## Platform-Specific Image Specs
+
+When generating images for ads, request the correct dimensions:
+
+| Platform | Placement | Aspect Ratio | Recommended Size |
+|----------|-----------|-------------|-----------------|
+| Meta Feed | Single image | 1:1 | 1080x1080 |
+| Meta Stories/Reels | Vertical | 9:16 | 1080x1920 |
+| Meta Carousel | Square | 1:1 | 1080x1080 |
+| Google Display | Landscape | 1.91:1 | 1200x628 |
+| Google Display | Square | 1:1 | 1200x1200 |
+| LinkedIn Feed | Landscape | 1.91:1 | 1200x627 |
+| LinkedIn Feed | Square | 1:1 | 1200x1200 |
+| TikTok Feed | Vertical | 9:16 | 1080x1920 |
+| Twitter/X Feed | Landscape | 16:9 | 1200x675 |
+| Twitter/X Card | Landscape | 1.91:1 | 800x418 |
+
+Include these dimensions in your generation prompts to avoid needing to crop or resize.
+````
+
+## 本站调整
+
+- 原文的平台尺寸表是海外平台（Meta、Google、LinkedIn、TikTok、X）。国内投放先按 1:1 / 4:5 / 9:16 / 16:9 四种出，具体以投放后台为准。
+- 原文 Ugly / Post-it 模板说它在大促期间效果好，但价格和截止时间必须真实。
+- 原文 Grid Static 适合多 SKU：同一光线、同一角度、同一背景，3×3 或 2×2 排列，最多一行系列名。

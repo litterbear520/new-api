@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import {
   IconDiscord,
   IconGithub,
+  IconGoogle,
   IconLinuxDo,
   IconTelegram,
   IconWeChat,
@@ -30,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 import { useOAuthLogin } from '../hooks/use-oauth-login'
+import { getMainLine } from '../lib/main-line'
 import type { SystemStatus } from '../types'
 
 type OAuthProvidersProps = {
@@ -47,6 +49,8 @@ type ProviderButton = {
   onClick: () => void
   icon?: ReactNode
   disabled?: boolean
+  /** The provider redirects back to a callback registered on the main line */
+  usesCallback: boolean
 }
 
 export function OAuthProviders({
@@ -79,6 +83,7 @@ export function OAuthProviders({
       onClick: onWeChatLogin,
       icon: <IconWeChat className='h-4 w-4' />,
       disabled: isWeChatLoading,
+      usesCallback: false,
     })
   }
 
@@ -89,6 +94,7 @@ export function OAuthProviders({
       onClick: handleGitHubLogin,
       icon: <IconGithub className='h-4 w-4' />,
       disabled: githubButtonDisabled,
+      usesCallback: true,
     })
   }
 
@@ -98,6 +104,7 @@ export function OAuthProviders({
       label: t('Continue with Discord'),
       onClick: handleDiscordLogin,
       icon: <IconDiscord className='h-4 w-4' />,
+      usesCallback: true,
     })
   }
 
@@ -109,6 +116,9 @@ export function OAuthProviders({
         name: oidcDisplayName,
       }),
       onClick: handleOIDCLogin,
+      icon:
+        oidcDisplayName.toLowerCase() === 'google' ? <IconGoogle /> : undefined,
+      usesCallback: true,
     })
   }
 
@@ -118,6 +128,7 @@ export function OAuthProviders({
       label: t('Continue with LinuxDO'),
       onClick: handleLinuxDOLogin,
       icon: <IconLinuxDo className='h-4 w-4' />,
+      usesCallback: true,
     })
   }
 
@@ -127,6 +138,7 @@ export function OAuthProviders({
       label: t('Continue with Telegram'),
       onClick: handleTelegramLogin,
       icon: <IconTelegram data-icon='inline-start' />,
+      usesCallback: true,
     })
   }
 
@@ -138,42 +150,66 @@ export function OAuthProviders({
         key: `custom-${provider.slug}`,
         label: t('Continue with {{name}}', { name: provider.name }),
         onClick: () => handleCustomOAuthLogin(provider),
+        usesCallback: true,
       })
     }
   }
 
   if (providerButtons.length === 0) return null
 
-  return (
-    <div className={cn('space-y-3', className)}>
-      <div className='relative'>
-        <div className='absolute inset-0 flex items-center'>
-          <span className='w-full border-t' />
-        </div>
-        <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background text-muted-foreground px-2'>
-            {t('Or continue with')}
-          </span>
-        </div>
-      </div>
+  const mainLine = getMainLine(
+    status?.server_address,
+    window.location.origin,
+    redirectTo
+  )
+  const sendsToMainLine =
+    mainLine !== null && providerButtons.some((p) => p.usesCallback)
+  const buttonClassName = 'relative h-11 w-full justify-center'
 
-      <div className='flex flex-col gap-2'>
-        {providerButtons.map(
-          ({ key, label, onClick, icon, disabled: extraDisabled }) => (
+  return (
+    <div className={cn('flex flex-col gap-2.5', className)}>
+      {providerButtons.map((provider) => {
+        // Icons sit at a fixed inline-start so labels stay centered and aligned.
+        const icon = provider.icon && (
+          <span aria-hidden='true' className='absolute start-4 flex'>
+            {provider.icon}
+          </span>
+        )
+        if (mainLine && provider.usesCallback) {
+          return (
             <Button
-              key={key}
+              key={provider.key}
+              role='link'
               variant='outline'
-              type='button'
-              disabled={disabled || isLoading || extraDisabled}
-              onClick={onClick}
-              className='h-11 w-full justify-center gap-2 rounded-lg'
+              className={buttonClassName}
+              render={<a href={mainLine.signInUrl} />}
             >
               {icon}
-              {label}
+              {provider.label}
             </Button>
           )
-        )}
-      </div>
+        }
+        return (
+          <Button
+            key={provider.key}
+            variant='outline'
+            type='button'
+            disabled={disabled || isLoading || provider.disabled}
+            onClick={provider.onClick}
+            className={buttonClassName}
+          >
+            {icon}
+            {provider.label}
+          </Button>
+        )
+      })}
+      {sendsToMainLine && (
+        <p className='text-muted-foreground text-center text-xs'>
+          {t('Third-party sign-in continues on {{host}}', {
+            host: mainLine.host,
+          })}
+        </p>
+      )}
     </div>
   )
 }

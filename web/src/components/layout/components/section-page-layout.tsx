@@ -24,6 +24,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { cn } from '@/lib/utils'
+
 import { Main } from './main'
 import { PageFooterProvider } from './page-footer'
 
@@ -39,6 +41,11 @@ function SectionPageLayoutActions(_props: SlotProps) {
 }
 SectionPageLayoutActions.displayName = 'SectionPageLayout.Actions'
 
+function SectionPageLayoutDescription(_props: SlotProps) {
+  return null
+}
+SectionPageLayoutDescription.displayName = 'SectionPageLayout.Description'
+
 function SectionPageLayoutContent(_props: SlotProps) {
   return null
 }
@@ -53,6 +60,18 @@ export type SectionPageLayoutProps = {
   children: ReactNode
   fixedContent?: boolean
   stackActionsOnMobile?: boolean
+  /**
+   * The title stays put and the content scrolls inside the page, for content
+   * that fills the height (editors with panes of their own).
+   */
+  scrollContent?: boolean
+}
+
+// Without fixedContent or scrollContent the whole page scrolls.
+function contentClass(props: SectionPageLayoutProps): string {
+  if (props.fixedContent) return 'overflow-hidden'
+  if (props.scrollContent) return 'overflow-auto'
+  return ''
 }
 
 export function SectionPageLayout(props: SectionPageLayoutProps) {
@@ -61,6 +80,7 @@ export function SectionPageLayout(props: SectionPageLayoutProps) {
   )
 
   let title: ReactNode = null
+  let description: ReactNode = null
   let actions: ReactNode = null
   let content: ReactNode = null
   let breadcrumb: ReactNode = null
@@ -69,7 +89,9 @@ export function SectionPageLayout(props: SectionPageLayoutProps) {
     if (!isValidElement(node)) return
     const child = node as ReactElement<SlotProps>
     if (child.type === SectionPageLayoutTitle) title = child.props.children
-    else if (child.type === SectionPageLayoutActions) {
+    else if (child.type === SectionPageLayoutDescription) {
+      description = child.props.children
+    } else if (child.type === SectionPageLayoutActions) {
       actions = child.props.children
     } else if (child.type === SectionPageLayoutContent) {
       content = child.props.children
@@ -80,22 +102,26 @@ export function SectionPageLayout(props: SectionPageLayoutProps) {
 
   return (
     <PageFooterProvider container={footerContainer}>
-      <Main>
-        <div className='shrink-0 px-3 pt-3 pb-2.5 sm:px-4 sm:pt-5 sm:pb-3'>
+      <Main pageScroll={!props.fixedContent && !props.scrollContent}>
+        <div className='shrink-0 px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4'>
           {breadcrumb != null && (
             <div className='mb-2 sm:mb-3'>{breadcrumb}</div>
           )}
-          <div className='flex flex-wrap items-center justify-between gap-x-3 gap-y-2 sm:gap-x-4'>
+          <div className='flex flex-wrap items-start justify-between gap-x-3 gap-y-2 sm:gap-x-4'>
             <div
               className={
-                props.stackActionsOnMobile
+                // a description needs the full width on phones
+                props.stackActionsOnMobile || description != null
                   ? 'min-w-0 flex-1 max-sm:basis-full'
                   : 'min-w-0 flex-1'
               }
             >
-              <h2 className='truncate text-base font-bold tracking-tight sm:text-lg'>
-                {title}
-              </h2>
+              <h1 className='page-title truncate'>{title}</h1>
+              {description != null && (
+                <p className='text-muted-foreground mt-1 text-sm'>
+                  {description}
+                </p>
+              )}
             </div>
             {actions != null && (
               <div className='flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-x-4'>
@@ -106,18 +132,17 @@ export function SectionPageLayout(props: SectionPageLayoutProps) {
         </div>
 
         <div
-          className={
-            props.fixedContent
-              ? 'min-h-0 flex-1 overflow-hidden px-3 pt-1 pb-3 sm:px-4 sm:pt-1.5 sm:pb-4'
-              : 'min-h-0 flex-1 overflow-auto px-3 pt-1 pb-3 sm:px-4 sm:pt-1.5 sm:pb-4'
-          }
+          className={cn(
+            'min-h-0 flex-1 px-4 pt-1 pb-4 sm:px-6 sm:pb-6',
+            contentClass(props)
+          )}
         >
           {content}
         </div>
 
         <div
           ref={setFooterContainer}
-          className='bg-background shrink-0 border-t px-3 py-2.5 empty:hidden sm:px-4 sm:py-3'
+          className='bg-background sticky bottom-0 shrink-0 border-t px-4 py-2.5 empty:hidden sm:px-6 sm:py-3'
         />
       </Main>
     </PageFooterProvider>
@@ -125,6 +150,7 @@ export function SectionPageLayout(props: SectionPageLayoutProps) {
 }
 
 SectionPageLayout.Title = SectionPageLayoutTitle
+SectionPageLayout.Description = SectionPageLayoutDescription
 SectionPageLayout.Actions = SectionPageLayoutActions
 SectionPageLayout.Content = SectionPageLayoutContent
 SectionPageLayout.Breadcrumb = SectionPageLayoutBreadcrumb

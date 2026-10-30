@@ -106,7 +106,10 @@ export function ApiKeyQuotaCell(props: ApiKeyQuotaCellProps) {
             )
       }
       className={
-        props.variant === 'card' ? 'space-y-2.5' : 'max-w-45 space-y-1.5'
+        props.variant === 'card'
+          ? 'space-y-2.5'
+          : // a floor the auto table layout keeps, so 123,456.78 still fits
+            'max-w-45 min-w-44 space-y-1.5'
       }
       triggerClassName={props.variant === 'card' ? 'py-0' : undefined}
       afterTrigger={
@@ -128,7 +131,8 @@ export function ApiKeyQuotaCell(props: ApiKeyQuotaCellProps) {
           'grid w-full min-w-0 items-baseline gap-x-2 gap-y-1 text-sm',
           props.variant === 'card'
             ? 'grid-cols-[auto_minmax(0,1fr)]'
-            : 'grid-cols-2'
+            : // the longer amount takes the room the shorter one leaves
+              'grid-cols-[minmax(0,auto)_minmax(0,auto)] justify-between'
         )}
       >
         {props.variant === 'card' && (

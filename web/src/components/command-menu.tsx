@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useNavigate } from '@tanstack/react-router'
-import { ArrowRight, ChevronRight, Laptop, Moon, Sun } from 'lucide-react'
+import { ArrowRight, ChevronRight, Moon, Sun } from 'lucide-react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -34,13 +34,26 @@ import {
 import { useSearch } from '@/context/search-provider'
 import { useTheme } from '@/context/theme-provider'
 import { useSidebarView } from '@/hooks/use-sidebar-view'
+import { useNightSeaStore } from '@/stores/night-sea-store'
 
+import type { NavLink } from './layout/types'
 import { ScrollArea } from './ui/scroll-area'
+
+/**
+ * The item's path with its search params. The router can't type `search`
+ * for a `to` that is a plain string, but it parses an `href` itself.
+ */
+function navHref(item: NavLink): string {
+  const path = typeof item.url === 'string' ? item.url : '/'
+  if (!item.search) return path
+  return `${path}?${new URLSearchParams(item.search).toString()}`
+}
 
 export function CommandMenu() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { setTheme } = useTheme()
+  const setNight = useNightSeaStore((s) => s.setOn)
   const { open, setOpen } = useSearch()
   // Offer the same pages as the sidebar, so search never lists pages the
   // user's role or the sidebar settings hide.
@@ -53,6 +66,12 @@ export function CommandMenu() {
     },
     [setOpen]
   )
+
+  // Light and dark leave the night sea, as the theme button does.
+  const pickTheme = (theme: 'light' | 'dark') => {
+    setNight(false)
+    setTheme(theme)
+  }
 
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>
@@ -70,7 +89,12 @@ export function CommandMenu() {
                         key={`${navItem.title}-${navItem.url}`}
                         value={navItem.title}
                         onSelect={() => {
-                          runCommand(() => navigate({ to: navItem.url }))
+                          runCommand(() =>
+                            // the docs site and the model square live outside the console
+                            navItem.external && typeof navItem.url === 'string'
+                              ? window.open(navItem.url, '_blank', 'noopener')
+                              : navigate({ href: navHref(navItem) })
+                          )
                         }}
                       >
                         <div className='flex size-4 items-center justify-center'>
@@ -100,18 +124,14 @@ export function CommandMenu() {
             ))}
             <CommandSeparator />
             <CommandGroup heading='Theme'>
-              <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
+              <CommandItem
+                onSelect={() => runCommand(() => pickTheme('light'))}
+              >
                 <Sun /> <span>{t('Light')}</span>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
+              <CommandItem onSelect={() => runCommand(() => pickTheme('dark'))}>
                 <Moon className='scale-90' />
                 <span>{t('Dark')}</span>
-              </CommandItem>
-              <CommandItem
-                onSelect={() => runCommand(() => setTheme('system'))}
-              >
-                <Laptop />
-                <span>{t('System')}</span>
               </CommandItem>
             </CommandGroup>
           </ScrollArea>

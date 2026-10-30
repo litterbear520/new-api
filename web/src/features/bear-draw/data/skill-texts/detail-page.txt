@@ -1,0 +1,265 @@
+---
+name: detail-page
+description: 做 750 宽的电商详情页长图：先定 6–8 个模块（首屏、痛点、卖点、场景、细节、参数、对比、保障），每个模块单独出一张图，最后由页面按顺序拼成长图并切片。用户提到「详情页」「详情长图」「宝贝详情」「商品详情」「描述页」，或者要给淘宝、天猫、京东、拼多多、抖店做详情时使用。Builds a 750px-wide product detail page as 6–8 stacked module images, one generation per module.
+---
+
+# 详情页长图
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 淘宝、拼多多、抖店等手机端详情页（750 宽）；天猫 PC 详情 790 宽、京东 PC 详情宽度不同，由页面在导出时缩放。
+- 用户有商品图和基本信息（卖点、规格、售后），想要一套风格统一的详情页。
+- 不适用：只要主图（用 `taobao-main-set`）；只要一张对比图（用 `before-after`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 商品实拍图和 3 个卖点（必须是真的，有数据要有出处）。
+   - 规格参数和售后保障：用户没给的，参数模块写「待补充」，不编。
+   - 整体风格：简约白 / 生活暖色 / 科技深色，或者给一张参考图。
+2. **先定内容，再定画面**：按下表排模块，告诉用户每屏讲什么、放哪句字，确认后再出图。默认 7 屏，可删到 6 屏或加到 8 屏。
+
+   | # | 模块 | 比例 | 交付尺寸 | 模型 | 这一屏只讲一件事 |
+   |---|---|---|---|---|---|
+   | 1 | 首屏 | 2:3 | 750×1125 | gpt-image-2.5-sunburst | 商品 + 品牌 + 一句主张（≤12 字） |
+   | 2 | 痛点 | 2:3 | 750×1125 | gpt-image-2 | 用户遇到的问题，一个场景 + 一句话 |
+   | 3 | 核心卖点 | 2:3 | 750×1125 | gpt-image-2.5-sunburst | 一个卖点：特征 → 好处，2–3 个标注 |
+   | 4 | 使用场景 | 2:3 | 750×1125 | gpt-image-2 | 真实场景，商品是视觉中心，字很少 |
+   | 5 | 细节做工 | 1:1 | 750×750 | gpt-image-2 | 材质、接口、做工特写 |
+   | 6 | 规格参数 | 2:3 | 750×1125 | gpt-image-2.5-sunburst | 尺寸图 + ≤8 行参数，只写用户给的 |
+   | 7 | 售后与品牌 | 3:2 | 750×500 | gpt-image-2.5-sunburst | 用户真实提供的保障 + 品牌收尾 |
+   | 8 | 对比（可选） | 2:3 | 750×1125 | gpt-image-2.5-sunburst | 新旧款或用前用后，见 `before-after` |
+
+3. **一屏一段提示词**：所有模块共用一把风格锁（背景色、字体风格、强调色、标注样式、光线），写在每段提示词里；每段只改主体、构图和文字。带商品时把保真指令放在开头。
+4. **一屏调用一次**：7 屏就调用 7 次，有实拍图用 `edit_image`（Image 1 = 商品图）。计划卡先确认张数和金额；失败的那一屏单独重试。
+5. **拼接与检查**
+   - 页面按顺序竖向拼接、导出时切片；单张切片高度按平台要求（见 `data/platform-specs.json`）。
+   - 逐屏核对文字和参数，跑 `data/ad-law-words.json`；看相邻两屏颜色、字体是否一致，不一致只重出那一屏。
+
+## 最佳实践原文
+
+### 把每一屏当成一份版面说明来写
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 4.10 Slides, Diagrams, Charts · MIT (verbatim)
+
+````text
+Productivity visuals work best when the prompt is written like an artifact spec rather than an illustration request. Name the exact deliverable (slide, workflow diagram, chart, page image), define the canvas and hierarchy, provide the real text or data, and describe the visual language. These prompts should include practical constraints: readable typography, polished spacing, no decorative clutter, and no generic stock-photo treatment.
+
+For slides, charts, and diagram-heavy assets, include the numbers and labels directly in the prompt. Use a landscape size for deck-style outputs and `quality="high"` when the image contains small text, legends, axes, or footnotes.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 4.9 Scientific / Educational Visuals · MIT (verbatim)
+
+````text
+Scientific and educational visuals are strong fits for biology, chemistry, classroom explainers, flat scientific icon systems, diagrams, and learning assets. Prompt them like an instructional design brief: define the audience, lesson objective, visual format, required labels, and scientific constraints. For best results, ask for a clean, flat visual system with consistent icon style, clear arrows, readable labels, and enough white space for students to scan the concept quickly.
+
+When accuracy matters, list the required components explicitly and say what should not be included. Use `quality="high"` for dense labels, diagrams, or assets that will be used in slides or course materials.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Use-case tips · Apache-2.0 (verbatim)
+
+````text
+- infographic-diagram: Define the audience and layout flow; label parts explicitly; require verbatim text.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Generate › infographic-diagram · Apache-2.0 (verbatim)
+
+````text
+### infographic-diagram
+```
+Use case: infographic-diagram
+Primary request: detailed infographic of an automatic coffee machine flow
+Scene/backdrop: clean, light neutral background
+Subject: bean hopper -> grinder -> brew group -> boiler -> water tank -> drip tray
+Style/medium: clean vector-like infographic with clear callouts and arrows
+Composition/framing: vertical poster layout, top-to-bottom flow
+Text (verbatim): "Bean Hopper", "Grinder", "Brew Group", "Boiler", "Water Tank", "Drip Tray"
+Constraints: clear labels, strong contrast, no logos or trademarks, no watermark
+```
+````
+
+### 模块版式参考
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 7 Problem / Solution · MIT (verbatim)
+
+````text
+### 7. Problem / Solution
+
+Pain point on top (text or image), product as the answer below.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. Close kin to objection-handling, which "works fast" and lands in most brands' top 15. Strongest when the pain is phrased in the customer's exact words.
+- **Structure**: Two zones — tension above, relief below
+- **Copy slot**: The pain in the customer's exact words, then the product's one-line answer
+- **DTC example**: "Tired of 6 supplements every morning?" → one scoop visual
+- **SaaS example**: "Your CRM knows nothing about product usage." → integration screenshot
+- **Source it from**: The most common pain phrasing in `inputs/reviews/` — verbatim beats paraphrase
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 9 Feature Spotlight · MIT (verbatim)
+
+````text
+### 9. Feature Spotlight (Ingredient Spotlight)
+
+Product hero in the center, 4-6 callout boxes around the edges highlighting key components.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. This is a *callout* treatment — one of the most reliable static levers; pairs with Headline Statement. When the callouts teach rather than sell, it tips into educational-infographic territory (also B, below).
+- **Structure**: Center image, radiating callouts, each callout 3-6 words
+- **Copy slot**: The components buyers actually ask about — not your full feature list
+- **DTC example**: Product bottle with callouts per key ingredient and what it does
+- **SaaS example**: Dashboard screenshot with callouts on the 4 features reviews mention most
+- **Source it from**: Which features/ingredients appear most in reviews and comments
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 2 Us vs. Them · MIT (verbatim)
+
+````text
+### 2. Us vs. Them
+
+Side-by-side comparison. Competitor or "old way" on the left (grayed out), your product on the right (full color). 4-6 comparison rows.
+
+- **Tier**: B — **Role**: mid-funnel supporting cast. "Us vs. them" reliably sneaks into a brand's top 8; converts well for people already weighing you against an alternative, but rarely the format that opens cold net-new reach.
+- **Structure**: Two columns, check/cross marks per row, your side visually alive
+- **Copy slot**: Comparison rows — each row a real differentiator, not filler
+- **DTC example**: "Their multivitamin: 13 ingredients. Ours: 60."
+- **SaaS example**: "Spreadsheets: 6 hours a week. Us: 6 minutes."
+- **Source it from**: Reviews that mention switching, or comments comparing you to a competitor
+````
+
+### 整套统一
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/social/references/carousel-frameworks.md › Picking a Framework · MIT (verbatim)
+
+````text
+Two cross-framework rules before the specifics:
+
+- **Slide 1 is the thumbnail.** It competes in the feed alone, before anyone knows a carousel follows. Design and write it as a standalone scroll-stopper.
+- **One visual template per carousel.** Same layout, type scale, and palette on every interior slide. Variety between slides reads as clutter; consistency lets the *content* change while the frame stays still.
+````
+
+### 商品保真与不编造
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – fidelity lock · Apache-2.0 (verbatim)
+
+````text
+Every prompt must include this product fidelity instruction near the top:
+
+```text
+Preserve the exact product identity from the reference image: shape,
+silhouette, color, material, logo/label placement, visible construction
+details, and proportions. Do not redesign the product. Do not add, remove,
+or relocate product features.
+```
+````
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/references/checklist.md › Checklist P0 · Apache-2.0 (verbatim)
+
+````text
+- [ ] **No fabricated claims.** The feature image does not invent
+  certifications, measurements, materials, ingredients, performance numbers,
+  awards, or compliance promises.
+- [ ] **No tiny rendered text dependency.** Prompts avoid relying on small
+  in-image text for selling points; they leave clean label space when copy will
+  be added later.
+````
+
+### 标签结构与执行规则
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Decision tree · Apache-2.0 (verbatim)
+
+````text
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Text in images · Apache-2.0 (verbatim)
+
+````text
+## Text in images
+- Put literal text in quotes or ALL CAPS and specify typography (font style, size, color, placement).
+- Spell uncommon words letter-by-letter if accuracy matters.
+- For in-image copy, require verbatim rendering and no extra characters.
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/image/references/ai-image-prompting.md › Common Prompt Mistakes · MIT (verbatim)
+
+````text
+## Common Prompt Mistakes
+
+| Mistake | Why It Fails | Fix |
+|---------|-------------|-----|
+| "A professional image" | No visual detail | Describe subject, setting, style, lighting |
+| Long paragraph of text in image | Models can't render paragraphs | 3-5 words max; add text in post |
+| "Make it look good" | Not actionable | Specify style: "commercial photography, bright" |
+| 200+ word prompts | Models lose focus | 40-80 words, specific over comprehensive |
+| No aspect ratio | Random output size | Always specify dimensions or ratio |
+| "Logo in bottom right" | Unreliable placement | Add logos in post-processing |
+| "Make it viral" | Not a visual instruction | Describe the aesthetic you want |
+| Requesting UI screenshots | AI hallucinates interfaces | Capture real screenshots instead |
+````
+
+## 本站调整
+
+- **模块清单是我们自己写的**：首屏、痛点、卖点、场景、细节、参数、保障、对比，是国内详情页常见的结构。原文只提供「怎么写一屏」的方法。
+- **竖版屏改成 2:3**：本站出图通常是 1024×1536 竖图，直接缩到 750×1125 不用裁切；1:1 缩到 750×750，3:2 缩到 750×500。原文 Cookbook 里的尺寸规则针对 OpenAI 官方接口，本站接口不保证按 size 出图，所以比例写进提示词。
+- **原文提到的「carousel / slide」换成「详情页的一屏」**：一屏一件事、整套一个模板，这两条原样适用。
+- **文字**：每屏主标题 ≤12 字，标注每条 ≤8 字，参数表 ≤8 行。原文建议大段文字后期叠加；我们能直接出的就直接出（用 gpt-image-2.5-sunburst），超出就先出无字版留好位置，告诉用户可以自己加字。
+- **参数不编**：用户没给的参数写「待补充」，交付时列成清单提醒用户。检测数据、专利号、认证要有出处才写。
+- **广告法**：卖点里不出现「最」「第一」「国家级」「100%」「永不」等，详见 `data/ad-law-words.json`。功效类商品（化妆品、保健品、医疗器械）不写治疗、治愈之类说法。
+- **模型**：带字的屏用 gpt-image-2.5-sunburst，无字的场景和细节用 gpt-image-2；要透明底素材时用 gpt-image-2.5-flare。
+- **导出**：ZIP 里放每屏原图 `详情-01-首屏.jpg` … 和拼好的长图切片 `详情-长图-01.jpg` …，宽度 750；天猫版另出 790 宽。
+- **示例**：原文的咖啡机、细胞呼吸图只是示意；我们的示例用虚构品牌「橙屿」便携榨汁杯。
+
+### 示例（虚构品牌「橙屿」榨汁杯，第 3 屏 核心卖点）
+
+```text
+Use case: infographic-diagram
+Asset type: e-commerce detail page module 3 of 7, portrait 2:3, 750px wide when delivered
+Primary request: one selling point confirmed by the seller — the cup crushes ice in 30 seconds — shown with the product and three short callouts
+Input images: Image 1: product photo of the CHENGYU portable blender (keep exactly)
+Scene/backdrop: soft peach-to-cream background with faint water droplets, same as the other modules
+Subject: the blender bottle at a slight angle, crushed ice and orange slices inside, motion blur on the blades only
+Style/medium: clean commercial product photography with flat vector callout lines
+Composition/framing: portrait 2:3; title block in the top 20%; product centered; callouts on the right; 6% safe margin on all edges
+Lighting/mood: bright, fresh, morning light from the left
+Color palette: orange #F28C28, cream #FFF4E6, charcoal text #2B2B2B
+Text (verbatim): title "30秒 碎冰" ; callouts "六叶刀头", "一键启动", "USB-C 充电"
+Constraints: preserve product shape, color, logo and proportions from Image 1; render each text exactly once; no other text; no watermark
+Avoid: fake certification badges, numbers not listed above, extra fruit covering the product
+```

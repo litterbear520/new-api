@@ -1,0 +1,221 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/*
+ * Meteors over the plain dark chat and draw pages, the wish on one, and what
+ * the bear says about them (components/meteor.tsx). Used by both pages, so
+ * nothing here depends on their own tokens.
+ */
+
+.bc-meteors {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bc-meteor {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  opacity: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.bc-meteor:focus-visible {
+  outline: 2px solid #2a78d6;
+  outline-offset: 2px;
+}
+.bc-meteor-head {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 6px 2px rgb(255 255 255 / 0.7),
+    0 0 18px 6px rgb(160 190 255 / 0.32);
+  transition: transform 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.bc-meteor:is(:hover, :focus-visible) .bc-meteor-head {
+  transform: scale(1.6);
+}
+.bc-meteor-tail {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 170px;
+  height: 1.5px;
+  margin-top: -0.75px;
+  border-radius: 1px;
+  background: linear-gradient(
+    90deg,
+    rgb(236 242 255 / 0.9),
+    rgb(200 215 255 / 0)
+  );
+  transform: rotate(var(--ang));
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+/* the wish: sparks fly out and a line rises */
+.bc-wish {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  animation: bc-wish-life 1.7s linear both;
+}
+.bc-wish i {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgb(190 210 255 / 0.9);
+  animation: bc-spark 0.9s cubic-bezier(0.165, 0.84, 0.44, 1) both;
+}
+.bc-wish b {
+  position: absolute;
+  left: 0;
+  top: -16px;
+  font-family:
+    'Bear Chat Serif', 'Bear Draw Serif', 'Songti SC', 'Noto Serif SC', serif;
+  font-size: 15px;
+  font-weight: 400;
+  white-space: nowrap;
+  color: #f6f2e8;
+  text-shadow: 0 0 14px rgb(160 190 255 / 0.6);
+  animation: bc-wish-rise 1.7s cubic-bezier(0.165, 0.84, 0.44, 1) both;
+}
+@keyframes bc-wish-life {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes bc-spark {
+  from {
+    transform: rotate(var(--a)) translateX(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--a)) translateX(36px) scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes bc-wish-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -70%);
+  }
+  20%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -190%);
+  }
+}
+
+/* the bear spotted them: an exclamation mark; clicked, a tip beside it */
+.bc-bear-mark {
+  position: absolute;
+  left: 50%;
+  bottom: 40px;
+  width: 14px;
+  margin-left: -7px;
+  font:
+    800 20px/1 ui-rounded,
+    'SF Pro Rounded',
+    system-ui,
+    sans-serif;
+  text-align: center;
+  color: #ffc94d;
+  text-shadow:
+    0 0 10px rgb(255 201 77 / 0.55),
+    0 1px 0 rgb(0 0 0 / 0.4);
+  pointer-events: none;
+  animation:
+    bc-mark-pop 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both,
+    bc-mark-bob 1.4s 0.45s ease-in-out infinite;
+}
+@keyframes bc-mark-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.2);
+  }
+}
+@keyframes bc-mark-bob {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+.bc-bear-tip {
+  position: absolute;
+  left: calc(100% - 6px);
+  bottom: 22px;
+  width: max-content;
+  max-width: 230px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 12px 30px -12px rgb(0 0 0 / 0.6);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: normal;
+  pointer-events: none;
+  transform-origin: 0 100%;
+  animation: bc-tip-in 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes bc-tip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px) scale(0.94);
+  }
+}
+@media (max-width: 640px) {
+  .bc-bear-tip {
+    left: auto;
+    right: -8px;
+    bottom: 64px;
+    transform-origin: 100% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.bc-wish, .bc-bear-mark, .bc-bear-tip),
+  :is(.bc-wish, .bc-bear-mark, .bc-bear-tip) * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

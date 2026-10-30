@@ -1,0 +1,250 @@
+---
+name: live-douyin
+description: 做直播间和抖音素材：9:16 直播间背景（中间给主播留位）、透明底价格/福利贴片、直播预告海报、竖版视频封面，整套同一主题色。用户提到「直播间」「直播背景」「绿幕背景」「贴片」「直播预告」「抖音封面」「视频号封面」「快手封面」时使用。Creates 9:16 live-room backgrounds, transparent overlay stickers, live preview posters and vertical video covers for Douyin and similar apps.
+---
+
+# 直播间与抖音素材
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。
+
+## 适用
+
+- 抖音、视频号、快手直播：绿幕背景图、价格贴片、福利贴片、预告海报。
+- 短视频封面：9:16 竖版，标题放在安全区内。
+- 不适用：小红书 3:4 图文（用 `xhs-cover`）；电商主图（用 `taobao-main-set`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 直播主题和时间（预告海报上的时间必须是真的）。
+   - 主推商品和真实的价格/福利（没有就不放价格）。
+   - 主播站位：居中 / 偏左 / 偏右，桌面上放不放商品。
+2. **列交付清单**，确认后出图：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 直播间背景 | 9:16 | 1080×1920 | gpt-image-2 | 中间 60% 留给主播，主题字放上方安全区，不放小字 |
+   | 2 | 价格贴片 | 1:1 | 600×600 | gpt-image-2.5-flare | 透明底 PNG，价格和福利逐字 |
+   | 3 | 福利贴片 | 3:2 | 900×600 | gpt-image-2.5-flare | 透明底 PNG，如「关注领券」 |
+   | 4 | 直播预告海报 | 3:4 | 1080×1440 | gpt-image-2.5-sunburst | 主题 + 时间 + 主推商品 |
+   | 5 | 视频封面 | 9:16 | 1080×1920 | gpt-image-2.5-sunburst | 标题在中间安全带，四边不放关键内容 |
+
+3. **一张图一段提示词，一张图调用一次**：整套共用风格锁（主题色、字体风格、装饰元素）。贴片用 `generate_image` 并带 `background=transparent`、`output_format=png`。
+4. **检查**：主播区是否干净；所有字在安全区内；价格、时间与用户提供的一致；跑 `data/ad-law-words.json`；画面里不放二维码、微信号、站外链接。
+
+## 最佳实践原文
+
+### 竖屏安全区
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/short-form-video-specs.md › Vertical video production spec · MIT (verbatim)
+
+````text
+### Safe zones (the single most-missed constraint)
+Platform UI covers the frame edges — the action rail, caption stack, music button, and account row all sit *on top of* your video. Text or key visuals in those bands get covered. Keep everything inside the **cross-platform safe band** — the worst case of TikTok and IG Reels margins on a 1080×1920 canvas:
+
+| Edge | Keep clear | Why |
+|---|---|---|
+| **Top** | 220px | TikTok tabs + IG account row |
+| **Bottom** | 500px | Caption / music / CTA stack (both platforms) |
+| **Left** | 180px | Symmetry with right |
+| **Right** | 180px | Action rail (like/comment/share/music) |
+
+**Result: a 720×1200 centered text band, from y=220 to y=1420.** Compose all captions and load-bearing visuals inside it. Preview against a safe-zone overlay before a big push. (These numbers drift with app updates — re-verify occasionally; they're a well-sourced worst-case, not a permanent law.)
+````
+
+> 来源 / Source: nextlevelbuilder/ui-ux-pro-max-skill · .claude/skills/design/references/banner-sizes-and-styles.md › Design Principles · MIT (verbatim)
+
+````text
+## Design Principles
+
+### Visual Hierarchy (3-Zone Rule)
+- **Top**: Logo or main value prop
+- **Middle**: Supporting message + visuals
+- **Bottom**: CTA (button/QR/URL)
+
+### Safe Zones
+- Critical content in central 70-80% of canvas
+- Avoid text/CTA within 50-100px of edges
+- YouTube: 1546 × 423px safe area inside 2560 × 1440
+- Meta/Instagram: central 80% to avoid UI chrome
+
+### CTA Rules
+- One CTA per banner
+- High contrast vs background
+- Bottom-right placement (terminal area)
+- Min 44px height for mobile tap targets
+- Action verbs: "Get", "Start", "Download", "Claim"
+
+### Typography
+- Max 2 typefaces per banner
+- Min 16px body, ≥32px headline (digital)
+- Min 4.5:1 contrast ratio
+- Max 7 words/line, 3 lines for ads
+
+### Text-to-Image Ratio
+- Ads: under 20% text (Meta penalizes)
+- Social covers: 60/40 image-to-text
+- Print: 70pt+ headlines for 3-5m viewing distance
+````
+
+### 背景要给人和字留空
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Website assets example · Apache-2.0 (verbatim)
+
+````text
+### Website assets example: minimal hero background
+```
+Use case: stylized-concept
+Asset type: landing page hero background
+Primary request: minimal abstract background with a soft gradient and subtle texture
+Style/medium: matte illustration / soft-rendered abstract background
+Composition/framing: wide composition with usable negative space for page copy
+Lighting/mood: gentle studio glow
+Color palette: restrained neutral palette
+Constraints: no text; no logos; no watermark
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Composition and layout · Apache-2.0 (verbatim)
+
+````text
+## Composition and layout
+- Specify framing and viewpoint (close-up, wide, top-down) and placement only when it materially helps.
+- Call out negative space if the asset clearly needs room for UI or copy.
+- Avoid making left/right layout decisions unless the user or surrounding layout supports them.
+````
+
+### 透明底贴片
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 1.1 Model parameters · MIT (verbatim)
+
+````text
+### Transparent backgrounds with `gpt-image-2` (preview)
+
+Transparent backgrounds are available in preview for `gpt-image-2`. To generate or edit an image with a transparent background:
+
+- Set `background="transparent"`.
+- Set `output_format="png"` (the default) or `output_format="webp"`. Both support transparency; `jpeg` does not.
+- Omit `output_compression` for PNG output. WebP supports optional compression.
+- Explicitly request an isolated subject on a fully transparent background, with no scenery, solid backdrop, checkerboard, or unwanted shadows.
+- For edits, explicitly preserve the transparent background in each prompt so later steps do not introduce a new background.
+- Keep the returned image as a PNG or WebP file and preserve its alpha channel throughout downstream processing.
+````
+
+### 带字的预告和封面
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.5 Marketing Creatives with Real Text · MIT (verbatim)
+
+````text
+Marketing creatives with real in-image text are great for rapid ad concepting, but typography needs explicit constraints. Put the exact copy in quotes, demand verbatim rendering (no extra characters), and describe placement and font style. If text fidelity is imperfect, keep the prompt strict and iterate—small wording/layout tweaks usually improve legibility.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.5 Marketing Creatives (prompt) · MIT (verbatim)
+
+````text
+Create a realistic billboard mockup of the shampoo on a highway scene during sunset.
+Billboard text (EXACT, verbatim, no extra characters):
+"Fresh and clean"
+Typography: bold sans-serif, high contrast, centered, clean kerning.
+Ensure text appears once and is perfectly legible.
+No watermarks, no logos.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Text in images · Apache-2.0 (verbatim)
+
+````text
+## Text in images
+- Put literal text in quotes or ALL CAPS and specify typography (font style, size, color, placement).
+- Spell uncommon words letter-by-letter if accuracy matters.
+- For in-image copy, require verbatim rendering and no extra characters.
+````
+
+> 来源 / Source: coreyhaines31/marketingskills · skills/ad-creative/references/static-ad-templates.md › Template 22 Ugly / Post-it · MIT (verbatim)
+
+````text
+### 22. Ugly / Handwriting / Post-it
+
+Deliberately low-polish — handwritten note, sticky note, or plain-text-on-a-photo. The anti-designed look reads native and urgent.
+
+- **Tier**: B — **Role**: supporting cast, and a sales-period specialist. These crush during sales/promo windows precisely because they look thrown-together and time-sensitive. Rotate in for BFCM, launches, and flash sales; don't run them as an always-on default.
+- **Structure**: One scrappy element (post-it, marker note, screenshot) over product or plain ground
+- **Copy slot**: A blunt, human line — the offer or the reason, in plain words
+- **DTC example**: A post-it reading "40% off ends tonight. Don't forget." slapped on the product
+- **SaaS example**: A "note to self: cancel the other tool" scrawl before the switch
+- **Source it from**: The offer itself; the plain way a customer would remind a friend
+````
+
+### 标签结构
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Decision tree · Apache-2.0 (verbatim)
+
+````text
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+````
+
+## 本站调整
+
+- **安全区**：原文的 720×1200 安全带是 TikTok 和 IG Reels 的最坏情况。抖音界面和 TikTok 相近，我们先按这个数用，平台改版后要再核对（`data/platform-specs.json` 里标了 `verify`）。直播间背景另外要避开底部商品卡和评论区，主题字放在上方 220–600px 的区域。
+- **直播间背景不放小字**：原文的网页背景示例要求完全无字；直播背景我们允许上方一行主题短句（≤8 字）和品牌名，其余不放字。直播画面会被压缩，小字看不清。
+- **CTA 位置**：原文建议 CTA 放右下角。竖屏直播和视频的右侧、底部会被按钮和评论挡住，所以按钮类文字放在安全带内偏下的位置。
+- **贴片尺寸**：600×600、900×600 是我们给的默认值，实际大小在直播伴侣里拖拽调整；贴片一定要透明底 PNG。
+- **价格和时间**：只写用户给的真实价格、真实福利、真实开播时间。写「原价」要有依据（促销前 7 天内的最低成交价），没有就不写划线价。
+- **抖音合规**：不写「全网最低」「最便宜」「第一」，不做「点击领奖」这类诱导字样，不放二维码和站外联系方式。详见 `data/ad-law-words.json`。
+- **原文的 Ugly / Post-it 模板**：原文说它在大促期间效果好。直播福利贴片可以借这种手写便签感，但价格必须真实。
+- **模型**：背景用 gpt-image-2；贴片用 gpt-image-2.5-flare（透明底）；带字的预告海报和封面用 gpt-image-2.5-sunburst。
+- **尺寸**：本站出图通常是 1024×1536 竖图，9:16 由页面左右裁掉约 8%，所以主体和字离左右边至少留 10%。
+- **导出**：ZIP 里按 `抖音-直播背景.jpg`、`抖音-贴片-价格.png`、`抖音-预告.jpg`、`抖音-封面.jpg` 命名。
+- **示例**：原文的广告牌只是示意；我们的示例用虚构品牌「果仁社」混合坚果。
+
+### 示例（虚构品牌「果仁社」，直播间背景）
+
+```text
+Use case: stylized-concept
+Asset type: Douyin live-room background (green-screen replacement), portrait 9:16
+Primary request: warm autumn harvest stage backdrop for a nut snacks live sale
+Scene/backdrop: soft-focus wooden pantry shelves with glass jars of mixed nuts, warm string lights, gentle bokeh
+Subject: no people; the center 60% of the frame is a calm, low-detail area where the host will stand
+Style/medium: photorealistic set photography, shallow depth of field
+Composition/framing: portrait 9:16; brand title area in the upper band (y 220–600 px of 1920); lower third darker and plain for product cards and comments; nothing important within 10% of the left and right edges
+Lighting/mood: warm tungsten glow, cozy and inviting
+Color palette: walnut brown, honey gold #E3A33B, cream
+Text (verbatim): "果仁社 秋日囤货场" in bold rounded sans-serif, upper band only
+Constraints: render the text exactly once; no prices; no QR codes; no other logos; no watermark
+Avoid: busy patterns behind the host area, small text, people or hands
+```

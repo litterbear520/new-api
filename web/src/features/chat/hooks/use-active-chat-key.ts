@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useQuery } from '@tanstack/react-query'
 import { t } from 'i18next'
 
+import { DRAW_TOKEN_NAME } from '@/features/draw/constants'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import { API_KEY_STATUS } from '@/features/keys/constants'
 import {
@@ -34,7 +35,11 @@ export async function fetchActiveChatKey() {
   }
 
   const items = result.data?.items ?? []
-  const active = items.find((item) => item.status === API_KEY_STATUS.ENABLED)
+  // The drawing page's own token allows image models only, so chat apps can't use it.
+  const active = items.find(
+    (item) =>
+      item.status === API_KEY_STATUS.ENABLED && item.name !== DRAW_TOKEN_NAME
+  )
   if (!active) {
     throw new Error('No enabled API keys found. Create or enable one first.')
   }

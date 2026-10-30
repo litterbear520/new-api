@@ -17,13 +17,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { ColumnDef } from '@tanstack/react-table'
-import { GitBranch, Sparkles, KeyRound } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { GitBranch, Sparkles } from 'lucide-react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { GroupBadge } from '@/components/group-badge'
-import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  StatusBadge,
+  textColorMap,
+  type StatusBadgeProps,
+} from '@/components/status-badge'
 import {
   Popover,
   PopoverContent,
@@ -47,17 +49,25 @@ import {
 import { pluginUsageSchema } from '@/features/pricing/lib/plugin-pricing'
 import { taskUsageUnitLabel } from '@/features/pricing/lib/task-price-display'
 import type { BillingUsageSchema } from '@/features/pricing/types'
-import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
+import { toIntlLocale } from '@/i18n/languages'
 import { formatBillingCurrencyFromUSD } from '@/lib/currency'
-import { formatLogQuota, formatTimestampToDate } from '@/lib/format'
+import dayjs from '@/lib/dayjs'
+import {
+  formatLogQuota,
+  formatNumber,
+  formatTimestampToDate,
+  formatUseTime,
+} from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 
-import { LOG_TYPE_ALL_VALUE } from '../../constants'
+import { LOG_TYPE_ALL_VALUE, LOG_TYPE_ENUM } from '../../constants'
 import type { UsageLog } from '../../data/schema'
 import {
   formatModelName,
   decodeBillingExprB64,
+  getFirstResponseTimeColor,
+  getResponseTimeColor,
   getTieredBillingSummary,
   hasAnyCacheTokens,
   parseLogOther,
@@ -73,10 +83,11 @@ import {
   isPerCallBilling,
 } from '../../lib/utils'
 import type { LogOtherData } from '../../types'
-import { DetailsDialog } from '../dialogs/details-dialog'
 import { LogCostDisplay } from '../log-cost-display'
+import { LogDetailsCell } from '../log-details-cell'
+import { LogUserAvatar } from '../log-user-avatar'
 import { ModelBadge } from '../model-badge'
-import { TimingMetricsCell, StreamTpsCell } from '../timing-metrics-cell'
+import { StreamErrorAlert } from '../stream-error-alert'
 import { useUsageLogsContext } from '../usage-logs-provider'
 
 interface DetailSegment {
@@ -348,12 +359,45 @@ function buildTypeDetailSegments(
   return segments
 }
 
+/**
+ * The price summary of a log (or the text of a top-up, error and the like),
+ * for the admin 详情 column and the bottom line of every mobile card.
+ */
+export function useLogDetailSegments(
+  log: UsageLog,
+  isAdmin: boolean
+): DetailSegment[] {
+  const { t, i18n } = useTranslation()
+  const other = parseLogOther(log.other)
+  const pricingData = usePricingData(
+    log.type === 2 &&
+      other?.is_task === true &&
+      other.billing_mode === 'tiered_expr'
+  )
+  const usageSchema = pluginUsageSchema(
+    pricingData.models.find((model) => model.model_name === log.model_name),
+    other?.admin_info?.task_plugin?.key
+  )
+  return buildDetailSegments(log, other, t, isAdmin, i18n.language, usageSchema)
+}
+
+/** 10-27 14:05:09; older logs also show the year. */
+function formatLogTime(timestamp: number): string {
+  const time = dayjs.unix(timestamp)
+  return time.format(
+    time.year() === dayjs().year() ? 'MM-DD HH:mm:ss' : 'YYYY-MM-DD HH:mm:ss'
+  )
+}
+
+const EMPTY_CELL = <span className='text-muted-foreground/50'>—</span>
+
 export function useCommonLogsColumns(
   isAdmin: boolean,
   isRoot: boolean,
   showBillingSource = false
 ): ColumnDef<UsageLog>[] {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
   const currency = useSystemConfigStore((state) => state.config.currency)
   return useMemo(() => {
     const columns: ColumnDef<UsageLog>[] = [
@@ -366,17 +410,22 @@ export function useCommonLogsColumns(
           const config = getLogTypeConfig(log.type)
 
           return (
-            <div className='flex min-w-0 flex-col gap-0.5'>
-              <span className='truncate font-mono text-xs tabular-nums'>
-                {formatTimestampToDate(timestamp)}
+            <div className='flex min-w-0 items-center gap-1.5'>
+              <span
+                className='truncate tabular-nums'
+                title={formatTimestampToDate(timestamp)}
+              >
+                {formatLogTime(timestamp)}
               </span>
-              <StatusBadge
-                label={t(config.label)}
-                variant={config.color as StatusBadgeProps['variant']}
-                size='sm'
-                copyable={false}
-                className='-ml-1.5 !text-xs [&_span]:!text-xs'
-              />
+              {log.type !== LOG_TYPE_ENUM.CONSUME && (
+                <StatusBadge
+                  label={t(config.label)}
+                  variant={config.color as StatusBadgeProps['variant']}
+                  size='sm'
+                  copyable={false}
+                  className='shrink-0 !text-xs [&_span]:!text-xs'
+                />
+              )}
             </div>
           )
         },
@@ -386,7 +435,7 @@ export function useCommonLogsColumns(
           return value.includes(String(row.original.type))
         },
         enableHiding: false,
-        size: 180,
+        size: 140,
       },
     ]
 
@@ -576,23 +625,11 @@ export function useCommonLogsColumns(
                   setUserInfoDialogOpen(true)
                 }}
               >
-                <Avatar className='ring-border/60 size-6 ring-1 max-sm:hidden'>
-                  <AvatarFallback
-                    className={cn(
-                      'text-[11px] font-semibold',
-                      !sensitiveVisible && 'bg-muted text-muted-foreground'
-                    )}
-                    style={
-                      sensitiveVisible
-                        ? getUserAvatarStyle(log.username)
-                        : undefined
-                    }
-                  >
-                    {sensitiveVisible
-                      ? getUserAvatarFallback(log.username)
-                      : '•'}
-                  </AvatarFallback>
-                </Avatar>
+                <LogUserAvatar
+                  name={log.username}
+                  visible={sensitiveVisible}
+                  className='max-sm:hidden'
+                />
                 <TooltipProvider delay={300}>
                   <Tooltip>
                     <TooltipTrigger
@@ -614,75 +651,29 @@ export function useCommonLogsColumns(
       )
     }
 
-    columns.push({
-      accessorKey: 'token_name',
-      header: t('Token'),
-      cell: function TokenNameCell({ row }) {
-        const { sensitiveVisible } = useUsageLogsContext()
-        const log = row.original
-        if (!isDisplayableLogType(log.type)) return null
-
-        const tokenName = logTokenName(log, t)
-        if (!tokenName) return null
-
-        const other = parseLogOther(log.other)
-        const displayName = sensitiveVisible ? tokenName : '••••'
-        let group = log.group
-        if (!group) group = other?.group || ''
-        const groupRatio = getGroupRatio(other)
-
-        return (
-          <div className='flex max-w-[200px] flex-col gap-0.5'>
-            <TooltipProvider delay={300}>
-              <Tooltip>
-                <TooltipTrigger render={<div className='max-w-full' />}>
-                  <StatusBadge
-                    label={displayName}
-                    icon={KeyRound}
-                    copyText={sensitiveVisible ? log.token_name : undefined}
-                    size='sm'
-                    showDot={false}
-                    className='border-border/60 bg-muted/30 text-foreground h-6 max-w-full gap-1.5 overflow-hidden rounded-md border px-2 py-0.5 [font-family:var(--font-body)]'
-                  />
-                </TooltipTrigger>
-                {sensitiveVisible && tokenName.length > 16 && (
-                  <TooltipContent side='top' className='max-w-xs break-all'>
-                    {tokenName}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-            {(group || groupRatio != null) && (
-              <span className='block max-w-full truncate text-xs leading-none'>
-                {group ? (
-                  <GroupBadge
-                    group={group}
-                    label={sensitiveVisible ? undefined : '••••'}
-                    type='text'
-                    size='sm'
-                    className='inline align-baseline text-xs leading-none [&>span]:leading-none'
-                  />
-                ) : null}
-                {group && groupRatio != null ? ' ' : null}
-                {groupRatio != null ? (
-                  <span className='text-muted-foreground/60 relative top-px align-baseline tabular-nums'>
-                    {formatRatioCompact(groupRatio)}x
-                  </span>
-                ) : null}
-              </span>
-            )}
-          </div>
-        )
-      },
-      size: 160,
-    })
     columns.push(
       {
         accessorKey: 'model_name',
         header: t('Model'),
         cell: function ModelCell({ row }) {
           const log = row.original
-          if (!isDisplayableLogType(log.type)) return null
+          if (!isDisplayableLogType(log.type)) {
+            // Top-ups, quota changes and the like have no model or tokens;
+            // what happened goes here so the row is not blank.
+            const other = parseLogOther(log.other)
+            const summary =
+              renderAuditContent(other, t) ??
+              renderLogContent(other, t) ??
+              log.content
+            return summary ? (
+              <span
+                className='text-muted-foreground block max-w-44 truncate'
+                title={summary}
+              >
+                {summary}
+              </span>
+            ) : null
+          }
 
           const modelInfo = formatModelName(log)
 
@@ -697,79 +688,119 @@ export function useCommonLogsColumns(
           )
         },
         meta: { mobileTitle: true },
+        size: 180,
       },
       {
-        accessorKey: 'is_stream',
-        header: t('Stream'),
-        cell: ({ row }) => {
+        accessorKey: 'token_name',
+        header: t('Key'),
+        cell: function KeyCell({ row }) {
+          const { sensitiveVisible } = useUsageLogsContext()
           const log = row.original
-          if (!isTimingLogType(log.type)) return null
+          if (!isDisplayableLogType(log.type)) return null
 
-          const useTime = row.getValue('use_time') as number
+          const tokenName = logTokenName(log, t)
+          if (!tokenName) return null
+
           const other = parseLogOther(log.other)
-          const tokensPerSecond =
-            useTime > 0 && log.completion_tokens > 0
-              ? log.completion_tokens / useTime
-              : null
+          const group = log.group || other?.group || ''
+          const groupRatio = getGroupRatio(other)
+          // The default group at its usual price is the common case; only
+          // anything else earns a second line.
+          const note = [
+            group && group !== 'default' ? group : '',
+            groupRatio != null ? `${formatRatioCompact(groupRatio)}x` : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
 
           return (
-            <StreamTpsCell
-              isStream={log.is_stream}
-              isTask={other?.is_task === true}
-              isSyncTask={other?.task_sync === true}
-              tokensPerSecond={tokensPerSecond}
-              streamStatus={other?.stream_status}
-            />
+            <div className='flex min-w-0 flex-col'>
+              <span
+                className='truncate'
+                title={sensitiveVisible ? tokenName : undefined}
+              >
+                {sensitiveVisible ? tokenName : '••••'}
+              </span>
+              {note && (
+                <span className='text-muted-foreground truncate text-xs!'>
+                  {sensitiveVisible ? note : '••••'}
+                </span>
+              )}
+            </div>
           )
         },
-        meta: { label: t('Stream') },
+        size: 140,
       },
       {
         accessorKey: 'prompt_tokens',
-        header: t('Tokens', { context: 'usage' }),
+        header: t('Input'),
+        cell: ({ row }) => {
+          const log = row.original
+          if (!isDisplayableLogType(log.type)) return null
+          if (!log.prompt_tokens && !log.completion_tokens) return EMPTY_CELL
+          return (
+            <span className='tabular-nums'>
+              {formatNumber(log.prompt_tokens || 0, locale)}
+            </span>
+          )
+        },
+        size: 90,
+      },
+      {
+        accessorKey: 'completion_tokens',
+        header: t('Output'),
+        cell: ({ row }) => {
+          const log = row.original
+          if (!isDisplayableLogType(log.type)) return null
+          if (!log.prompt_tokens && !log.completion_tokens) return EMPTY_CELL
+          return (
+            <span className='tabular-nums'>
+              {formatNumber(log.completion_tokens || 0, locale)}
+            </span>
+          )
+        },
+        size: 80,
+      },
+      {
+        id: 'cache_tokens',
+        header: t('Cache'),
+        accessorFn: (log) => parseLogOther(log.other)?.cache_tokens ?? 0,
         cell: ({ row }) => {
           const log = row.original
           if (!isDisplayableLogType(log.type)) return null
 
           const other = parseLogOther(log.other)
-
-          const promptTokens = log.prompt_tokens || 0
-          const completionTokens = log.completion_tokens || 0
-          if (promptTokens === 0 && completionTokens === 0) {
-            return <span className='text-muted-foreground text-xs'>-</span>
-          }
-
-          const cacheReadTokens = other?.cache_tokens || 0
-          const cacheWrite5m = other?.cache_creation_tokens_5m || 0
-          const cacheWrite1h = other?.cache_creation_tokens_1h || 0
-          const hasSplitCache = cacheWrite5m > 0 || cacheWrite1h > 0
-          const cacheWriteTokens = hasSplitCache
-            ? cacheWrite5m + cacheWrite1h
-            : other?.cache_creation_tokens || 0
+          const read = other?.cache_tokens || 0
+          const split =
+            (other?.cache_creation_tokens_5m || 0) +
+            (other?.cache_creation_tokens_1h || 0)
+          const write = split > 0 ? split : other?.cache_creation_tokens || 0
+          if (read === 0 && write === 0) return EMPTY_CELL
 
           return (
-            <div className='flex flex-col gap-0.5'>
-              <span className='font-mono text-xs font-medium tabular-nums'>
-                {promptTokens.toLocaleString()} /{' '}
-                {completionTokens.toLocaleString()}
-              </span>
-              {(cacheReadTokens > 0 || cacheWriteTokens > 0) && (
-                <div className='flex items-center gap-1 text-[11px]'>
-                  {cacheReadTokens > 0 && (
-                    <span className='text-muted-foreground/60'>
-                      {t('Cache')}↓ {cacheReadTokens.toLocaleString()}
-                    </span>
-                  )}
-                  {cacheWriteTokens > 0 && (
-                    <span className='text-muted-foreground/60'>
-                      ↑ {cacheWriteTokens.toLocaleString()}
-                    </span>
-                  )}
-                </div>
+            <span className='tabular-nums'>
+              {read > 0 && (
+                <span
+                  title={`${t('Cache Read')} ${formatNumber(read, locale)}`}
+                >
+                  {formatNumber(read, locale)}
+                </span>
               )}
-            </div>
+              {write > 0 && (
+                <span
+                  className={cn(
+                    'text-muted-foreground text-xs!',
+                    read > 0 && 'ms-1'
+                  )}
+                  title={`${t('Cache write')} ${formatNumber(write, locale)}`}
+                >
+                  ↑{formatNumber(write, locale)}
+                </span>
+              )}
+            </span>
           )
         },
+        size: 100,
       },
       {
         accessorKey: 'quota',
@@ -785,122 +816,104 @@ export function useCommonLogsColumns(
               quota={quota}
               other={other}
               showBillingSource={showBillingSource}
+              plain
             />
           )
         },
+        size: 90,
       },
-
       {
-        accessorKey: 'use_time',
-        header: t('Timing'),
+        id: 'frt',
+        header: t('First token'),
+        accessorFn: (log) => parseLogOther(log.other)?.frt ?? null,
         cell: ({ row }) => {
           const log = row.original
           if (!isTimingLogType(log.type)) return null
 
-          const useTime = row.getValue('use_time') as number
-          const other = parseLogOther(log.other)
-
+          const frtMs = parseLogOther(log.other)?.frt
+          if (!log.is_stream || frtMs == null || frtMs <= 0) return EMPTY_CELL
+          const seconds = frtMs / 1000
+          const variant = getFirstResponseTimeColor(seconds)
           return (
-            <TimingMetricsCell
-              useTimeSec={useTime}
-              completionTokens={log.completion_tokens}
-              frtMs={other?.frt}
-              isStream={log.is_stream}
-            />
+            <span
+              className={cn(
+                'tabular-nums',
+                variant !== 'success' && textColorMap[variant]
+              )}
+            >
+              {formatUseTime(seconds)}
+            </span>
           )
         },
+        size: 70,
       },
-
       {
+        accessorKey: 'use_time',
+        header: t('Duration'),
+        cell: ({ row }) => {
+          const log = row.original
+          if (!isTimingLogType(log.type)) return null
+
+          const useTime = log.use_time || 0
+          const tokensPerSecond =
+            useTime > 0 && log.completion_tokens > 0
+              ? Math.round(log.completion_tokens / useTime)
+              : null
+          const variant = getResponseTimeColor(useTime, log.completion_tokens)
+          const streamStatus = parseLogOther(log.other)?.stream_status
+          const streamFailed =
+            log.is_stream && streamStatus && streamStatus.status !== 'ok'
+
+          return (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 tabular-nums',
+                variant !== 'success' && textColorMap[variant]
+              )}
+              title={
+                tokensPerSecond != null
+                  ? `${tokensPerSecond} tokens/s`
+                  : undefined
+              }
+            >
+              {formatUseTime(useTime)}
+              {streamFailed && streamStatus && (
+                <StreamErrorAlert
+                  streamStatus={streamStatus}
+                  iconClassName='size-3.5'
+                />
+              )}
+            </span>
+          )
+        },
+        size: 70,
+      }
+    )
+
+    // Users open a log by clicking its row; administrators keep the price
+    // summary column as well.
+    if (isAdmin) {
+      columns.push({
         accessorKey: 'content',
         header: t('Details'),
         cell: function DetailsCell({ row }) {
-          const { t, i18n } = useTranslation()
-          const [dialogOpen, setDialogOpen] = useState(false)
-          const log = row.original
-          const other = parseLogOther(log.other)
-
-          const pricingData = usePricingData(
-            log.type === 2 &&
-              other?.is_task === true &&
-              other.billing_mode === 'tiered_expr'
-          )
-          const usageSchema = pluginUsageSchema(
-            pricingData.models.find(
-              (model) => model.model_name === log.model_name
-            ),
-            other?.admin_info?.task_plugin?.key
-          )
-          const segments = buildDetailSegments(
-            log,
-            other,
-            t,
-            isAdmin,
-            i18n.language,
-            usageSchema
-          )
-          const primary = segments[0]
-          const hasMore = segments.length > 1
-          let primaryTextClass = 'text-foreground'
-          if (primary?.muted) {
-            primaryTextClass = 'text-muted-foreground/60'
-          } else if (primary?.danger) {
-            primaryTextClass = 'text-red-600 dark:text-red-400'
-          }
-          let detailPreview = (
-            <span className='text-muted-foreground/40'>—</span>
-          )
-          if (primary) {
-            detailPreview = (
-              <span
-                className={cn(
-                  'truncate leading-snug group-hover:underline',
-                  primaryTextClass
-                )}
-              >
-                {primary.text}
-                {hasMore && (
-                  <span className='text-muted-foreground/40 ml-0.5'>
-                    +{segments.length - 1}
-                  </span>
-                )}
-              </span>
-            )
-          } else if (log.content) {
-            detailPreview = (
-              <span className='text-muted-foreground truncate group-hover:underline'>
-                {renderLogContent(other, t) ?? log.content}
-              </span>
-            )
-          }
-
+          const segments = useLogDetailSegments(row.original, isAdmin)
           return (
-            <>
-              <button
-                type='button'
-                className='group flex max-w-[200px] items-center gap-1 text-left text-xs'
-                onClick={() => setDialogOpen(true)}
-                title={t('Click to view full details')}
-              >
-                {detailPreview}
-              </button>
-              <DetailsDialog
-                log={log}
-                isAdmin={isAdmin}
-                isRoot={isRoot}
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-              />
-            </>
+            <LogDetailsCell
+              log={row.original}
+              segments={segments}
+              isAdmin={isAdmin}
+              isRoot={isRoot}
+            />
           )
         },
         size: 180,
         maxSize: 200,
-      }
-    )
+      })
+    }
 
     return columns
     // Log formatters read currency settings from the store.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t, isAdmin, isRoot, showBillingSource, currency])
+  }, [t, locale, isAdmin, isRoot, showBillingSource, currency])
 }

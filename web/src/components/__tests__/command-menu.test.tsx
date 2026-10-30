@@ -23,7 +23,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
 
@@ -31,6 +31,7 @@ import { SearchProvider } from '@/context/search-provider'
 import { ROLE } from '@/lib/roles'
 import { STATUS_QUERY_KEY } from '@/lib/status-query'
 import { useAuthStore } from '@/stores/auth-store'
+import { useNightSeaStore } from '@/stores/night-sea-store'
 
 import { CommandMenu } from '../command-menu'
 import { Search } from '../search'
@@ -65,10 +66,11 @@ afterAll(() => {
 
 afterEach(() => {
   useAuthStore.setState(useAuthStore.getInitialState(), true)
+  useNightSeaStore.setState({ found: false, on: false })
   window.localStorage.clear()
 })
 
-async function searchEntriesFor(role: number, sidebarModulesAdmin = '') {
+async function openSearch(role: number, sidebarModulesAdmin = '') {
   useAuthStore.getState().auth.setUser({ id: 1, username: 'alice', role })
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -95,15 +97,36 @@ async function searchEntriesFor(role: number, sidebarModulesAdmin = '') {
   )
 
   await userEvent.click(await screen.findByRole('button', { name: 'Search' }))
+  return router
+}
+
+async function searchEntriesFor(role: number, sidebarModulesAdmin = '') {
+  await openSearch(role, sidebarModulesAdmin)
   const options = await screen.findAllByRole('option')
   return options.map((option) => option.textContent)
 }
+
+test('the security entry opens its account settings section', async () => {
+  const router = await openSearch(ROLE.USER)
+
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Sign-in & security' })
+  )
+
+  await waitFor(() => expect(router.state.location.pathname).toBe('/profile'))
+  expect(router.state.location.search).toEqual({ section: 'security' })
+})
 
 test('regular users only find their own console pages in search', async () => {
   const entries = await searchEntriesFor(ROLE.USER)
 
   expect(entries).toEqual(
-    expect.arrayContaining(['API Keys', 'Usage Logs', 'Wallet', 'Profile'])
+    expect.arrayContaining([
+      'API Keys',
+      'Usage Logs',
+      'Wallet',
+      'Account settings',
+    ])
   )
   for (const entry of [...adminEntries, ...superAdminEntries]) {
     expect(entries).not.toContain(entry)
@@ -126,5 +149,23 @@ test('pages hidden in the sidebar settings stay out of search', async () => {
   )
 
   expect(entries).not.toContain('Wallet')
-  expect(entries).toContain('Profile')
+  expect(entries).toContain('Account settings')
+})
+
+test('search offers the light and dark themes but no system theme', async () => {
+  const entries = (await searchEntriesFor(ROLE.USER)).map((entry) =>
+    entry?.trim()
+  )
+
+  expect(entries).toEqual(expect.arrayContaining(['Light', 'Dark']))
+  expect(entries).not.toContain('System')
+})
+
+test('picking light in search turns the night sea off', async () => {
+  useNightSeaStore.setState({ found: true, on: true })
+  await openSearch(ROLE.USER)
+
+  await userEvent.click(await screen.findByRole('option', { name: 'Light' }))
+
+  expect(useNightSeaStore.getState()).toMatchObject({ found: true, on: false })
 })

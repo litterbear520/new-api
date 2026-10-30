@@ -16,47 +16,56 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
-
+import nightSea from '@/assets/auth/night-sea.jpg'
+import { useDarkSiteBar } from '@/components/site-bar/store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSystemConfig } from '@/hooks/use-system-config'
 
 type AuthLayoutProps = {
   children: React.ReactNode
+  /** Pinned to the bottom of the page, e.g. the legal notice */
+  footer?: React.ReactNode
 }
 
-export function AuthLayout({ children }: AuthLayoutProps) {
-  const { t } = useTranslation()
-  const { systemName, logo, loading } = useSystemConfig()
+/**
+ * Shared shell for every auth page: the home page's night-sea sky behind a
+ * centered column. Always dark, whatever the console theme; the `dark` class
+ * is scoped to this subtree, so the user's saved theme is left untouched;
+ * the site bar above it wears its dark glass too.
+ */
+export function AuthLayout(props: AuthLayoutProps) {
+  const { logo, loading } = useSystemConfig()
+  useDarkSiteBar()
 
   return (
-    <div className='relative grid h-svh max-w-none'>
-      <Link
-        to='/'
-        className='absolute top-4 left-4 z-10 flex items-center gap-2 transition-opacity hover:opacity-80 sm:top-8 sm:left-8'
-      >
-        <div className='relative h-8 w-8'>
+    <div className='auth-cosmos dark bg-background text-foreground relative min-h-svh'>
+      <div aria-hidden='true' className='fixed inset-0 overflow-hidden'>
+        <img
+          src={nightSea}
+          alt=''
+          decoding='async'
+          className='h-[70vh] w-full object-cover object-[58%_0] sm:h-full sm:object-[62%_0]'
+        />
+        <div className='auth-cosmos-veil absolute inset-0' />
+      </div>
+
+      <div className='relative flex min-h-svh flex-col items-center px-4 pt-(--app-header-height) pb-5'>
+        <main className='flex w-full max-w-[360px] flex-1 flex-col items-center pt-[22vh] pb-9 sm:justify-center sm:py-9'>
           {loading ? (
-            <Skeleton className='absolute inset-0 rounded-full' />
+            <Skeleton className='mb-5 size-14 rounded-xl sm:size-16' />
           ) : (
             <img
               src={logo}
-              alt={t('Logo')}
-              className='h-8 w-8 rounded-full object-cover'
+              alt=''
+              className='auth-cosmos-mark mb-5 size-14 object-contain sm:size-16'
             />
           )}
-        </div>
-        {loading ? (
-          <Skeleton className='h-6 w-24' />
-        ) : (
-          <h1 className='text-xl font-medium'>{systemName}</h1>
+          {props.children}
+        </main>
+
+        {props.footer && (
+          <footer className='w-full max-w-[360px]'>{props.footer}</footer>
         )}
-      </Link>
-      <div className='container flex items-center pt-16 sm:pt-0'>
-        <div className='mx-auto flex w-full flex-col justify-center space-y-2 px-4 py-8 sm:w-[480px] sm:p-8'>
-          {children}
-        </div>
       </div>
     </div>
   )

@@ -1,0 +1,443 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/*
+ * The home page's sign-in dialog: a liquid-glass card over the running sky.
+ * The glass itself is drawn by liquid-glass.ts into .ns-auth-glass; this file
+ * shapes the card and restyles the shared auth forms to sit on glass.
+ */
+
+/* While the dialog is open the page copy (and the site bar, see
+   useQuietSiteBar) steps back; the sky keeps running. */
+.night-sea .ns-hero {
+  transition:
+    opacity 0.45s ease,
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.night-sea.ns-auth-open .ns-hero {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.ns-auth-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 42%,
+    rgb(2 4 10 / 38%),
+    rgb(2 4 10 / 16%)
+  );
+  transition: opacity 0.4s ease;
+}
+.ns-auth-veil[data-starting-style],
+.ns-auth-veil[data-ending-style] {
+  opacity: 0;
+}
+
+.ns-auth.auth-cosmos.dark {
+  --spring: cubic-bezier(0.22, 1.18, 0.36, 1);
+  --field: rgb(233 236 243 / 7.5%);
+  --field-hover: rgb(233 236 243 / 11%);
+  --field-edge: rgb(233 236 243 / 13%);
+  --ink: #e9ecf3;
+  --ink-soft: rgb(233 236 243 / 66%);
+  --ink-faint: rgb(233 236 243 / 42%);
+  /* Tokens the shared form components read. */
+  --primary: #f1ede4;
+  --primary-foreground: #0a0d14;
+  --border: var(--field-edge);
+  --input: var(--field-edge);
+  --ring: rgb(233 236 243 / 42%);
+  --muted-foreground: var(--ink-soft);
+
+  position: fixed;
+  z-index: 51;
+  left: 0;
+  right: 0;
+  /* The script sets --ns-auth-top; the card ends 16px above the bottom. */
+  top: var(--ns-auth-top, 12vh);
+  margin: 0 auto;
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--ns-auth-top, 12vh) - 16px);
+  max-height: calc(100dvh - var(--ns-auth-top, 12vh) - 16px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 32px;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--ink);
+  outline: none;
+  box-shadow:
+    0 40px 90px -24px rgb(0 0 0 / 70%),
+    0 12px 30px -12px rgb(0 0 0 / 50%);
+  transition:
+    opacity 0.26s ease,
+    transform 0.6s var(--spring),
+    top 0.5s var(--spring);
+}
+.ns-auth[data-starting-style] {
+  opacity: 0;
+  transform: translateY(10px) scale(0.86);
+}
+.ns-auth[data-ending-style] {
+  opacity: 0;
+  transform: translateY(6px) scale(0.94);
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+.ns-auth-glass {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+/* Without WebGL: frosted glass. */
+.ns-auth-frosted {
+  background: rgb(18 24 42 / 42%);
+  -webkit-backdrop-filter: blur(26px) saturate(1.6) brightness(1.08);
+  backdrop-filter: blur(26px) saturate(1.6) brightness(1.08);
+}
+.ns-auth-frosted .ns-auth-glass {
+  display: none;
+}
+.ns-auth-frosted::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    inset 0 0 0 1px rgb(255 255 255 / 7%);
+}
+
+.ns-auth-body {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+.ns-auth-body::-webkit-scrollbar {
+  display: none;
+}
+/* With the scrollbar hidden, a faded edge says the form goes on. */
+.ns-auth-body[data-more-below] {
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+}
+.ns-auth-body[data-more-above] {
+  -webkit-mask-image: linear-gradient(transparent, #000 36px);
+  mask-image: linear-gradient(transparent, #000 36px);
+}
+.ns-auth-body[data-more-above][data-more-below] {
+  -webkit-mask-image: linear-gradient(
+    transparent,
+    #000 36px,
+    #000 calc(100% - 36px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    transparent,
+    #000 36px,
+    #000 calc(100% - 36px),
+    transparent
+  );
+}
+.ns-auth-sizer {
+  position: relative;
+  overflow: hidden;
+}
+.ns-auth[data-settled] .ns-auth-sizer {
+  transition: height 0.5s var(--spring);
+}
+
+.ns-auth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  background: var(--field);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+.ns-auth-close:hover {
+  background: var(--field-hover);
+  color: var(--ink);
+}
+.ns-auth-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ns-auth-pane {
+  padding: 40px 36px 28px;
+  animation: ns-auth-pane-in 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes ns-auth-pane-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.ns-auth-head {
+  margin-bottom: 26px;
+  text-align: center;
+}
+.ns-auth-mark {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgb(243 213 142 / 35%));
+}
+.ns-auth-title {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+}
+
+/* ---------------------------------------------------- the shared forms, on glass */
+/* 「第三方登录将跳转到主线路 …」 can sit on the black hole's bright halo. */
+.ns-auth [data-slot='button'] ~ p {
+  color: rgb(233 236 243 / 78%);
+  text-shadow:
+    0 0 2px rgb(2 4 10 / 85%),
+    0 0 10px rgb(2 4 10 / 70%);
+}
+.ns-auth form {
+  gap: 10px;
+}
+.ns-auth [data-slot='button'] {
+  height: 46px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+}
+/* Provider buttons: quiet glass capsules. */
+.ns-auth [data-slot='button'].border-border {
+  border: 0;
+  color: var(--ink);
+  background: var(--field);
+  box-shadow:
+    inset 0 0 0 1px var(--field-edge),
+    inset 0 1px 0 rgb(255 255 255 / 7%);
+}
+.ns-auth [data-slot='button'].border-border:hover {
+  background: var(--field-hover);
+}
+/* The main action: the home page's cream button. */
+.ns-auth [data-slot='button'].bg-primary {
+  height: 48px;
+  margin-top: 4px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 24px -10px rgb(241 237 228 / 45%);
+}
+.ns-auth [data-slot='button'].bg-primary:hover:not(:disabled) {
+  background: #fff;
+}
+.ns-auth [data-slot='button'].bg-primary:disabled {
+  opacity: 0.55;
+}
+/* Text buttons (更改, 发送验证码 …) keep their own size. */
+.ns-auth [data-slot='button'].underline-offset-4 {
+  height: 36px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.ns-auth
+  input:not([type='hidden'], [type='checkbox'], [type='radio'], .sr-only) {
+  height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 16px;
+  font-size: 16px;
+  color: var(--ink);
+  background: rgb(4 6 13 / 34%);
+  box-shadow:
+    inset 0 0 0 1px var(--field-edge),
+    inset 0 2px 6px rgb(0 0 0 / 25%);
+  transition: box-shadow 0.2s ease;
+}
+.ns-auth input::placeholder {
+  color: var(--ink-faint);
+}
+.ns-auth input:not(.sr-only):focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgb(233 236 243 / 42%),
+    0 0 0 4px rgb(233 236 243 / 7%),
+    inset 0 2px 6px rgb(0 0 0 / 25%);
+}
+.ns-auth input[aria-invalid='true'] {
+  box-shadow:
+    inset 0 0 0 1px rgb(248 113 113 / 60%),
+    inset 0 2px 6px rgb(0 0 0 / 25%);
+}
+/* Password fields: room for the show/hide toggle. */
+.ns-auth div.relative:has(> button) > input {
+  padding-right: 48px;
+}
+.ns-auth div.relative:has(> input) > button {
+  right: 10px;
+  color: var(--ink-faint);
+}
+
+/* Labels stay for screen readers; the placeholders name each field. */
+.ns-auth [data-slot='form-label'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.ns-auth [data-slot='form-item'] {
+  gap: 6px;
+}
+
+/* 或者: a soft line either side, no box behind the word. */
+.ns-auth [data-slot='field-separator'] {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: auto;
+  margin: 10px 0;
+}
+.ns-auth [data-slot='field-separator']::before,
+.ns-auth [data-slot='field-separator']::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(233 236 243 / 16%),
+    transparent
+  );
+}
+.ns-auth
+  [data-slot='field-separator']
+  > :not([data-slot='field-separator-content']) {
+  display: none;
+}
+.ns-auth [data-slot='field-separator-content'] {
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--ink-faint);
+  background: transparent;
+}
+
+.ns-auth-terms {
+  margin-top: 18px;
+}
+.ns-auth-terms,
+.ns-auth-terms a {
+  color: var(--ink-faint);
+}
+.ns-auth-terms a:hover {
+  color: var(--ink-soft);
+}
+.ns-auth-swap {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(233 236 243 / 8%);
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.ns-auth-swap button {
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: rgb(233 236 243 / 35%);
+  text-underline-offset: 4px;
+}
+.ns-auth-swap button:hover {
+  text-decoration-color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  /* A floating sheet over the sea, like the iOS 26 sheets. */
+  .ns-auth.auth-cosmos.dark {
+    top: auto;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 72px);
+    max-height: calc(100dvh - 72px);
+    border-radius: 34px;
+    transform-origin: 50% 100%;
+  }
+  .ns-auth[data-starting-style] {
+    transform: translateY(70px) scale(0.96);
+  }
+  .ns-auth-pane {
+    padding: 32px 22px 20px;
+  }
+  .ns-auth-head {
+    margin-bottom: 20px;
+  }
+  .ns-auth-mark {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 12px;
+  }
+  .ns-auth-title {
+    font-size: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ns-auth.auth-cosmos.dark,
+  .ns-auth[data-settled] .ns-auth-sizer,
+  .ns-auth-veil,
+  .night-sea .ns-hero {
+    transition: none;
+  }
+  .ns-auth-pane {
+    animation: none;
+  }
+}

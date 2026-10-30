@@ -25,6 +25,7 @@ import {
   useState,
 } from 'react'
 
+import { useThemeColorMeta } from '@/hooks/use-theme-color-meta'
 import {
   readThemePreference,
   THEME_STORAGE_KEYS,
@@ -84,6 +85,7 @@ export function ThemeProvider({
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
     resolveTheme(theme)
   )
+  useThemeColorMeta()
 
   useEffect(() => {
     const root = window.document.documentElement

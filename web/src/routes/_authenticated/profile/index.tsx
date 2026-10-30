@@ -17,9 +17,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
 
-import { Profile } from '@/features/profile'
+import { AccountSettings } from '@/features/account-settings'
+import { SETTINGS_SECTIONS } from '@/features/account-settings/constants'
+
+const settingsSearchSchema = z.object({
+  section: z.enum(SETTINGS_SECTIONS).optional().catch(undefined),
+})
 
 export const Route = createFileRoute('/_authenticated/profile/')({
-  component: Profile,
+  validateSearch: settingsSearchSchema,
+  component: RouteComponent,
 })
+
+function RouteComponent() {
+  const { section } = Route.useSearch()
+  return <AccountSettings section={section} />
+}

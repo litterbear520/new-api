@@ -278,7 +278,12 @@ export function AccountBindings({ profile, onUpdate }: AccountBindingsProps) {
     },
     {
       id: 'oidc',
-      label: t('OIDC'),
+      // The provider's own name (e.g. Google), as on the sign-in page
+      label:
+        typeof status?.oidc_display_name === 'string' &&
+        status.oidc_display_name
+          ? status.oidc_display_name
+          : t('OIDC'),
       icon: Shield,
       value: (profile as unknown as Record<string, unknown>).oidc_id as
         | string
@@ -317,10 +322,7 @@ export function AccountBindings({ profile, onUpdate }: AccountBindingsProps) {
 
   return (
     <>
-      <ul
-        aria-label={t('Account Bindings')}
-        className='grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3'
-      >
+      <ul aria-label={t('Account Bindings')} className='divide-y'>
         {bindings.map((binding) => {
           let actionLabel = t('Bind')
           if (binding.isBound && binding.id === 'email') {
@@ -332,7 +334,7 @@ export function AccountBindings({ profile, onUpdate }: AccountBindingsProps) {
           return (
             <li
               key={binding.id}
-              className='flex min-w-0 items-center justify-between gap-2 rounded-lg border px-2.5 py-2'
+              className='flex min-w-0 items-center justify-between gap-3 px-4 py-3'
             >
               <div className='flex min-w-0 items-center gap-2'>
                 <div className='bg-muted shrink-0 rounded-md p-1.5'>
@@ -379,7 +381,7 @@ export function AccountBindings({ profile, onUpdate }: AccountBindingsProps) {
           return (
             <li
               key={provider.id}
-              className='flex min-w-0 items-center justify-between gap-2 rounded-lg border px-2.5 py-2'
+              className='flex min-w-0 items-center justify-between gap-3 px-4 py-3'
             >
               <div className='flex min-w-0 items-center gap-2'>
                 <div className='bg-muted shrink-0 rounded-md p-1.5'>

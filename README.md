@@ -1,3 +1,11 @@
+> [!NOTE]
+> **关于这个分支**：这是 [QuantumNous/new-api](https://github.com/QuantumNous/new-api) 的修改版，[小熊API](https://api.little-bear.app) 运行的就是它。
+> 自 2026 年 10 月起，我们在 v1.0.0-rc.45 的基础上修改了 `web/` 下的前端，后端没有改动。修改部分和原项目一样按 AGPL-3.0 发布。
+>
+> 素材与数据：夜间地球来自 NASA Earth Observatory（Black Marble）；银河来自 NASA/Goddard SVS Deep Star Maps 2020，其中含 ESA/Gaia/DPAC 的 Gaia DR2 数据；
+> 星表来自 ESA Hipparcos-2。字体为 Noto Serif SC 子集（SIL OFL 1.1，见 `web/src/assets/fonts/OFL.txt`）。
+> 画图页图库的示例来源与许可见 `web/src/features/bear-draw/data/gallery.json` 和 `web/src/features/bear-draw/data/licenses/`。
+
 <div align="center">
 
 ![new-api](/web/public/logo.png)

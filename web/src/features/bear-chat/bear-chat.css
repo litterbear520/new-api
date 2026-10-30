@@ -1,0 +1,2004 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/*
+ * The chat page (「聊天」). Light: one Claude-style reading column, and an
+ * artifact panel on the right when a reply writes a page or long code.
+ * Dark: the same in the console's dark colours, with a meteor now and then;
+ * a wish on it opens the night sea (夜海): the same layout under the stars,
+ * the bear rowing on the horizon, which is the composer's top edge. Classes
+ * are prefixed bc-; the bear's own acts live in bear.css.
+ */
+
+@font-face {
+  font-family: 'Bear Chat Serif';
+  src: url('../../assets/fonts/chat-greet-serif.woff2') format('woff2');
+  font-weight: 400 600;
+  font-display: swap;
+}
+
+/* ---------- tokens ---------- */
+.bc,
+.bc-menu,
+.bc-snip {
+  --bc-s1: var(--background);
+  --bc-s2: var(--card);
+  --bc-ink: var(--foreground);
+  --bc-ink2: color-mix(in oklab, var(--foreground) 74%, var(--background));
+  --bc-ink3: var(--muted-foreground);
+  --bc-bd: var(--border);
+  --bc-bd2: color-mix(in oklab, var(--foreground) 18%, transparent);
+  --bc-hov: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --bc-sel: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --bc-bubble: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --bc-accent: var(--primary);
+  --bc-on-accent: var(--primary-foreground);
+  --bc-accent-ink: color-mix(in oklab, var(--primary), #000 18%);
+  --bc-danger: var(--destructive);
+  --bc-danger-bg: color-mix(in oklab, var(--destructive) 7%, transparent);
+  --bc-code-bg: color-mix(in oklab, var(--muted) 55%, var(--background));
+  --bc-reply:
+    'Lora Variable', 'Lora', Georgia, -apple-system, BlinkMacSystemFont,
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei',
+    'Noto Sans SC', sans-serif;
+  --bc-greet:
+    'Bear Chat Serif', 'Lora Variable', 'Songti SC', 'Noto Serif SC',
+    'Source Han Serif SC', STSong, serif;
+  --bc-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  --kw: #1163b6;
+  --str: #1f7a4d;
+  --cm: #6a717b;
+  --num: #a65400;
+  --fn: #7a3fc2;
+  --tag: #1163b6;
+  --attr: #7a3fc2;
+  --ease: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-snap: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --ease-over: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.bc {
+  /* glass: the drawing page's values */
+  --g-tint: 255 255 255;
+  --g-a: 0.62;
+  --g-edge: rgb(15 23 42 / 0.11);
+  --g-shadow:
+    0 12px 32px -14px rgb(15 23 42 / 0.24), 0 2px 6px -2px rgb(15 23 42 / 0.07);
+  --spec: 255 255 255;
+  --hair: rgb(255 255 255 / 0.55);
+  /* where the bear stands on the composer's rim */
+  --pw: 72px;
+  --pb: -3.8px;
+  --pr: 62px;
+}
+/* dark without the night sea: the console's (Claude's) dark colours */
+.dark .bc {
+  --g-tint: 32 32 31;
+  --g-a: 0.72;
+  --g-edge: rgb(255 255 255 / 0.1);
+  --g-shadow:
+    0 12px 32px -14px rgb(0 0 0 / 0.7), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+  --hair: rgb(255 255 255 / 0.1);
+  --bc-accent-ink: #79b6f4;
+}
+.dark .bc,
+.dark .bc-menu,
+.dark .bc-snip {
+  --kw: #79b6f4;
+  --str: #7fd1a5;
+  --cm: #8d949e;
+  --num: #f0b072;
+  --fn: #c8a6ff;
+  --tag: #79b6f4;
+  --attr: #c8a6ff;
+}
+
+/* ---------- layout ---------- */
+.bc {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--aw, 0px);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--bc-s1);
+  color: var(--bc-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: grid-template-columns 0.32s var(--ease);
+}
+.bc.bc-dragging {
+  transition: none;
+  cursor: col-resize;
+}
+.bc.bc-dragging iframe {
+  pointer-events: none;
+}
+.bc.bc-art-max {
+  grid-template-columns: 0px minmax(0, 1fr);
+}
+.bc button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.bc button:disabled {
+  cursor: default;
+}
+.bc :is(button, a, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--bc-accent);
+  outline-offset: 2px;
+}
+.bc-main {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.bc-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.bc-grow {
+  flex: 1;
+}
+.bc-chev {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--bc-ink3);
+}
+
+/* ---------- top bar ---------- */
+.bc-top {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 7;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px 0 10px;
+  background: linear-gradient(var(--bc-s1) 55%, transparent);
+  pointer-events: none;
+}
+.bc-top > * {
+  pointer-events: auto;
+}
+.bc-ttl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: min(360px, 50%);
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--bc-ink);
+  font-size: 14px;
+  font-weight: 500;
+}
+.bc-ttl:hover,
+.bc-ttl[data-popup-open] {
+  background: var(--bc-hov);
+}
+.bc-ttl span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bc-ttl-input {
+  width: min(360px, 50%);
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--bc-bd2);
+  border-radius: 8px;
+  background: var(--bc-s2);
+  color: var(--bc-ink);
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+}
+.bc-tbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--bc-ink2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.bc-tbtn svg {
+  width: 16px;
+  height: 16px;
+}
+.bc-tbtn.bc-icon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+.bc-tbtn:hover,
+.bc-tbtn[data-popup-open],
+.bc-tbtn.bc-on {
+  background: var(--bc-hov);
+  color: var(--bc-ink);
+}
+.bc-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--bc-hov);
+  color: var(--bc-ink2);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- chat area ---------- */
+.bc-pane {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.bc-thread {
+  --cut: calc(100% - var(--dock-h, 120px) * 0.5 - 6px);
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bc-bd2) transparent;
+  /* text scrolls on under the top half of the glass (where it bends) and
+     fades out before the bottom half, so nothing shows below the composer */
+  -webkit-mask-image: linear-gradient(
+    #000 calc(var(--cut) - 26px),
+    transparent var(--cut)
+  );
+  mask-image: linear-gradient(
+    #000 calc(var(--cut) - 26px),
+    transparent var(--cut)
+  );
+}
+.bc-pane[data-scene='empty'] .bc-thread {
+  visibility: hidden;
+}
+.bc-col {
+  width: min(768px, 100%);
+  margin: 0 auto;
+  padding: 64px 24px calc(var(--dock-h, 120px) + 48px);
+}
+.bc-hero {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(34% + var(--dock-h, 120px) + 52px);
+  padding: 0 24px;
+  text-align: center;
+  pointer-events: none;
+  animation: bc-rise 0.5s var(--ease) both;
+}
+@keyframes bc-rise {
+  from {
+    opacity: 0.01;
+    transform: translateY(6px);
+  }
+}
+.bc-greet {
+  margin: 0;
+  font: 400 clamp(26px, 1.2rem + 1vw, 34px) / 1.25 var(--bc-greet);
+  letter-spacing: 0;
+  color: var(--bc-ink);
+  text-wrap: balance;
+}
+.bc-greet-sub {
+  margin: 12px 0 0;
+  color: var(--bc-ink3);
+  font-size: 14px;
+}
+.bc-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  padding: 0 24px 10px;
+  pointer-events: none;
+}
+.bc-pane[data-scene='empty'] .bc-dock {
+  bottom: 34%;
+}
+.bc-dock-in {
+  position: relative;
+  width: min(720px, 100%);
+  margin: 0 auto;
+  pointer-events: auto;
+}
+.bc-pane[data-scene='empty'] .bc-dock-in {
+  width: min(672px, 100%);
+}
+.bc-disc {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--bc-ink3);
+}
+.bc-pane[data-scene='empty'] .bc-disc {
+  visibility: hidden;
+}
+.bc-storage-note {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  z-index: 6;
+  translate: -50% 0;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--bc-hov);
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+
+/* ---------- messages ---------- */
+.bc-u {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin: 30px 0 22px;
+}
+.bc-col > .bc-u:first-child {
+  margin-top: 4px;
+}
+.bc-bub {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--bc-bubble);
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.bc-u-imgs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 85%;
+}
+.bc-att {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bc-s2);
+  box-shadow:
+    0 0 0 0.5px var(--bc-bd2),
+    0 1px 2px rgb(0 0 0 / 0.06);
+}
+.bc-att.bc-att-lg {
+  width: 112px;
+  height: 112px;
+}
+.bc-att img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bc-att-x {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+}
+.bc-att-x svg {
+  width: 12px;
+  height: 12px;
+}
+.bc-u-edit {
+  align-items: stretch;
+}
+.bc-u-edit textarea {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.bc-u-edit-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.bc-u-edit-note {
+  margin-right: auto;
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+.bc-a {
+  position: relative;
+  min-width: 0;
+  color: var(--bc-ink);
+  overflow-wrap: anywhere;
+}
+.bc-md {
+  font: 16px/1.7 var(--bc-reply);
+}
+.bc-md :is(h1, h2, h3, h4) {
+  font-family: inherit;
+}
+/* a single newline from the model is a line break (poems, addresses, lists
+   typed without markdown), like other chat apps; the parser keeps it as \n */
+.bc-md :is(p, li, blockquote, td, th) {
+  white-space: pre-line;
+}
+.bc-body > .bc-md + .bc-md,
+.bc-body > .bc-artc + .bc-md {
+  margin-top: 12px;
+}
+.bc-acts {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.bc-acts button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--bc-ink3);
+}
+.bc-acts button svg {
+  width: 15px;
+  height: 15px;
+}
+.bc-acts button:hover:not(:disabled),
+.bc-acts button[data-popup-open] {
+  background: var(--bc-hov);
+  color: var(--bc-ink);
+}
+.bc-acts button:disabled {
+  opacity: 0.4;
+}
+.bc-acts-u {
+  opacity: 0;
+  transition: opacity 60ms;
+}
+.bc-u:hover .bc-acts-u,
+.bc-u:focus-within .bc-acts-u {
+  opacity: 1;
+  transition: opacity 0.12s 0.1s;
+}
+.bc-foot {
+  margin-top: 10px;
+}
+.bc-a .bc-acts {
+  margin-top: 4px;
+  margin-left: -6px;
+  opacity: 0;
+  transition: opacity 60ms;
+}
+.bc-a:hover .bc-acts,
+.bc-a:focus-within .bc-acts,
+.bc-col > .bc-a:last-child .bc-acts {
+  opacity: 1;
+  transition: opacity 0.12s 0.1s;
+}
+.bc-usage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--bc-ink3);
+  font-variant-numeric: tabular-nums;
+}
+.bc-usage-model {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.bc-micon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+.bc-micon svg {
+  display: block;
+}
+.bc-mi > .bc-micon {
+  align-self: flex-start;
+  margin-top: 1px;
+}
+.bc-usage > span + span::before {
+  content: '·';
+  margin-right: 6px;
+  opacity: 0.7;
+}
+.bc-ver {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+.bc-acts .bc-ver button {
+  width: 22px;
+}
+.bc-stopped {
+  margin: 8px 0 0;
+  color: var(--bc-ink3);
+  font-size: 12.5px;
+}
+
+/* thinking: folded, opens with a soft slide */
+.bc-think {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px -6px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--bc-ink3);
+  font-size: 13px;
+  line-height: 20px;
+}
+.bc-think:hover {
+  background: var(--bc-hov);
+  color: var(--bc-ink2);
+}
+.bc-think-chev {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s var(--ease);
+}
+.bc-think[aria-expanded='true'] .bc-think-chev {
+  transform: rotate(90deg);
+}
+.bc-think-t {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.bc-think-t > div {
+  overflow: hidden;
+}
+.bc-think[aria-expanded='true'] + .bc-think-t {
+  grid-template-rows: 1fr;
+}
+.bc-think-t p {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--bc-bd);
+  color: var(--bc-ink3);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+.bc-shim {
+  background: linear-gradient(
+    90deg,
+    var(--bc-ink3) 0 35%,
+    var(--bc-ink) 50%,
+    var(--bc-ink3) 65% 100%
+  );
+  background-size: 320% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: bc-shim 3s cubic-bezier(0.714, 0.121, 0.211, 0.888) infinite;
+}
+@keyframes bc-shim {
+  0%,
+  15% {
+    background-position: 100% 0;
+  }
+  85%,
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* artifact card in the chat */
+.bc-artc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, 100%);
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bc-s2);
+  box-shadow:
+    0 0 0 1px var(--bc-bd),
+    0 1px 2px rgb(0 0 0 / 0.04);
+  color: var(--bc-ink);
+  font-size: 14px;
+  text-align: left;
+}
+.bc-artc:hover {
+  box-shadow:
+    0 0 0 1px var(--bc-bd2),
+    0 2px 8px rgb(0 0 0 / 0.06);
+}
+.bc-artc.bc-cur {
+  box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--bc-accent) 55%, transparent);
+}
+.bc-artc-i {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--bc-hov);
+  color: var(--bc-ink2);
+}
+.bc-artc-i svg {
+  width: 18px;
+  height: 18px;
+}
+.bc-artc-i.bc-artc-web {
+  background: linear-gradient(160deg, #eef5ff, #e3ecfb);
+  color: var(--bc-accent-ink);
+}
+.bc-artc-t {
+  flex: 1;
+  min-width: 0;
+}
+.bc-artc-t b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.bc-artc-t small {
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+.bc-artc-chev {
+  width: 16px;
+  height: 16px;
+  color: var(--bc-ink3);
+}
+
+/* error card */
+.bc-err {
+  margin: 4px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bc-danger-bg);
+  box-shadow: inset 0 0 0 0.5px
+    color-mix(in oklab, var(--bc-danger) 30%, transparent);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.bc-err b {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--bc-danger);
+  font-weight: 600;
+}
+.bc-err-why {
+  color: var(--bc-ink2);
+}
+.bc-err-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.bc-err-raw {
+  margin-top: 8px;
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+.bc-err-raw summary {
+  width: max-content;
+  cursor: pointer;
+}
+.bc-err-raw code {
+  display: block;
+  margin-top: 4px;
+  font: 12px/1.5 var(--bc-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ---------- composer: the drawing page's liquid glass ---------- */
+.bc-cmpw {
+  position: relative;
+}
+.bc-glass {
+  position: relative;
+  isolation: isolate;
+  background-color: rgb(var(--g-tint) / var(--g-a));
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
+  box-shadow:
+    0 0 0 0.5px var(--g-edge),
+    var(--g-shadow);
+}
+.bc-glass.lensed {
+  background-color: transparent;
+  -webkit-backdrop-filter: var(--lens);
+  backdrop-filter: var(--lens);
+}
+.bc-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1.2px;
+  pointer-events: none;
+  background: conic-gradient(
+    from calc(var(--la, 320deg) - 80deg),
+    rgb(var(--spec) / 0),
+    rgb(var(--spec) / 0.4) 40deg,
+    rgb(var(--spec) / 1) 80deg,
+    rgb(var(--spec) / 0.4) 120deg,
+    rgb(var(--spec) / 0) 160deg,
+    rgb(var(--spec) / 0) 215deg,
+    rgb(var(--spec) / 0.5) 260deg,
+    rgb(var(--spec) / 0) 305deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.bc-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.bc-cmp {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 8px 8px;
+  border-radius: 24px;
+}
+.bc-attrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 8px;
+}
+.bc-sys-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bc-hov);
+  color: var(--bc-ink2);
+  font-size: 12.5px;
+}
+.bc-sys-chip svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.bc-sys-chip small {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+.bc-taw {
+  position: relative;
+}
+.bc-ta {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: none;
+  color: var(--bc-ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 21px;
+  max-height: min(384px, 40vh);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.bc .bc-ta:focus-visible {
+  outline: none;
+}
+.bc-ph {
+  position: absolute;
+  inset: 0 8px auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--bc-ink3);
+  font-size: 15px;
+  line-height: 21px;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bc-ph-ex {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bc-tabk {
+  flex: none;
+  padding: 3px 5px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--bc-bd2);
+  color: var(--bc-ink3);
+  font: 11px/1 var(--bc-mono);
+}
+@media (hover: none) and (pointer: coarse) {
+  .bc-tabk {
+    display: none;
+  }
+}
+.bc-tb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.bc-ib {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  color: var(--bc-ink2);
+  transition: background 60ms;
+}
+.bc-ib svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.6;
+}
+.bc-ib:hover,
+.bc-ib[data-popup-open] {
+  background: var(--bc-hov);
+  color: var(--bc-ink);
+}
+.bc-ib.bc-ib-on::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bc-accent);
+}
+.bc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 220px;
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  color: var(--bc-ink2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.bc-chip:hover,
+.bc-chip[data-popup-open] {
+  background: var(--bc-hov);
+  color: var(--bc-ink);
+}
+.bc-send {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--bc-accent);
+  color: var(--bc-on-accent);
+  transition:
+    background 0.12s,
+    transform 0.45s var(--ease-over);
+}
+.bc-send svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+.bc-send:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--bc-accent) 86%, #000);
+}
+.bc-send:active:not(:disabled) {
+  transform: scale(0.94);
+  transition-duration: 60ms;
+}
+.bc-send:disabled {
+  background: none;
+  color: var(--bc-ink3);
+  box-shadow: inset 0 0 0 1px var(--bc-bd);
+}
+.bc-send.bc-stop {
+  background: var(--bc-ink);
+  color: var(--bc-s1);
+}
+.bc-send.bc-stop i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2.5px;
+  background: currentColor;
+}
+
+/* F3 light: typing = v01's sweet rim drifting left and right; working =
+   v05's four-colour light turning (fades 0.6 s after the first text) */
+.bc-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  pointer-events: none;
+}
+.bc-glow > div {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.bc-cmpw[data-glow='focus'] .bc-g-focus,
+.bc-cmpw[data-glow='work'] .bc-g-work {
+  opacity: 1;
+}
+.bc-cmpw[data-glow='fade'] .bc-g-work {
+  opacity: 0;
+  transition-duration: 0.6s;
+}
+.bc-rm {
+  position: absolute;
+  overflow: hidden;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.bc-g-back {
+  z-index: 1;
+}
+.bc-g-front {
+  z-index: 3;
+}
+.bc-v01 {
+  --c1: #fb838d;
+  --c2: #c999dc;
+  --c3: #73a0fe;
+}
+.bc-v01-g {
+  position: absolute;
+  inset: 0;
+  filter: blur(12px);
+  opacity: 0.85;
+}
+.bc-v01-gi {
+  inset: -8px;
+  border-radius: 32px;
+  padding: 12px;
+}
+.bc-v01-r {
+  inset: -1.5px;
+  border-radius: 25.5px;
+  padding: 3px;
+}
+.bc-v01-strip {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: -30%;
+  width: 160%;
+  background: linear-gradient(
+    90deg,
+    var(--c1),
+    var(--c1) 15%,
+    var(--c2) 50%,
+    var(--c3) 85%,
+    var(--c3)
+  );
+  animation: bc-v01-slide 6s ease-in-out infinite alternate;
+}
+@keyframes bc-v01-slide {
+  from {
+    transform: translateX(-8%);
+  }
+  to {
+    transform: translateX(8%);
+  }
+}
+.bc-v05 {
+  --b: #3186ff;
+  --bt: #a5a6f9;
+  --gr: #00af57;
+  --gt: #78c9ff;
+  --y: #fec700;
+  --yt: #ffb5e8;
+  --rd: #fc413d;
+  --rdt: #ff6595;
+}
+.bc-v05-gw {
+  position: absolute;
+  inset: 0;
+  filter: blur(9px);
+  animation: bc-v05-op 2.75s linear infinite;
+}
+.bc-v05-gr {
+  inset: -8px;
+  border-radius: 32px;
+  padding: 12px;
+}
+.bc-v05-rr {
+  inset: -1px;
+  border-radius: 25px;
+  padding: 2px;
+}
+/* The colours fill the ring and their gradient angle turns (@property). A big
+   square turned by a transform got only its on-screen part painted in Safari,
+   so the ring went dark where the square stuck out of the page. The reads
+   keep a fallback angle for browsers without @property. */
+@property --bc-v05-a {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 158deg;
+}
+.bc-spin {
+  position: absolute;
+  inset: 0;
+}
+.bc-v05-c {
+  opacity: 0;
+  animation:
+    bc-v05-rot 2.75s cubic-bezier(0.62, 0.25, 0.29, 0.7) infinite,
+    bc-v05-f1 11s ease infinite;
+}
+.bc-v05-c.b {
+  background: conic-gradient(
+    from calc(100deg + var(--bc-v05-a, 158deg)),
+    transparent 0deg,
+    var(--bt) 7%,
+    var(--b) 40%,
+    var(--b) 45%,
+    transparent 55%
+  );
+}
+.bc-v05-c.g {
+  background: conic-gradient(
+    from calc(100deg + var(--bc-v05-a, 158deg)),
+    transparent 0deg,
+    var(--gt) 7%,
+    var(--gr) 40%,
+    var(--gr) 45%,
+    transparent 55%
+  );
+  animation-name: bc-v05-rot, bc-v05-f2;
+}
+.bc-v05-c.y {
+  background: conic-gradient(
+    from calc(100deg + var(--bc-v05-a, 158deg)),
+    transparent 0deg,
+    var(--yt) 7%,
+    var(--y) 40%,
+    var(--y) 45%,
+    transparent 55%
+  );
+  animation-name: bc-v05-rot, bc-v05-f3;
+}
+.bc-v05-c.r {
+  background: conic-gradient(
+    from calc(100deg + var(--bc-v05-a, 158deg)),
+    transparent 0deg,
+    var(--rdt) 7%,
+    var(--rd) 40%,
+    var(--rd) 45%,
+    transparent 55%
+  );
+  animation-name: bc-v05-rot, bc-v05-f4;
+}
+/* the turning light only runs while it shows */
+.bc-cmpw:not([data-glow='work']) .bc-g-work * {
+  animation-play-state: paused;
+}
+.bc-cmpw:not([data-glow='focus']) .bc-v01-strip {
+  animation-play-state: paused;
+}
+@keyframes bc-v05-op {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes bc-v05-rot {
+  from {
+    --bc-v05-a: 158deg;
+  }
+  to {
+    --bc-v05-a: 518deg;
+  }
+}
+@keyframes bc-v05-f1 {
+  0%,
+  12%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+  17%,
+  87% {
+    opacity: 0;
+  }
+}
+@keyframes bc-v05-f2 {
+  17%,
+  37% {
+    opacity: 1;
+  }
+  0%,
+  12%,
+  42%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes bc-v05-f3 {
+  42%,
+  62% {
+    opacity: 1;
+  }
+  0%,
+  37%,
+  67%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes bc-v05-f4 {
+  67%,
+  87% {
+    opacity: 1;
+  }
+  0%,
+  62%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- the bear on the rim, its status on the left ---------- */
+.bc-perch {
+  position: absolute;
+  bottom: 100%;
+  right: var(--pr);
+  z-index: 4;
+  width: var(--pw);
+  height: 0;
+}
+.bc-perch.bc-behind {
+  z-index: 1;
+}
+.bc-bear-btn {
+  position: absolute;
+  left: 0;
+  bottom: var(--pb);
+  width: var(--pw);
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+}
+.bc-bear-btn > span,
+.bc-bear-btn .xb {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.bc .xb .p-boat,
+.bc .xb .p-hull {
+  display: none;
+}
+.bc-stat {
+  position: absolute;
+  right: calc(100% + 2px);
+  bottom: 9px;
+  color: var(--bc-ink3);
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.bc-stat.bc-on {
+  opacity: 1;
+}
+.bc[data-mood='hide'] .bc-perch {
+  display: none;
+}
+.bc[data-mood='quiet'] .xb :is(.b-all, .fx, .p) {
+  animation: none !important;
+}
+
+/* jump to the latest: a 36 px glass button; a little bear inside while it works */
+.bc-tobot {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  z-index: 6;
+  width: 36px;
+  height: 36px;
+  margin-left: -18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  color: var(--bc-ink2);
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  transition:
+    opacity 0.2s,
+    transform 0.2s var(--ease);
+  pointer-events: none;
+}
+.bc-tobot.bc-on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.bc-tobot .bc-arr {
+  position: relative;
+  z-index: 4;
+  width: 17px;
+  height: 17px;
+}
+.bc-tobot .bc-mini {
+  display: none;
+  width: 30px;
+}
+.bc-busy .bc-tobot .bc-mini {
+  display: block;
+  position: relative;
+  z-index: 4;
+  animation: bc-minihop 0.84s steps(4, jump-none) infinite;
+  transform-origin: 50% 100%;
+}
+.bc-busy .bc-tobot .bc-arr {
+  display: none;
+}
+.bc-busy .bc-tobot:hover .bc-mini {
+  display: none;
+}
+.bc-busy .bc-tobot:hover .bc-arr {
+  display: block;
+}
+@keyframes bc-minihop {
+  0%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: scale(1.1, 0.88);
+  }
+  60% {
+    transform: translateY(-3px) scale(0.95, 1.06);
+  }
+}
+
+/* ---------- menus (portalled, so they carry their own tokens) ---------- */
+.bc-menu {
+  font-size: 13.5px;
+}
+.bc-mi {
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+}
+.bc-mi > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--bc-ink3);
+}
+.bc-mi-tx {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+.bc-mi-tx small {
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+.bc-mi-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.bc-mi-cur {
+  background: var(--bc-hov);
+}
+.bc-tag {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bc-hov);
+  color: var(--bc-ink2);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.bc-price {
+  margin-left: auto;
+  color: var(--bc-ink3);
+  font-size: 12px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bc-tick {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--bc-accent);
+}
+.bc-menu-note {
+  margin: 4px 6px 2px;
+  color: var(--bc-ink3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.bc-menu-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--bc-bd);
+  color: var(--bc-ink3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.bc-menu-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  color: var(--bc-ink2);
+  text-decoration: none;
+}
+.bc-menu-link:hover {
+  color: var(--bc-ink);
+  text-decoration: underline;
+}
+.bc-menu-link svg {
+  width: 14px;
+  height: 14px;
+}
+.bc-seg {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--bc-hov);
+}
+.bc-seg button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--bc-ink2);
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.bc-seg button svg {
+  width: 14px;
+  height: 14px;
+}
+.bc-seg button[aria-pressed='true'] {
+  background: var(--bc-s2);
+  color: var(--bc-ink);
+  font-weight: 500;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.1),
+    0 0 0 0.5px var(--bc-bd);
+}
+.bc-seg.bc-seg-icons button {
+  padding: 0 7px;
+}
+.bc-prm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bc-prm .bc-seg {
+  display: flex;
+}
+.bc-prm-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bc-prm-t {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+.bc-prm-t small {
+  color: var(--bc-ink3);
+  font-size: 12px;
+}
+.bc-prm-v {
+  color: var(--bc-ink2);
+  font-size: 12.5px;
+}
+
+/* ---------- artifact panel: a floating card 8 px in, an 8 px drag handle ---------- */
+.bc-ap {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  padding: 8px 8px 8px 0;
+  overflow: hidden;
+}
+.bc:not(.bc-art) .bc-ap {
+  visibility: hidden;
+}
+.bc-art-max .bc-ap {
+  padding-left: 8px;
+}
+.bc-ap-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--bc-s2);
+  box-shadow:
+    0 0 0 1px var(--bc-bd),
+    0 10px 30px -14px rgb(15 23 42 / 0.2);
+  overflow: hidden;
+}
+.bc-art .bc-ap-card {
+  animation: bc-artin 0.2s var(--ease);
+}
+@keyframes bc-artin {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+.bc-ap-drag {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.bc-ap-drag::after {
+  content: '';
+  position: absolute;
+  left: 2.5px;
+  top: 50%;
+  width: 3px;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 2px;
+  background: var(--bc-bd2);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.bc-ap-drag:hover::after,
+.bc-ap-drag:focus-visible::after,
+.bc-dragging .bc-ap-drag::after {
+  opacity: 1;
+  transition-delay: 0.2s;
+}
+.bc-dragging .bc-ap-drag::after {
+  transition-delay: 0s;
+}
+.bc-ap-h {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  padding: 0 8px 0 10px;
+  border-bottom: 1px solid var(--bc-bd);
+}
+.bc-ap-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 260px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--bc-ink);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.bc-ap-file:hover {
+  background: var(--bc-hov);
+}
+.bc-ap-file > svg:first-child {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--bc-ink3);
+}
+.bc-ap-file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bc-ap-h .bc-seg {
+  margin-left: 6px;
+}
+.bc-ap-h .bc-tbtn {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+.bc-ap-b {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.bc-prev {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  background: var(--bc-code-bg);
+}
+.bc-prev iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+.bc-ap[data-device='phone'] .bc-prev {
+  place-items: center;
+  padding: 18px;
+}
+.bc-ap[data-device='phone'] .bc-prev iframe {
+  width: min(390px, 100%);
+  height: min(760px, 100%);
+  border-radius: 30px;
+  box-shadow:
+    0 0 0 7px #11141a,
+    0 0 0 8px #3a3f47,
+    0 24px 60px -20px rgb(0 0 0 / 0.45);
+}
+.bc-wait {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: var(--bc-ink3);
+  font-size: 13px;
+}
+.bc-wait-bear {
+  display: block;
+  width: 120px;
+}
+.bc-wait-bear .xb {
+  width: 100%;
+  height: auto;
+}
+.bc-code {
+  margin: 0;
+  overflow: auto;
+  background: var(--bc-code-bg);
+  color: var(--bc-ink);
+  font: 13px/1.68 var(--bc-mono);
+  white-space: pre;
+  tab-size: 4;
+}
+.bc-ap-b .bc-code {
+  position: absolute;
+  inset: 0;
+  padding: 14px 18px 18px 0;
+}
+.bc-line {
+  display: block;
+}
+.bc-ln {
+  display: inline-block;
+  width: 46px;
+  padding-right: 16px;
+  color: var(--bc-ink3);
+  opacity: 0.55;
+  text-align: right;
+  user-select: none;
+}
+.bc-code .k {
+  color: var(--kw);
+}
+.bc-code .s {
+  color: var(--str);
+}
+.bc-code .c {
+  color: var(--cm);
+  font-style: italic;
+}
+.bc-code .n {
+  color: var(--num);
+}
+.bc-code .f {
+  color: var(--fn);
+}
+.bc-code .t {
+  color: var(--tag);
+}
+.bc-code .a {
+  color: var(--attr);
+}
+.bc-ap-f {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border-top: 1px solid var(--bc-bd);
+  color: var(--bc-ink3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* code dialog */
+.bc-snip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.bc-snip-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bc-snip .bc-code {
+  max-height: 46vh;
+  padding: 12px 14px 14px 0;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--bc-bd);
+}
+.bc-snip-note {
+  margin: 0;
+  color: var(--bc-ink3);
+  font-size: 12.5px;
+}
+.bc-link {
+  color: var(--bc-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* dropping pictures anywhere on the page */
+.bc-drop {
+  position: absolute;
+  inset: 8px;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  border: 2px dashed color-mix(in oklab, var(--bc-accent) 55%, transparent);
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--bc-s1) 82%, transparent);
+  color: var(--bc-ink2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.bc-drop.bc-on {
+  opacity: 1;
+}
+.bc-drop > div {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.bc-drop svg {
+  width: 28px;
+  height: 28px;
+}
+.bc-drop small {
+  color: var(--bc-ink3);
+}
+
+/* ---------- dark = the night sea ---------- */
+.bc.bc-night {
+  --bc-s1: #04060d;
+  --bc-s2: #0f1526;
+  --bc-ink: #e9eef7;
+  --bc-ink2: #b8c3d6;
+  --bc-ink3: #8592aa;
+  --bc-bd: rgb(255 255 255 / 0.12);
+  --bc-bd2: rgb(255 255 255 / 0.22);
+  --bc-hov: rgb(255 255 255 / 0.08);
+  --bc-sel: rgb(255 255 255 / 0.14);
+  --bc-bubble: rgb(255 255 255 / 0.08);
+  --bc-code-bg: rgb(5 9 20 / 0.86);
+  --bc-accent: #2b7fd4;
+  --bc-on-accent: #fff;
+  --bc-accent-ink: #8cc4ff;
+  --bc-danger: #ec7e7e;
+  --bc-danger-bg: rgb(236 126 126 / 0.1);
+  --kw: #8cc4ff;
+  --str: #8fe0b8;
+  --cm: #8592aa;
+  --num: #f5c27a;
+  --fn: #c9b0ff;
+  --tag: #8cc4ff;
+  --attr: #c9b0ff;
+  --g-tint: 12 18 40;
+  --g-a: 0.4;
+  --g-edge: rgb(0 0 0 / 0.5);
+  --g-shadow:
+    0 18px 50px -18px rgb(0 0 0 / 0.85), 0 2px 8px -3px rgb(0 0 0 / 0.5);
+  --hair: rgb(255 255 255 / 0.16);
+  --pw: 88px;
+  --pb: -6.4px;
+  --pr: 54px;
+  color-scheme: dark;
+}
+.bc-night .bc-top {
+  background: linear-gradient(rgb(6 10 23 / 0.94) 45%, rgb(6 10 23 / 0));
+}
+.bc-night .bc-pane[data-scene='empty'] .bc-dock {
+  bottom: 0;
+}
+.bc-night .bc-pane[data-scene='empty'] .bc-disc {
+  visibility: visible;
+}
+.bc-night .bc-pane[data-scene='empty'] .bc-dock-in {
+  width: min(720px, 100%);
+}
+.bc-night .bc-hero {
+  top: 26%;
+  bottom: auto;
+}
+.bc-night .bc-greet {
+  color: #f6f2e8;
+  font-size: clamp(28px, 1.4rem + 1.2vw, 38px);
+  text-shadow: 0 2px 30px rgb(120 160 255 / 0.22);
+}
+.bc-night .bc-v01 {
+  --c1: #f9b2f4;
+  --c2: #d3affb;
+  --c3: #9dafff;
+}
+.bc-night .bc-bub {
+  background: rgb(255 255 255 / 0.08);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
+}
+.bc-night .bc-artc {
+  background: rgb(15 21 38 / 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.bc-night .bc-artc-i.bc-artc-web {
+  background: rgb(43 127 212 / 0.18);
+}
+.bc-night .bc-ap-card {
+  background: rgb(9 13 26 / 0.74);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.12),
+    0 24px 60px -20px rgb(0 0 0 / 0.8);
+}
+.bc-night .bc-seg button[aria-pressed='true'] {
+  background: rgb(255 255 255 / 0.14);
+}
+.bc-night .bc-disc {
+  color: rgb(255 255 255 / 0.4);
+}
+.bc-night .bc-stat {
+  color: #c9d6ee;
+}
+.bc-night :is(.bc-usage, .bc-think) {
+  color: #8f9bb3;
+}
+.bc-night .bc-md [data-slot='code-block'],
+.bc-night .bc-md .group\/code-block {
+  background: rgb(5 9 20 / 0.72);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.bc-night .xb .p-boat,
+.bc-night .xb .p-hull {
+  display: inline;
+}
+.bc-night .bc-bear-btn .xb {
+  animation: bc-bob 3.6s ease-in-out infinite;
+  transform-origin: 40% 100%;
+}
+@keyframes bc-bob {
+  50% {
+    transform: translateY(-1.6px) rotate(-1.2deg);
+  }
+}
+
+/* ---------- the wish (meteors: components/meteor.css) ---------- */
+/* right after the wish the sky spreads over the plain dark */
+.bc.bc-night.bc-dawn {
+  background: var(--background);
+}
+.bc-dawn .bc-top {
+  background: none;
+}
+.bc-dawn :is(.bc-hero, .bc-disc) {
+  animation: bc-dawn-in 0.9s 0.35s var(--ease) both;
+}
+@keyframes bc-dawn-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- narrow cards and phones ---------- */
+.bc.bc-narrow {
+  grid-template-columns: minmax(0, 1fr) 0px;
+}
+.bc.bc-narrow .bc-ap {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  padding: 6px;
+}
+.bc.bc-narrow:not(.bc-art) .bc-ap {
+  display: none;
+}
+@media (max-width: 640px) {
+  .bc-col {
+    padding: 60px 16px calc(var(--dock-h, 120px) + 36px);
+  }
+  .bc-dock {
+    padding: 0 10px 8px;
+  }
+  .bc-cmp {
+    border-radius: 20px;
+  }
+  .bc-glow {
+    border-radius: 20px;
+  }
+  .bc-hide-sm {
+    display: none;
+  }
+  .bc-bub {
+    max-width: 92%;
+  }
+  .bc {
+    --pw: 60px;
+    --pr: 44px;
+  }
+  .bc.bc-night {
+    --pw: 72px;
+    --pr: 40px;
+  }
+  .bc-pane[data-scene='empty'] .bc-dock {
+    bottom: 22%;
+  }
+  .bc-hero {
+    bottom: calc(22% + var(--dock-h, 120px) + 44px);
+  }
+  .bc-stat {
+    display: none;
+  }
+}
+
+/* reduced motion: still light, no glide; the sky draws one frame */
+@media (prefers-reduced-motion: reduce) {
+  .bc *,
+  .bc *::before,
+  .bc *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .bc .bc-v05-c {
+    opacity: 0.6;
+  }
+}

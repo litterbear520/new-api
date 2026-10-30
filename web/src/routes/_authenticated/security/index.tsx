@@ -16,10 +16,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { Security } from '@/features/security'
-
+// 安全与访问 is now the 登录与安全 section of 账户设置.
 export const Route = createFileRoute('/_authenticated/security/')({
-  component: Security,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/profile',
+      search: { section: 'security' },
+      replace: true,
+    })
+  },
 })

@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { removeCookie } from '@/lib/cookies'
+
 export const THEME_STORAGE_KEYS = {
   mode: 'newapi:theme:v1:mode',
   preset: 'newapi:theme:v1:preset',
@@ -54,4 +56,22 @@ export function writeThemePreference(key: string, value: string | null): void {
   } catch {
     // Keep theme controls usable when storage is blocked or full.
   }
+}
+
+// The theme settings drawer was replaced by a light/dark toggle, so what it
+// saved (colour preset, font, radius, density, content width, sidebar style,
+// layout, text direction) can no longer be changed. Clearing it at startup
+// gives every visitor the designed defaults.
+const RETIRED_THEME_STORAGE_KEYS = [
+  THEME_STORAGE_KEYS.preset,
+  THEME_STORAGE_KEYS.font,
+  THEME_STORAGE_KEYS.radius,
+  THEME_STORAGE_KEYS.scale,
+  THEME_STORAGE_KEYS.contentLayout,
+] as const
+const RETIRED_LAYOUT_COOKIES = ['layout_collapsible', 'layout_variant', 'dir']
+
+export function clearRetiredThemePreferences(): void {
+  for (const key of RETIRED_THEME_STORAGE_KEYS) writeThemePreference(key, null)
+  for (const name of RETIRED_LAYOUT_COOKIES) removeCookie(name)
 }

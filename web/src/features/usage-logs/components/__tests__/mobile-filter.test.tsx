@@ -29,7 +29,6 @@ import {
   render,
   screen,
   waitFor,
-  within,
   fireEvent,
   cleanup,
 } from '@testing-library/react'
@@ -41,6 +40,7 @@ import zhTW from '@/i18n/locales/zh-TW.json'
 import zh from '@/i18n/locales/zh.json'
 import { api } from '@/lib/api'
 
+import { formatRangeLabel, presetRange } from '../../lib/time-range'
 import { CommonLogsFilterBar } from '../common-logs-filter-bar'
 import { CompactDateTimeRangePicker } from '../compact-date-time-range-picker'
 import { LogsFilterToolbar } from '../logs-filter-toolbar'
@@ -70,11 +70,11 @@ function Fixture() {
     </UsageLogsProvider>
   )
 }
-async function renderMobileFilter() {
+async function renderToolbar(options: { phone?: boolean } = {}) {
   const original = window.matchMedia
   vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
     ...original(query),
-    matches: query === '(max-width: 640px)',
+    matches: Boolean(options.phone) && query === '(max-width: 640px)',
   }))
   vi.spyOn(api, 'get').mockImplementation(async (url) => ({
     data: {
@@ -107,7 +107,7 @@ async function renderMobileFilter() {
       <RouterProvider router={router} />
     </QueryClientProvider>
   )
-  await screen.findByRole('button', { name: 'Filter' })
+  await screen.findByRole('button', { name: /^Time range/ })
   return router
 }
 afterEach(async () => {
@@ -124,66 +124,76 @@ afterEach(async () => {
   await i18next.changeLanguage('en')
 })
 
-it('applies the selected mobile date range directly and resets pagination while retaining filters', async () => {
-  const router = await renderMobileFilter()
+it('names the default range Today and applies a preset at once, keeping the other filters', async () => {
+  const router = await renderToolbar()
   const user = userEvent.setup()
-  await user.click(screen.getByRole('button', { name: /^\d{4}-\d{2}/ }))
+  const trigger = screen.getByRole('button', { name: /^Time range/ })
+  expect(trigger).toHaveTextContent('Today')
+  await user.click(trigger)
+  await user.click(screen.getByRole('button', { name: 'Last 7 days' }))
+  const week = presetRange('7d')
+  await waitFor(() =>
+    expect(router.state.location.search).toMatchObject({
+      page: 1,
+      group: 'default',
+      type: ['2'],
+      startTime: week.start.getTime(),
+      endTime: week.end.getTime(),
+    })
+  )
+  expect(screen.getByRole('button', { name: /^Time range/ })).toHaveTextContent(
+    'Last 7 days'
+  )
+})
+
+it('applies a custom range only after Apply and shows its dates', async () => {
+  const router = await renderToolbar({ phone: true })
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: /^Time range/ }))
   fireEvent.change(screen.getByLabelText('Start Time'), {
     target: { value: '2026-09-07T09:30' },
   })
   fireEvent.change(screen.getByLabelText('End Time'), {
     target: { value: '2026-09-08T17:45' },
   })
-  await user.click(screen.getByRole('button', { name: 'Confirm' }))
+  expect(router.state.location.search).not.toHaveProperty('startTime')
+  await user.click(screen.getByRole('button', { name: 'Apply' }))
   await waitFor(() =>
     expect(router.state.location.search).toMatchObject({
       page: 1,
-      group: 'default',
-      type: ['2'],
       startTime: new Date('2026-09-07T09:30').getTime(),
       endTime: new Date('2026-09-08T17:45').getTime(),
     })
   )
+  expect(screen.getByRole('button', { name: /^Time range/ })).toHaveTextContent(
+    formatRangeLabel(new Date('2026-09-07T09:30'), new Date('2026-09-08T17:45'))
+  )
 })
 
-it('applies mobile drawer filters only when Search is pressed', async () => {
-  const router = await renderMobileFilter()
+it('searches models on Enter without waiting for the pause', async () => {
+  const router = await renderToolbar()
   const user = userEvent.setup()
-  await user.click(screen.getByRole('button', { name: 'Filter' }))
-  const dialog = await screen.findByRole('dialog', { name: 'Filter' })
   await user.type(
-    within(dialog).getByPlaceholderText('Model Name'),
-    'gemini-3.7-flash'
+    screen.getByRole('searchbox', { name: 'Model Name' }),
+    'gemini-3.7-flash{Enter}'
   )
-  expect(router.state.location.search).not.toHaveProperty('model')
-  await user.click(within(dialog).getByRole('button', { name: 'Search' }))
   await waitFor(() =>
     expect(router.state.location.search).toMatchObject({
       page: 1,
       model: 'gemini-3.7-flash',
     })
   )
-  await waitFor(() =>
-    expect(
-      screen.queryByRole('dialog', { name: 'Filter' })
-    ).not.toBeInTheDocument()
-  )
 })
 
-it('keeps all quick actions visible without opening a menu', async () => {
-  await renderMobileFilter()
+it('keeps the quick actions on the bar without a filter drawer on phones', async () => {
+  await renderToolbar({ phone: true })
   const user = userEvent.setup()
-  for (const name of ['Hide', 'Filter', 'Search', 'Export', 'View']) {
+  for (const name of ['Hide', 'Refresh', 'Export', /More filters/]) {
     expect(screen.getByRole('button', { name })).toBeVisible()
   }
-  expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Filter' })).toBeNull()
   await user.click(screen.getByRole('button', { name: 'Hide' }))
   expect(screen.getByRole('button', { name: 'Show' })).toBeVisible()
-  screen.getByRole('button', { name: 'Show' }).focus()
-  for (const name of ['Filter', 'Search', 'Export', 'View']) {
-    await user.tab()
-    expect(screen.getByRole('button', { name })).toHaveFocus()
-  }
 })
 
 function LoadingFixture(props: { loading: boolean; onSearch: () => void }) {
@@ -250,37 +260,6 @@ it('places the end action between Search and View on desktop', () => {
     .getAllByRole('button')
     .map((button) => button.textContent)
   expect(names.slice(-4)).toEqual(['Reset', 'Search', 'Export', 'View'])
-})
-
-it('collapses only date and statistics while keeping the right-hand quick actions visible', async () => {
-  await renderMobileFilter()
-  const user = userEvent.setup()
-  const date =
-    screen
-      .getByRole('button', { name: /^\d{4}-\d{2}/ })
-      .getAttribute('aria-label') ?? ''
-  expect(await screen.findByText('Usage')).toBeVisible()
-  await user.click(screen.getByRole('button', { name: 'Collapse' }))
-  expect(screen.getByRole('button', { name: 'Expand' })).toHaveAttribute(
-    'aria-expanded',
-    'false'
-  )
-  expect(screen.queryByRole('button', { name: date })).not.toBeInTheDocument()
-  expect(screen.queryByText('Usage')).not.toBeInTheDocument()
-  const actions = screen.getByRole('group', { name: 'Actions' })
-  for (const name of ['Hide', 'Filter', 'Search', 'Export', 'View']) {
-    expect(within(actions).getByRole('button', { name })).toBeVisible()
-  }
-  expect(
-    within(actions).queryByRole('button', { name: 'Expand' })
-  ).not.toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: 'Expand' }))
-  expect(screen.getByRole('button', { name: 'Collapse' })).toHaveAttribute(
-    'aria-expanded',
-    'true'
-  )
-  expect(screen.getByRole('button', { name: date })).toBeVisible()
-  expect(await screen.findByText('Usage')).toBeVisible()
 })
 
 it.each([

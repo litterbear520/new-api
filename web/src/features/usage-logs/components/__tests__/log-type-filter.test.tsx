@@ -80,6 +80,10 @@ async function renderFilter() {
       <RouterProvider router={router} />
     </QueryClientProvider>
   )
+  // The type field lives behind 「更多筛选」 and applies with 「应用」.
+  await userEvent.click(
+    await screen.findByRole('button', { name: /More filters/ })
+  )
   await screen.findByRole('combobox', { name: 'Type' })
   return router
 }
@@ -117,13 +121,14 @@ it('marks only retired log types as deprecated while keeping historical filters 
   expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent(
     'Deprecated'
   )
-  await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
   await waitFor(() =>
     expect(router.state.location.search).toMatchObject({ type: ['3'], page: 1 })
   )
-  await userEvent.click(screen.getByRole('combobox', { name: 'Type' }))
+  await userEvent.click(screen.getByRole('button', { name: /More filters/ }))
+  await userEvent.click(await screen.findByRole('combobox', { name: 'Type' }))
   await userEvent.click(screen.getByRole('option', { name: /^Login/ }))
-  await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
   await waitFor(() =>
     expect(router.state.location.search).toMatchObject({ type: ['7'], page: 1 })
   )

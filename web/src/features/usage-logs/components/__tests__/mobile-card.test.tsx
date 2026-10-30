@@ -200,9 +200,7 @@ it('hides sensitive names and disables full-text inspection when privacy is enab
   expect(
     screen.queryByRole('button', { name: /Channel:/ })
   ).not.toBeInTheDocument()
-  expect(
-    screen.queryByRole('button', { name: /Token:/ })
-  ).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Key:/ })).not.toBeInTheDocument()
 })
 
 it('respects hidden columns and omits admin fields in the self view', () => {
@@ -212,7 +210,7 @@ it('respects hidden columns and omits admin fields in the self view', () => {
   })
   expect(
     screen.queryByRole('button', {
-      name: /Channel:|User:|Token:|Group:|Model:/,
+      name: /Channel:|User:|Key:|Group:|Model:/,
     })
   ).not.toBeInTheDocument()
   expect(screen.queryByText('enterprise-production')).not.toBeInTheDocument()
@@ -337,3 +335,36 @@ it('shows loading placeholders without displaying stale log fields', () => {
     screen.queryByRole('button', { name: /^Model:/ })
   ).not.toBeInTheDocument()
 })
+
+it('labels the key field Key, as the desktop column does', () => {
+  renderLogs()
+  expect(
+    screen.getByRole('button', { name: 'Key: backend-production-token' })
+  ).toBeVisible()
+})
+
+it('opens the full log details from the billing line at the bottom of a user card', async () => {
+  const user = userEvent.setup()
+  renderLogs({ admin: false })
+
+  await user.click(screen.getByRole('button', { name: /^Standard · / }))
+
+  expect(
+    await screen.findByRole('dialog', { name: /Log Details/ })
+  ).toBeVisible()
+})
+
+it.each([
+  [1, 'Recharged $10 with a redemption code'],
+  [5, 'upstream returned 502 Bad Gateway'],
+])(
+  'shows the content of a type %s log on the bottom line of a user card',
+  (type, content) => {
+    renderLogs({
+      admin: false,
+      logs: [{ ...log, type, content, other: '' }],
+    })
+
+    expect(screen.getByRole('button', { name: content })).toBeVisible()
+  }
+)

@@ -1,0 +1,345 @@
+---
+name: brand-vi
+description: 做品牌 VI 提案：先想清品牌策略和核心比喻，再出一张 3×3 品牌板（Logo、构造、色板、字体、数字应用、实物应用、图像方向、标语、细节），并补色板卡、字体样张和应用板；用户确认后把色值、字体、Logo 存进 Brand Kit。用户提到「VI」「品牌视觉」「品牌手册」「品牌板」「色板」「字体规范」「品牌识别」时使用。Creates a 3×3 brand-identity board plus palette, type and application boards, then saves the kit.
+---
+
+# 品牌 VI
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。视觉模式和配色预设见 `references/visual-modes.md`、`references/theme-presets.md`。
+
+## 适用
+
+- 新品牌做第一版视觉提案；老品牌想看一个新方向。
+- 后面要用其他技能（主图、海报、包装）出图，想先把品牌色和字体定下来。
+- 不适用：只要 Logo（用 `logo-mockup`）；只要包装（用 `packaging-system`）。
+
+## 工作流程
+
+1. **先问缺的**（最多 3 个问题）
+   - 品牌名、做什么、卖给谁。
+   - 想要的感觉（3 个形容词），以及不想要的。
+   - 有没有现成的 Logo 或颜色（有就上传，作为 Image 1）。
+2. **先写品牌策略**：按下面原文 BRAND STRATEGY FIRST 的清单写 6–8 行（品类、人群、情绪承诺、核心比喻、Logo 思路、要避开的东西），再从 `references/visual-modes.md` 选一个视觉模式，从 `references/theme-presets.md` 参考或新建一套色板（写 hex）。给用户确认。
+3. **列交付清单**，确认后出图：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 3×3 品牌板 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 9 格，见原文 DEFAULT 3 × 3 PANEL SYSTEM |
+   | 2 | 色板卡 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 主色、辅助色、中性色，每个色块写 hex |
+   | 3 | 字体样张 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 中英文标题字 + 正文字示意 |
+   | 4 | 应用板 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 名片、纸袋、杯套、门头、手机界面 |
+   | 5 | 社交头像与封面 | 1:1 | 1024×1024 | gpt-image-2.5-flare | 透明底头像 + 主色背景版 |
+
+4. **一张图调用一次**：第 1 张品牌板定稿后，后面几张都把它作为 Image 1 参考（`edit_image`），提示词写「Logo、色值、字体风格和品牌板一致」。
+5. **检查并保存**：品牌名和标语逐字核对；色块的 hex 和策略里写的一致；Logo 在每格里是同一个。用户确认后，把色板 hex、字体建议、Logo 图存进 Brand Kit，之后其他技能自动套用。
+
+## 最佳实践原文
+
+### 品牌板要回答什么
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › CORE PRINCIPLE · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# CORE PRINCIPLE
+
+A premium brand kit is not decoration.
+
+It is a visual argument for why the brand exists.
+
+Every generated board must answer:
+
+1. What does this brand represent?
+2. What is the core metaphor?
+3. How does the logo express that?
+4. How does the system scale across UI, print, image, and detail?
+5. Why does the whole thing feel ownable?
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › BRAND STRATEGY FIRST · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# BRAND STRATEGY FIRST
+
+Before generating, infer the brand strategy.
+
+Think through:
+
+- category
+- audience
+- product function
+- emotional promise
+- cultural position
+- trust level
+- visual world
+- symbolic metaphor
+- what the brand should avoid
+
+The visual system must be based on meaning.
+
+Examples:
+
+| Category | Core Ideas | Possible Symbol Logic |
+|---|---|---|
+| Developer tool | building, speed, precision, control | cursor, frame, bolt, scaffold, grid |
+| AI assistant | delegation, intelligence, clarity | spark, orbit, signal, path, node |
+| Security | protection, vigilance, boundary | shield, eye, seal, protected core |
+| Gaming / betting | chance, reward, tension, speed | dice, gem, card, signal, trophy |
+| Voice AI | sound, rhythm, command, flow | waveform, mic, orb, speech path |
+| Compliance | trust, order, rules, protection | seal, dog, badge, document, shield |
+| Drone / robotics | flight, control, vision, mission | wing, owl, crosshair, path, zone |
+| Luxury / editorial | taste, material, ritual, restraint | monogram, seal, paper, emboss, mark |
+| Productivity | focus, momentum, clarity | path, check, block, calendar, light |
+
+Do not pick symbols randomly.
+````
+
+### 版式与面板
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › DEFAULT OUTPUT · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# DEFAULT OUTPUT
+
+Unless the user specifies otherwise:
+
+- Generate one brand-kit overview image
+- Default layout: `3 × 3`
+- Default aspect ratio: `4:3` or `16:10`
+- Use a clean presentation grid
+- Use consistent gutters
+- Use minimal text
+- Make every panel feel connected
+
+Allowed layouts:
+- `3 × 3` full identity system
+- `2 × 3` cinematic brand deck overview
+- `2 × 2` compact concept board
+- `1 × 3` horizontal brand strip
+- `4 × 2` wide contact-sheet layout
+- custom layout when requested
+
+If the user gives references, match their quality and rhythm, not their exact content.
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › DEFAULT 3 × 3 PANEL SYSTEM · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# DEFAULT 3 × 3 PANEL SYSTEM
+
+Use this if no layout is specified:
+
+## 1. Logo Cover
+Large logo and wordmark.
+Minimal title.
+Strong negative space.
+
+## 2. Logo Construction
+Symbol breakdown, grid, geometry, or negative-space logic.
+Show why the mark exists.
+
+## 3. Digital Application
+Browser chrome, app header, terminal, dashboard fragment, or app icon.
+
+## 4. Brand Essence
+One short tagline.
+Large readable typography.
+Sparse composition.
+
+## 5. Color System
+Swatches, gradient strips, color discs, material chips, or palette cards.
+
+## 6. Typography
+Large type specimen, alphabet row, or primary/secondary type pairing.
+
+## 7. Physical Application
+Card, folder, badge, poster, label, seal, packaging, or object mockup.
+
+## 8. Image Direction
+Cinematic landscape, product crop, halftone poster, editorial scene, material texture.
+
+## 9. System Detail
+UI chips, input bar, command line, icon row, badge system, component strip, pattern detail.
+````
+
+### 颜色与文字
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › COLOR DISCIPLINE · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# COLOR DISCIPLINE
+
+Use one dominant palette.
+
+Default:
+- base color
+- primary accent
+- secondary accent
+- neutrals
+
+Good reference-style palettes:
+- black + cyan + muted coral
+- black + red + cream + blue
+- forest green + lime + fog gray
+- navy + white + steel
+- ivory + deep blue + red + gold
+- black + lilac + soft purple
+- black + amber + red
+- charcoal + white + pale blue
+
+Rules:
+- accents must repeat across panels
+- no random rainbow unless requested
+- no generic purple-blue AI glow unless appropriate
+- one accent can carry the entire system
+````
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › TEXT RULES · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# TEXT RULES
+
+Use very little text.
+
+Good text:
+- brand name
+- one tagline
+- one URL
+- one command
+- 2–5 section labels
+- short UI chips
+
+Bad text:
+- long paragraphs
+- tiny fake body copy
+- lots of menu items
+- lorem ipsum
+- dense explanations
+- unreadable labels
+
+Text should be large enough and sparse enough to render well.
+````
+
+### 反套路
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › ANTI-GENERIC RULES · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# ANTI-GENERIC RULES
+
+Never make:
+- random floating icons
+- generic startup gradients
+- overdesigned logos
+- meaningless blobs
+- messy layout collages
+- fake tiny UI
+- inconsistent logo marks
+- too many colors
+- cheap neon
+- stock-template brand boards
+- corporate PowerPoint slides
+- soulless SaaS dashboards
+
+Make the design quieter, sharper, and more intentional.
+````
+
+### 提示词模板
+
+> 来源 / Source: nexu-io/open-design · skills/brandkit/SKILL.md › PROMPT TEMPLATE · MIT © 2026 Leonxlnx（上游 Leonxlnx/taste-skill） (verbatim)
+
+````text
+# PROMPT TEMPLATE
+
+Use this structure internally:
+
+Create a premium brand-kit overview image for "[BRAND NAME]".
+
+Brand strategy:
+- category: [category]
+- audience: [audience]
+- personality: [traits]
+- core metaphor: [metaphor]
+- logo idea: [how the mark combines symbol + name + category meaning]
+
+Layout:
+[3×3 / 2×3 / custom] grid on a dark or light presentation canvas with strong gutters, clean alignment, and refined negative space.
+
+Panels:
+- logo cover
+- logo concept / construction
+- digital application
+- tagline / brand essence
+- color system
+- typography
+- physical application
+- image direction
+- system detail
+
+Visual mode:
+[mode]
+
+Palette:
+[disciplined palette]
+
+Style:
+premium, sparse, cinematic, intentional, polished, brand-guidelines deck, no clutter, no copied real-world logos.
+
+Typography:
+readable, minimal, high hierarchy, no tiny fake text.
+
+Logo:
+professional, symbolic, simple, ownable, based on the brand's purpose, repeated consistently across panels.
+````
+
+> 来源 / Source: anthropics/skills · skills/theme-factory/SKILL.md › Create your Own Theme · Apache-2.0 (verbatim)
+
+````text
+## Create your Own Theme
+To handle cases where none of the existing themes work for an artifact, create a custom theme. Based on provided inputs, generate a new theme similar to the ones above. Give the theme a similar name describing what the font/color combinations represent. Use any basic description provided to choose appropriate colors/fonts. After generating the theme, show it for review and verification. Following that, apply the theme as described above.
+````
+
+## 本站调整
+
+- **默认 3:2**：brandkit 原文默认 4:3 或 16:10。本站出图通常是 1536×1024，所以品牌板默认 3:2；要 4:3 时由页面裁切，四边留 6% 安全区。
+- **9 格字要少**：原文 TEXT RULES 照用。每格最多一个标签 + 一行字；色块上的 hex 写在提示词里，出图后逐个核对，错了只重出色板卡。
+- **字体只是方向**：图里的字体是示意。落地时建议用可商用的开源字体（如思源黑体、思源宋体，SIL OFL 许可），或用户已经买了授权的字体；不要在图里写出商业字体的名字当作承诺。
+- **Brand Kit**：用户确认后保存主色、辅助色、中性色（hex）、标题字和正文字建议、Logo（透明底 PNG）、一句标语。其他技能读取 Brand Kit 后，把色值写进 Color palette 行，把 Logo 作为参考图。
+- **原文的数字产品倾向**：brandkit 原文偏开发者工具、AI 产品（终端、浏览器框）。国内消费品牌多用实物应用，所以我们的应用板默认是名片、纸袋、杯套、门头和手机界面。
+- **不借用真实品牌**：不参考、不模仿真实品牌的 VI；原文的 tagline 示例只是语气示意，不直接用。
+- **广告法**：标语不写「第一」「顶级」「最」等。
+- **模型**：品牌板、色板卡、字体样张、应用板都带字，用 gpt-image-2.5-sunburst；透明底头像用 gpt-image-2.5-flare。
+- **导出**：ZIP 里按 `VI-1-品牌板.jpg`、`VI-2-色板.jpg` … 命名，另附 `brand-kit.json`（色值、字体、标语）。
+- **示例**：我们的示例用虚构品牌「浮岛咖啡 FLOATISLE」。
+
+### 示例（虚构品牌「浮岛咖啡」，3×3 品牌板）
+
+```text
+Create a premium brand-kit overview image for "FLOATISLE 浮岛咖啡".
+
+Brand strategy:
+- category: specialty coffee bar with takeaway
+- audience: young office workers who want a calm ten minutes
+- personality: calm, airy, crafted, friendly
+- core metaphor: a small island floating on a cup of coffee
+- logo idea: a circle (cup seen from above) with a soft island-shaped cutout in negative space
+
+Layout:
+3×3 grid on a warm light presentation canvas, landscape 3:2, strong gutters, clean alignment, refined negative space.
+
+Panels:
+- logo cover
+- logo construction
+- digital application (phone order screen fragment)
+- tagline: "浮一会儿"
+- color system: Island Sand #E9DCC6, Roast Brown #4A3426, Lagoon Teal #2F7F7A, Milk White #FAF7F2
+- typography: bold rounded sans for headlines, clean sans for body
+- physical application (paper cup and sleeve)
+- image direction (latte surface with soft morning light)
+- system detail (stamp-style badges and icon row)
+
+Visual mode: light editorial, calm system
+Style: premium, sparse, intentional, polished, no clutter, no copied real-world logos.
+Typography: readable, minimal, high hierarchy, no tiny fake text.
+Logo: simple, symbolic, repeated consistently across panels.
+Text (verbatim): "FLOATISLE", "浮岛咖啡", "浮一会儿", and the four hex codes above, each rendered once.
+```

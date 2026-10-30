@@ -1,0 +1,250 @@
+---
+name: style-transfer
+description: 保持商品或人物不变，把画面换成参考图的风格（色调、质感、笔触、光线），先出 3 个风格小样，选定后再出整套。用户提到「风格迁移」「换风格」「照着这张图的风格」「同款风格」「换成插画风/胶片风/3D 风」「统一成品牌调性」时使用。Keeps the product or identity fixed and transfers the look of a style reference.
+---
+
+# 风格迁移
+
+> 本文件由小熊API整理。「最佳实践原文」里的英文段落是开源项目的原文摘录，每段上方标了来源和许可证；其余部分是我们写的。许可证全文见 `../LICENSES/`，致谢清单见 `../../CREDITS.md`。更多编辑配方见 `references/edit-recipes.md`。
+
+## 适用
+
+- 同一个商品要出不同风格的图（插画、胶片、黏土 3D、水彩、杂志）。
+- 用户给了一张喜欢的图，想让自己的商品图「也是这个味道」。
+- 把一批风格不一的图统一成同一种调性。
+- 不适用：换背景成纯白（用 `white-background`）；只改文字（用编辑里的 text-localization）。
+
+## 工作流程
+
+1. **先分清每张图的角色**：Image 1 = 要保留的商品/人物（编辑对象），Image 2 = 风格参考。用户没给参考图时，用文字描述风格，不写在世艺术家的名字。
+2. **先问缺的**（最多 3 个问题）
+   - 哪些必须不变：商品外形、Logo、颜色？人物的脸、发型、姿势？
+   - 要参考风格里的哪些东西：色调、质感、笔触、光线、构图？
+   - 用在哪里，要什么比例。
+3. **先出 3 个风格小样，再出整套**：
+
+   | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
+   |---|---|---|---|---|---|
+   | 1 | 风格小样 A | 1:1 | 1024×1024 | gpt-image-2.5-sunburst | 最接近参考图 |
+   | 2 | 风格小样 B | 1:1 | 1024×1024 | gpt-image-2.5-sunburst | 同一风格，强度减弱 |
+   | 3 | 风格小样 C | 1:1 | 1024×1024 | gpt-image-2 | 另一个可选方向 |
+   | 4+ | 整套 | 按用途 | 按用途 | gpt-image-2.5-sunburst | 选定小样后，每张图一次编辑 |
+
+4. **一张图调用一次**（`edit_image`）。提示词把「不变清单」放在最前面，每一轮都原样重复；每轮只改一处（例如只把颜色调暖）。
+5. **检查**：商品有没有走样（形状、Logo、文字）；人物是不是还是本人；有没有多出参考图里的物体；风格是不是整套一致。
+
+## 最佳实践原文
+
+### 先判断是生成还是编辑
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Decision tree · Apache-2.0 (verbatim)
+
+````text
+Intent:
+- If the user wants to modify an existing image while preserving parts of it, treat the request as **edit**.
+- If the user provides images only as references for style, composition, mood, or subject guidance, treat the request as **generate**.
+- If the user provides no images, treat the request as **generate**.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Use-case taxonomy · Apache-2.0 (verbatim)
+
+````text
+## Use-case taxonomy (exact slugs)
+
+Classify each request into one of these buckets and keep the slug consistent across prompts and references.
+
+Generate:
+- photorealistic-natural — candid/editorial lifestyle scenes with real texture and natural lighting.
+- product-mockup — product/packaging shots, catalog imagery, merch concepts.
+- ui-mockup — app/web interface mockups and wireframes; specify the desired fidelity.
+- infographic-diagram — diagrams/infographics with structured layout and text.
+- logo-brand — logo/mark exploration, vector-friendly.
+- illustration-story — comics, children’s book art, narrative scenes.
+- stylized-concept — style-driven concept art, 3D/stylized renders.
+- historical-scene — period-accurate/world-knowledge scenes.
+
+Edit:
+- text-localization — translate/replace in-image text, preserve layout.
+- identity-preserve — try-on, person-in-scene; lock face/body/pose.
+- precise-object-edit — remove/replace a specific element (including interior swaps).
+- lighting-weather — time-of-day/season/atmosphere changes only.
+- background-extraction — transparent background / clean cutout.
+- style-transfer — apply reference style while changing subject/scene.
+- compositing — multi-image insert/merge with matched lighting/perspective.
+- sketch-to-render — drawing/line art to photoreal render.
+````
+
+### 编辑的写法
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Use-case tips (edit) · Apache-2.0 (verbatim)
+
+````text
+Edit:
+- text-localization: Change only the text; preserve layout, typography, spacing, and hierarchy; no extra words or reflow unless needed.
+- identity-preserve: Lock identity (face, body, pose, hair, expression); change only the specified elements; match lighting and shadows.
+- precise-object-edit: Specify exactly what to remove/replace; preserve surrounding texture and lighting; keep everything else unchanged.
+- lighting-weather: Change only environmental conditions (light, shadows, atmosphere, precipitation); keep geometry, framing, and subject identity.
+- background-extraction: Request a clean cutout; crisp silhouette; no halos; preserve label text exactly; no restyling.
+- style-transfer: Specify style cues to preserve (palette, texture, brushwork) and what must change; add `no extra elements` to prevent drift.
+- compositing: Reference inputs by index; specify what moves where; match lighting, perspective, and scale; keep the base framing unchanged.
+- sketch-to-render: Preserve layout, proportions, and perspective; choose materials and lighting that support the supplied sketch without adding new elements.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Input images and references · Apache-2.0 (verbatim)
+
+````text
+## Input images and references
+- Do not assume that every provided image is an edit target.
+- Label each image by index and role (`Image 1: edit target`, `Image 2: style reference`).
+- If the user provides images for style, composition, or mood guidance and does not ask to modify them, treat the request as generation with references.
+- If the user asks to preserve an existing image while changing specific parts, treat the request as an edit.
+- For compositing, describe how the images interact (`place the subject from Image 2 into Image 1`).
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.1 Style Transfer · MIT (verbatim)
+
+````text
+Style transfer is useful when you want to keep the *visual language* of a reference image (palette, texture, brushwork, film grain, etc.) while changing the subject or scene. For best results, describe what must stay consistent (style cues) and what must change (new content), and add hard constraints like background, framing, and “no extra elements” to prevent drift.
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.1 Style Transfer (prompt) · MIT (verbatim)
+
+````text
+Use the same style from the input image and generate a man riding a motorcycle on a white background.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › style-transfer · Apache-2.0 (verbatim)
+
+````text
+### style-transfer
+```
+Use case: style-transfer
+Input images: Image 1: style reference
+Primary request: apply Image 1's visual style to a man riding a motorcycle on a plain white backdrop
+Constraints: preserve palette, texture, and brushwork; no extra elements
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › identity-preserve · Apache-2.0 (verbatim)
+
+````text
+### identity-preserve
+```
+Use case: identity-preserve
+Input images: Image 1: person photo; Image 2..N: clothing references
+Primary request: replace only the clothing with the provided garments
+Constraints: preserve face, body shape, pose, hair, expression, and identity; match lighting and shadows; keep the background unchanged; no accessories or text
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/sample-prompts.md › Edit › lighting-weather · Apache-2.0 (verbatim)
+
+````text
+### lighting-weather
+```
+Use case: lighting-weather
+Input images: Image 1: original photo
+Primary request: make it look like a winter evening with gentle snowfall
+Constraints: preserve subject identity, geometry, camera angle, and composition; change only lighting, atmosphere, and weather
+```
+````
+
+> 来源 / Source: openai/openai-cookbook · examples/multimodal/image-gen-models-prompting-guide.ipynb › 5.6 Lighting and Weather · MIT (verbatim)
+
+````text
+Used to re-stage a photo for different moods, seasons, or time-of-day variants (e.g., sunny → overcast, daytime → dusk, clear → snowy) while keeping the scene composition intact. The key is to change only environmental conditions—lighting direction/quality, shadows, atmosphere, precipitation, and ground wetness—while preserving identity, geometry, camera angle, and object placement so it still reads as the same original photo.
+````
+
+### 锁住商品
+
+> 来源 / Source: nexu-io/open-design · skills/ecommerce-image-workflow/SKILL.md › Step 3 – fidelity lock · Apache-2.0 (verbatim)
+
+````text
+Every prompt must include this product fidelity instruction near the top:
+
+```text
+Preserve the exact product identity from the reference image: shape,
+silhouette, color, material, logo/label placement, visible construction
+details, and proportions. Do not redesign the product. Do not add, remove,
+or relocate product features.
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Use-case tips · Apache-2.0 (verbatim)
+
+````text
+- stylized-concept: Specify style cues, material finish, and rendering approach (3D, painterly, clay) without inventing new story elements.
+````
+
+### 迭代
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/references/prompting.md › Iterate deliberately · Apache-2.0 (verbatim)
+
+````text
+## Iterate deliberately
+- Start with a clean base prompt, then make small single-change edits.
+- Re-specify critical constraints when you iterate.
+- Prefer one targeted follow-up at a time over rewriting the whole prompt.
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+````
+
+> 来源 / Source: openai/skills · skills/.system/imagegen/SKILL.md › Shared prompt schema · Apache-2.0 (verbatim)
+
+````text
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+````
+
+## 本站调整
+
+- **商品锁放最前面**：原文 style-transfer 示例只写了「preserve palette, texture, and brushwork」。我们的场景通常要保商品，所以把 open-design 的保真指令放在提示词最前，再写要迁移的风格。
+- **小样先行**：先出 3 张 1:1 小样（每张一次调用），用户选定再出整套，避免整套返工。
+- **不写艺术家名字**：用「水彩晕染、粗颗粒胶片、柔和黏土质感」这类描述代替在世艺术家或工作室的名字；不复制参考图里的具体构图、角色和 Logo（参考图只学风格）。
+- **人物**：只处理用户本人或已授权的人像；不把人换成明星，不改变人的身份。原文 identity-preserve 的「锁脸、锁体型、锁姿势」照用。
+- **模型**：编辑默认 gpt-image-2.5-sunburst（精修编辑最好）；草稿小样可用 gpt-image-2；需要透明底素材时用 gpt-image-2.5-flare。
+- **尺寸**：本站出图通常是 1024×1024、1024×1536、1536×1024，比例写进提示词，页面再缩放或裁切。
+- **广告法**：风格迁移不改变商品事实；图里如有文字，照常过 `data/ad-law-words.json`。
+- **导出**：ZIP 里按 `风格-A-水彩.jpg`、`风格-B-胶片.jpg` 命名。
+- **示例**：原文的骑摩托的人只是示意；我们的示例用虚构品牌「泥语」手作陶瓷杯。
+
+### 示例（虚构品牌「泥语」陶瓷杯，风格小样 A）
+
+```text
+Use case: style-transfer
+Asset type: style sample A, square 1:1
+Input images: Image 1: product photo of the NIYU hand-thrown ceramic mug (edit target; keep the mug exactly); Image 2: style reference (soft watercolor illustration)
+Primary request: render the scene in Image 2's style while keeping the mug from Image 1 unchanged
+Subject: the mug on a linen cloth with a sprig of dried eucalyptus
+Style/medium: loose watercolor wash, visible paper grain, soft pigment blooms at the edges
+Composition/framing: square 1:1, mug centered, generous white paper margin
+Color palette: take the palette from Image 2 (muted sage, clay pink, warm grey)
+Constraints: preserve the mug's shape, glaze color, handle, rim and the stamped "泥语" mark exactly; change only the rendering style and backdrop; no extra objects from Image 2; no text; no watermark
+Avoid: changing the mug's proportions, adding patterns to the glaze, copying Image 2's subject
+```

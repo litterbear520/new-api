@@ -48,6 +48,8 @@ interface UsageLogsMobileListProps<TData> {
   isLoading?: boolean
   emptyTitle?: string
   emptyDescription?: string
+  /** Replaces the default empty state, as DataTablePage's emptyContent does. */
+  emptyContent?: React.ReactNode
   logCategory: LogCategory
 }
 
@@ -241,6 +243,7 @@ export function UsageLogsMobileList<TData>({
   isLoading = false,
   emptyTitle,
   emptyDescription,
+  emptyContent,
   logCategory,
 }: UsageLogsMobileListProps<TData>) {
   const { t } = useTranslation()
@@ -257,6 +260,7 @@ export function UsageLogsMobileList<TData>({
   const rows = table.getRowModel().rows
 
   if (!rows || rows.length === 0) {
+    if (emptyContent) return emptyContent
     return (
       <div className='rounded-lg border p-6'>
         <Empty className='border-none p-0'>

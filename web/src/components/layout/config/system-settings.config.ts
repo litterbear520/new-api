@@ -17,84 +17,42 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { TFunction } from 'i18next'
-import {
-  Box,
-  Route,
-  CreditCard,
-  Layout,
-  Settings,
-  Shield,
-  ShieldAlert,
-  Wrench,
-} from 'lucide-react'
-
-import { getAuthSectionNavItems } from '@/features/system-settings/auth/section-registry.tsx'
-import { getBillingSectionNavItems } from '@/features/system-settings/billing/section-registry.tsx'
-import { getContentSectionNavItems } from '@/features/system-settings/content/section-registry.tsx'
-import { getModelsSectionNavItems } from '@/features/system-settings/models/section-registry.tsx'
-import { getOperationsSectionNavItems } from '@/features/system-settings/operations/section-registry.tsx'
-import { getPolicySectionNavItems } from '@/features/system-settings/request-policies/section-registry'
-import { getSecuritySectionNavItems } from '@/features/system-settings/security/section-registry.tsx'
-import { getSiteSectionNavItems } from '@/features/system-settings/site/section-registry.tsx'
 
 import type { NavGroup, SidebarView } from '../types'
 
-/**
- * Sidebar nav groups for the System Settings nested view.
- *
- * Kept as a single group because the workspace title in the sidebar
- * header already provides top-level context — the inner group label
- * scopes the items as "administration" actions.
+/*
+ * The section registries import every settings page, so the nav groups are a
+ * chunk of their own: the settings route loads them before it renders (see
+ * routes/_authenticated/system-settings/route.tsx), other pages never do.
  */
-function getSystemSettingsNavGroups(t: TFunction): NavGroup[] {
-  return [
-    {
-      id: 'system-administration',
-      title: t('System Administration'),
-      items: [
-        {
-          title: t('Site & Branding'),
-          icon: Settings,
-          items: getSiteSectionNavItems(t),
-        },
-        {
-          title: t('Authentication'),
-          icon: Shield,
-          items: getAuthSectionNavItems(t),
-        },
-        {
-          title: t('Billing & Payment'),
-          icon: CreditCard,
-          items: getBillingSectionNavItems(t),
-        },
-        {
-          title: t('Models'),
-          icon: Box,
-          items: getModelsSectionNavItems(t),
-        },
-        {
-          title: t('Request policies'),
-          icon: Route,
-          items: getPolicySectionNavItems(t),
-        },
-        {
-          title: t('Security & Limits'),
-          icon: ShieldAlert,
-          items: getSecuritySectionNavItems(t),
-        },
-        {
-          title: t('Console Content'),
-          icon: Layout,
-          items: getContentSectionNavItems(t),
-        },
-        {
-          title: t('Operations'),
-          icon: Wrench,
-          items: getOperationsSectionNavItems(t),
-        },
-      ],
+type NavBuilder = (t: TFunction) => NavGroup[]
+
+let buildNav: NavBuilder | null = null
+let loading: Promise<void> | null = null
+const listeners = new Set<() => void>()
+
+export function loadSystemSettingsNav(): Promise<void> {
+  loading ??= import('./system-settings-nav').then(
+    (m) => {
+      buildNav = m.getSystemSettingsNavGroups
+      listeners.forEach((notify) => notify())
     },
-  ]
+    (error: unknown) => {
+      loading = null
+      throw error
+    }
+  )
+  return loading
+}
+
+/** For useSyncExternalStore: the sidebar re-renders once the groups are in. */
+export function subscribeSystemSettingsNav(notify: () => void): () => void {
+  listeners.add(notify)
+  return () => listeners.delete(notify)
+}
+
+export function isSystemSettingsNavLoaded(): boolean {
+  return buildNav !== null
 }
 
 /**
@@ -111,5 +69,9 @@ export const SYSTEM_SETTINGS_VIEW: SidebarView = {
     to: '/dashboard/overview',
     label: 'Back to Dashboard',
   },
-  getNavGroups: getSystemSettingsNavGroups,
+  getNavGroups: (t) => {
+    if (buildNav) return buildNav(t)
+    loadSystemSettingsNav().catch(() => undefined)
+    return []
+  },
 }

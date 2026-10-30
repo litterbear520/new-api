@@ -16,38 +16,28 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
 import { AuthLayout } from '../auth-layout'
+import { AuthHeading } from '../components/auth-heading'
+import { AuthPromptLink } from '../components/auth-prompt-link'
 import { OtpForm } from './components/otp-form'
 
 export function Otp() {
   const { t } = useTranslation()
   return (
     <AuthLayout>
-      <div className='w-full space-y-8'>
-        <div className='space-y-3'>
-          <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
-            {t('Security verification')}
-          </h2>
-          <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t('Verify your identity to finish signing in.')}
-          </p>
-          <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t('Session expired?')}{' '}
-            <Link
-              to='/sign-in'
-              className='hover:text-primary font-medium underline underline-offset-4'
-            >
-              {t('Re-login')}
-            </Link>
-            .
-          </p>
-        </div>
-
+      <AuthHeading title={t('Security verification')}>
+        <p>{t('Verify your identity to finish signing in.')}</p>
+      </AuthHeading>
+      <div className='w-full'>
         <OtpForm />
       </div>
+      <AuthPromptLink
+        prompt={t('Session expired?')}
+        to='/sign-in'
+        label={t('Re-login')}
+      />
     </AuthLayout>
   )
 }

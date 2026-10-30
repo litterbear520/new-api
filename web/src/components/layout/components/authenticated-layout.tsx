@@ -18,15 +18,26 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { CommandMenu } from '@/components/command-menu'
 import { AnimatedOutlet } from '@/components/page-transition'
+import { useSiteBarMenu } from '@/components/site-bar/store'
 import { SkipToMain } from '@/components/skip-to-main'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import {
+  SidebarInset,
+  SidebarProvider,
+  useSidebar,
+} from '@/components/ui/sidebar'
 import { LayoutProvider } from '@/context/layout-provider'
 import { SearchProvider } from '@/context/search-provider'
 import { getCookie } from '@/lib/cookies'
-import { cn } from '@/lib/utils'
 
-import { AppHeader } from './app-header'
 import { AppSidebar } from './app-sidebar'
+import { ConsoleScroller } from './console-scroller'
+
+/** On phones the site bar's menu button opens the sidebar drawer. */
+function SidebarMenuForSiteBar() {
+  const { setOpenMobile } = useSidebar()
+  useSiteBarMenu(() => setOpenMobile(true))
+  return null
+}
 
 type AuthenticatedLayoutProps = {
   children?: React.ReactNode
@@ -38,22 +49,15 @@ export function AuthenticatedLayout(props: AuthenticatedLayoutProps) {
   return (
     <LayoutProvider>
       <SearchProvider>
-        <SidebarProvider defaultOpen={defaultOpen} className='flex-col'>
+        <SidebarProvider defaultOpen={defaultOpen}>
           <SkipToMain />
-          <AppHeader />
-          <div className='flex min-h-0 w-full flex-1'>
-            <AppSidebar />
-            <SidebarInset
-              className={cn(
-                '@container/content',
-                'h-[calc(100svh-var(--app-header-height,0px))]',
-                'min-h-0 overflow-hidden',
-                'peer-data-[variant=inset]:h-[calc(100svh-var(--app-header-height,0px)-(var(--spacing)*4))]'
-              )}
-            >
+          <SidebarMenuForSiteBar />
+          <AppSidebar />
+          <SidebarInset className='@container/content h-svh min-h-0 overflow-hidden peer-data-[variant=inset]:h-[calc(100svh-(var(--spacing)*4))]'>
+            <ConsoleScroller>
               {props.children ?? <AnimatedOutlet />}
-            </SidebarInset>
-          </div>
+            </ConsoleScroller>
+          </SidebarInset>
         </SidebarProvider>
         <CommandMenu />
       </SearchProvider>

@@ -6,8 +6,8 @@
     <meta name="google" content="notranslate" />
 
     <!-- Primary Meta Tags -->
-    <title>New API</title>
-    <meta name="title" content="New API" />
+    <title>小熊API</title>
+    <meta name="title" content="小熊API" />
     <meta
       name="description"
       content="Unified AI API gateway and admin dashboard."
@@ -30,6 +30,50 @@
         }
         document.documentElement.classList.add(theme)
       })()
+    </script>
+    <!-- Coming from the docs (another site on this domain), the browser would
+         cross-fade into this empty page before the app has drawn anything.
+         Skip that fade: Chrome then keeps the docs on screen (paint holding)
+         until this page paints its first content, the app with the site bar
+         in the same place; checked by recording docs → 模型广场 on 10-29. -->
+    <script>
+      addEventListener('pagereveal', function (event) {
+        var root = document.getElementById('root')
+        if (event.viewTransition && !(root && root.firstChild)) {
+          event.viewTransition.skipTransition()
+        }
+      })
+    </script>
+    <!-- The docs are a whole other page, slow over a long way to the
+         server. Once this page has loaded (so nothing competes with the
+         first screen), Chromium fetches the docs' front page (14 KB), and
+         draws any docs page ahead once the pointer rests on its link, so
+         the click shows it at once. -->
+    <script>
+      addEventListener('load', function () {
+        if (!(
+          HTMLScriptElement.supports &&
+          HTMLScriptElement.supports('speculationrules')
+        ))
+          return
+        ;(window.requestIdleCallback || setTimeout)(function () {
+          var rules = document.createElement('script')
+          rules.type = 'speculationrules'
+          rules.textContent = JSON.stringify({
+            prefetch: [
+              { source: 'list', urls: ['/docs/'], eagerness: 'immediate' },
+            ],
+            prerender: [
+              {
+                source: 'document',
+                where: { href_matches: '/docs/*' },
+                eagerness: 'moderate',
+              },
+            ],
+          })
+          document.head.append(rules)
+        })
+      })
     </script>
     <!--umami-->
     <!--Google Analytics-->

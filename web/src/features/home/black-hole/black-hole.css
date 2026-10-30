@@ -1,0 +1,482 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/* The black hole over the night Earth: drawn live on the first screen
+   (engine.ts) or its still picture (phones, no WebGL2, less motion); the
+   night and its faint stars carry on under it (.ns-hole on .night-sea). */
+.night-sea.ns-hole {
+  background: url('./tex/night-stars.webp') 0 0 / 512px 512px repeat
+    var(--ns-night);
+}
+
+/* the sky is the first screen's own: it goes up with it and fades with its words */
+.ns-hole .ns-sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* The poster first (with the page's HTML, see night-sea/hero-shell.ts), the
+   live sky over it once it draws: the same picture, so it comes up unseen
+   but for what moves. */
+.ns-sky-hole {
+  opacity: 0;
+  transition: opacity 0.9s ease-out;
+}
+.ns-sky-hole[data-ready] {
+  opacity: 1;
+}
+.ns-sky-poster img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* phones: the hole stays in view however the screen crops it; the Earth under it */
+  object-position: 62% 100%;
+}
+/* Until the poster is in, a soft one of the same picture: a few hundred bytes
+   inside this CSS, so inside the page's HTML (night-sea/hero-shell-html.ts). */
+.ns-sky-poster {
+  overflow: hidden;
+}
+.ns-sky-poster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('./tex/hole-phone-soft.webp') 62% 100% / cover no-repeat;
+  filter: blur(24px);
+  /* a little larger, so the blur's edges stay outside; round where the picture is held */
+  transform: scale(1.08);
+  transform-origin: 62% 100%;
+}
+/* Computers: cropped round the hole as the engine crops its frame
+   (knobs.ts lookFrame: FRAME, hx, hy), so poster and live sky meet exactly. */
+@media (min-width: 641px) {
+  .ns-sky-poster img {
+    object-position: 67% 47%;
+  }
+  .ns-sky-poster::before {
+    background-image: url('./tex/hole-desktop-soft.webp');
+    background-position: 67% 47%;
+    transform-origin: 67% 47%;
+  }
+}
+/* Windows near square or upright (a tablet held so, half a screen): the
+   engine keeps their own frame there, which the poster would not meet, so the
+   night shows until it draws (the HTML's first screen too: hero-shell-html.ts) */
+@media (min-width: 641px) and (max-aspect-ratio: 6/5) {
+  .ns-first:has(> .ns-sky-hole) .ns-sky-poster {
+    display: none;
+  }
+}
+/* once the live sky is all the way up, the poster under it goes: nothing more to put together each frame */
+.ns-first:has(> .ns-sky-hole[data-ready]) .ns-sky-poster {
+  visibility: hidden;
+  transition: visibility 0s 1s;
+}
+/* the bottom of the first screen goes into the night the page carries on in
+   (a smoothstep, as the engine's grade once did; phones' picture has its own) */
+.ns-sky-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12%;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgb(4 6 13) 0%,
+    rgb(4 6 13 / 0.84) 25%,
+    rgb(4 6 13 / 0.5) 50%,
+    rgb(4 6 13 / 0.16) 75%,
+    rgb(4 6 13 / 0) 100%
+  );
+}
+@media (max-width: 640px) {
+  .ns-sky-fade {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------ the first screen */
+/* The words on the left, the hole rising over the Earth on the right. */
+.ns-hole .ns-hero {
+  right: auto;
+  left: clamp(24px, 8.3vw, 140px);
+  top: 22vh;
+  top: 22svh;
+  height: auto;
+  max-width: 600px;
+  padding: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  text-shadow: var(--ns-halo);
+}
+.ns-hole .ns-hero p {
+  margin-left: 0;
+  margin-right: 0;
+}
+.ns-hole .ns-hero h1 {
+  font-size: clamp(36px, 4.4vw, 60px);
+  line-height: 1.18;
+  letter-spacing: 0.04em;
+}
+/* left-aligned, each phrase starts its own line (no gap carried over a break) */
+.ns-hole .ns-hero h1 .ns-phrase {
+  display: block;
+  white-space: nowrap;
+}
+.ns-hole .ns-hero h1 .ns-phrase + .ns-phrase {
+  margin-left: 0;
+}
+.ns-hole .ns-actions {
+  justify-content: flex-start;
+}
+.ns-hole .ns-offer-pill,
+.ns-hole .ns-endpoint,
+.ns-hole .ns-actions {
+  text-shadow: none;
+}
+/* The offer comes once pay-bridge's rules are in, after the words: its place
+   is kept (the pill's own height, so it comes the same on every system) and
+   the words never move when it does. */
+.ns-hole .ns-offer-slot {
+  min-height: 31px;
+  margin-bottom: 26px;
+}
+.ns-hole .ns-offer-slot .ns-offer-pill {
+  height: 31px;
+  margin-bottom: 0;
+}
+/* shorter screens leave the offer to the bar above (night-sea.css), and its place too */
+@media (max-height: 820px) and (min-width: 641px) {
+  .ns-hole .ns-offer-slot {
+    display: none;
+  }
+}
+/* the prayer belongs to the sea */
+.ns-hole .ns-prayer {
+  display: none;
+}
+
+/* ------------------------------------------------------ the gateway */
+/* Models on the left, tools on the right, the hole's still picture between
+   them (gateway-strands.ts runGateway sizes it to the gap). */
+.ns-gateway {
+  position: relative;
+}
+.ns-gateway + .ns-band {
+  margin-top: 40px;
+}
+.ns-gw-stage {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 64px;
+}
+.ns-gw-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* the strands cross in front of the hole's picture; the words and chips stay on top of them */
+.ns-gw-lines {
+  z-index: 1;
+}
+.ns-gw-head,
+.ns-gw-side {
+  position: relative;
+  z-index: 2;
+}
+.ns-gw-head {
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 32px;
+  text-align: center;
+}
+.ns-gw-head .ns-lead {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  text-wrap: pretty;
+}
+.ns-gw {
+  position: relative;
+  width: 100%;
+  margin: 2vh auto 0;
+  padding: 0 clamp(24px, 4.4vw, 72px);
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  align-items: center;
+  height: min(54vh, 460px);
+}
+.ns-gw-core {
+  position: relative;
+  height: 100%;
+}
+.ns-gw-hub {
+  position: absolute;
+  pointer-events: none;
+}
+.ns-gw-hub img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* the disk's light round it, breathing slowly (opacity and scale only: the compositor's work) */
+.ns-gw-hub::before {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(240, 214, 222, 0.07),
+    rgba(240, 214, 222, 0.025) 55%,
+    rgba(240, 214, 222, 0) 100%
+  );
+  animation: ns-gw-breathe 7s ease-in-out infinite;
+}
+.ns-gw-live:not(.ns-gw-on) .ns-gw-hub::before {
+  animation-play-state: paused;
+}
+@keyframes ns-gw-breathe {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+}
+.ns-gw-side {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  height: 100%;
+}
+.ns-gw-in {
+  align-items: flex-end;
+}
+.ns-gw-out {
+  align-items: flex-start;
+}
+.night-sea .ns-gw-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 38px;
+  padding: 0 16px 0 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--ns-ink-soft);
+  /* solid, no backdrop blur: the strands behind move every frame, and a
+     browser blurring under sixteen chips again each frame misses frames */
+  background: rgba(9, 12, 21, 0.78);
+  border: 1px solid rgba(233, 236, 243, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    color 0.25s,
+    border-color 0.25s,
+    background-color 0.25s,
+    opacity 0.6s,
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ns-gw-icon {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  color: var(--ns-ink);
+  opacity: 0.9;
+}
+.ns-gw-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.night-sea .ns-gw-chip:hover,
+.night-sea .ns-gw-chip:focus-visible,
+.night-sea .ns-gw-chip.ns-gw-lit {
+  color: var(--ns-ink);
+  border-color: rgba(233, 236, 243, 0.34);
+  background: rgba(18, 24, 38, 0.62);
+}
+.night-sea .ns-gw-chip:focus-visible {
+  outline: 2px solid var(--ns-glow);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+.ns-gw.ns-gw-picking .ns-gw-chip:not(.ns-gw-lit) {
+  opacity: 0.42;
+}
+/* Once the strands drive the stage (.ns-gw-live), the words and chips come
+   in as it comes into view: the words, the models, then the tools. Before
+   that (or without it) they simply show.
+   Keyboard focus brings them in too, so a chip tabbed to is never invisible;
+   hidden chips can't be clicked. */
+.ns-gw-head {
+  transition:
+    opacity 0.7s,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ns-gw-live:not(.ns-gw-on):not(:focus-within) .ns-gw-head {
+  opacity: 0;
+  transform: translateY(14px);
+  transition-duration: 0.3s;
+}
+.ns-gw-live:not(.ns-gw-on):not(:focus-within) .ns-gw-chip {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition-duration: 0.25s;
+  transition-delay: 0s;
+}
+.ns-gw-stage.ns-gw-on .ns-gw-in .ns-gw-chip {
+  transition-delay:
+    0s, 0s, 0s, calc(200ms + var(--i) * 45ms), calc(200ms + var(--i) * 45ms);
+}
+.ns-gw-stage.ns-gw-on .ns-gw-out .ns-gw-chip {
+  transition-delay:
+    0s, 0s, 0s, calc(560ms + var(--i) * 45ms), calc(560ms + var(--i) * 45ms);
+}
+.ns-gw-stage.ns-gw-on .ns-gw-chip:hover,
+.ns-gw-stage.ns-gw-on .ns-gw-chip.ns-gw-lit {
+  transition-delay: 0s;
+}
+
+/* Eight chips a side: on short laptop screens smaller chips, closer together */
+@media (min-width: 1000px) and (max-height: 760px) {
+  .ns-gw-side {
+    gap: 8px;
+  }
+  .night-sea .ns-gw-chip {
+    height: 32px;
+    font-size: 13px;
+  }
+}
+
+/* The cards: the night behind them holds still, so no blur under them (a
+   sticky one was blurred again on every frame of a scroll); a little more
+   night in the glass instead, as on phones (night-sea.css). */
+.ns-hole .ns-card {
+  background: linear-gradient(
+    180deg,
+    rgba(16, 21, 34, 0.84),
+    rgba(6, 9, 16, 0.88)
+  );
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ------------------------------------------------------ the last screen */
+/* The way in, on the night: no hole again, no screen's worth of empty sky. */
+.ns-hole .ns-end {
+  min-height: 0;
+}
+.ns-hole .ns-closing {
+  padding-top: 160px;
+}
+.night-sea .ns-credit {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ns-ink-faint);
+}
+
+/* Narrower than a laptop (tablets, phones): models above the hole, tools
+   below it (support.ts STACKED_QUERY), so the hole keeps its size. */
+@media (max-width: 999px) {
+  .ns-gw-stage {
+    justify-content: flex-start;
+    padding-top: 92px;
+  }
+  .ns-gw-head {
+    padding: 0 16px;
+  }
+  .ns-gw-head .ns-lead {
+    font-size: 14px;
+  }
+  .ns-gw {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    height: auto;
+    margin-top: 0;
+    padding: 22px 16px 26px;
+  }
+  .ns-gw-core {
+    flex: 1;
+    min-height: 200px;
+    height: auto;
+    align-self: stretch;
+  }
+  .ns-gw-side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    height: auto;
+  }
+}
+@media (max-width: 640px) {
+  .ns-hole .ns-hero {
+    top: 13vh;
+    top: 13svh;
+    left: 22px;
+    right: 22px;
+  }
+  .ns-hole .ns-offer-slot {
+    margin-bottom: 18px;
+  }
+  .ns-hole .ns-hero h1 {
+    font-size: min(34px, (100vw - 44px) / 7.6);
+    line-height: 1.22;
+  }
+  .night-sea .ns-gw-chip {
+    height: 32px;
+    padding: 0 12px 0 10px;
+    gap: 7px;
+    font-size: 12.5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ns-sky-hole,
+  .ns-gw-head,
+  .night-sea .ns-gw-chip {
+    transition: none;
+  }
+  .ns-gw-hub::before {
+    animation: none;
+  }
+}

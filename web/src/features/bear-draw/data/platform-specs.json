@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "updated": "2026-10-25",
+  "note": "国内平台常用图片规格。平台规则经常调整：verify=true 的条目没有找到平台官方原文，只有第三方整理，上线前要在商家后台或创作者后台核对。尺寸写法统一为 宽×高（像素）。",
+  "render": {
+    "note": "本站出图接口目前不保证按 size 参数出图（上游会忽略 size），比例要写进提示词。模型通常返回下面三种尺寸之一，页面再按 crops 缩放/裁切到交付尺寸。构图时主体和文字要离被裁掉的边至少 6%–10%。",
+    "outputs": ["1024×1024", "1024×1536", "1536×1024"],
+    "crops": {
+      "1:1": { "from": "1024×1024", "keep": "1024×1024" },
+      "2:3": { "from": "1024×1536", "keep": "1024×1536" },
+      "3:2": { "from": "1536×1024", "keep": "1536×1024" },
+      "3:4": {
+        "from": "1024×1536",
+        "keep": "1024×1365",
+        "cut": "上下共裁 11%"
+      },
+      "4:5": {
+        "from": "1024×1536",
+        "keep": "1024×1280",
+        "cut": "上下共裁 17%"
+      },
+      "9:16": {
+        "from": "1024×1536",
+        "keep": "864×1536",
+        "cut": "左右共裁 16%"
+      },
+      "4:3": {
+        "from": "1536×1024",
+        "keep": "1365×1024",
+        "cut": "左右共裁 11%"
+      },
+      "16:9": {
+        "from": "1536×1024",
+        "keep": "1536×864",
+        "cut": "上下共裁 16%"
+      },
+      "6:7": { "from": "1024×1024", "keep": "878×1024", "cut": "左右共裁 14%" }
+    }
+  },
+  "platforms": [
+    {
+      "id": "taobao",
+      "name": "淘宝",
+      "items": [
+        {
+          "id": "main",
+          "name": "主图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "w": 800,
+          "h": 800,
+          "minSize": "700×700",
+          "maxFileMB": 3,
+          "formats": ["jpg", "png"],
+          "count": 5,
+          "rules": [
+            "宽高 ≥700 才能在手机端放大查看（常见说法）",
+            "首图少放文字和促销信息",
+            "第 5 张常放白底图"
+          ],
+          "verify": false,
+          "sources": ["https://www.tixiaolu.com/v2/posts/v2-392283c1.html"]
+        },
+        {
+          "id": "main-3x4",
+          "name": "3:4 主图（服饰鞋包等部分类目）",
+          "ratio": "3:4",
+          "size": "750×1000",
+          "w": 750,
+          "h": 1000,
+          "maxFileMB": 3,
+          "rules": ["只有部分类目支持竖版主图"],
+          "verify": true,
+          "sources": ["https://www.tixiaolu.com/v2/posts/v2-392283c1.html"]
+        },
+        {
+          "id": "white",
+          "name": "白底图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "w": 800,
+          "h": 800,
+          "maxFileMB": 3,
+          "rules": [
+            "背景纯白 #FFFFFF",
+            "无文字、水印、Logo 贴片、拼接",
+            "商品完整、居中、不被裁切",
+            "默认不带投影（部分类目要求）"
+          ],
+          "verify": true,
+          "sources": ["https://www.woshipm.com/pmd/1916927.html"]
+        },
+        {
+          "id": "detail",
+          "name": "详情页（手机端）",
+          "width": 750,
+          "rules": [
+            "宽 750，按模块竖向拼接",
+            "单张切片高度和文件大小以后台提示为准"
+          ],
+          "verify": false,
+          "sources": []
+        }
+      ]
+    },
+    {
+      "id": "tmall",
+      "name": "天猫",
+      "items": [
+        {
+          "id": "main",
+          "name": "主图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "w": 800,
+          "h": 800,
+          "minSize": "700×700",
+          "maxFileMB": 3,
+          "count": 5,
+          "rules": ["同淘宝主图"],
+          "verify": false,
+          "sources": []
+        },
+        {
+          "id": "white",
+          "name": "白底图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "w": 800,
+          "h": 800,
+          "rules": ["同淘宝白底图"],
+          "verify": true,
+          "sources": []
+        },
+        {
+          "id": "detail-pc",
+          "name": "详情页（PC 端）",
+          "width": 790,
+          "rules": ["PC 端详情宽 790；手机端仍按 750 出"],
+          "verify": false,
+          "sources": []
+        }
+      ]
+    },
+    {
+      "id": "jd",
+      "name": "京东",
+      "items": [
+        {
+          "id": "main",
+          "name": "主图",
+          "ratio": "1:1",
+          "size": "800×800",
+          "w": 800,
+          "h": 800,
+          "rules": [
+            "常见要求：白底、无道具、无叠加元素",
+            "第三方资料称可传 6 张"
+          ],
+          "verify": true,
+          "sources": [
+            "https://www.amz123.com/ask/4SIL6EBK",
+            "https://www.photoroom.com/ja/lp/background-remover/jd"
+          ]
+        },
+        {
+          "id": "detail",
+          "name": "详情页",
+          "width": 750,
+          "rules": [
+            "第三方资料称 PC 端默认 990 宽，也可 750 / 790；移动端说法不一"
+          ],
+          "verify": true,
+          "sources": ["https://www.amz123.com/ask/4SIL6EBK"]
+        }
+      ]
+    },
+    {
+      "id": "pdd",
+      "name": "拼多多",
+      "items": [
+        {
+          "id": "main",
+          "name": "主图 / 轮播图",
+          "ratio": "1:1",
+          "size": "750×750",
+          "w": 750,
+          "h": 750,
+          "minSize": "480×480",
+          "maxFileMB": 1,
+          "formats": ["jpg", "png"],
+          "count": 10,
+          "rules": [
+            "轮播图首张建议白底、无文字（第三方资料）",
+            "单张 ≤1MB（第三方资料）"
+          ],
+          "verify": true,
+          "sources": ["https://www.amz123.com/ask/ADVadj6F"]
+        },
+        {
+          "id": "detail",
+          "name": "详情图",
+          "width": 750,
+          "rules": [
+            "第三方资料：宽 ≥480，单张 ≤1MB，最多 20 张；批量上传时高度建议 ≤1500"
+          ],
+          "verify": true,
+          "sources": ["https://www.amz123.com/ask/ADVadj6F"]
+        }
+      ]
+    },
+    {
+      "id": "douyin-shop",
+      "name": "抖店",
+      "items": [
+        {
+          "id": "main",
+          "name": "主图（1:1）",
+          "ratio": "1:1",
+          "size": "800×800",
+          "w": 800,
+          "h": 800,
+          "minSize": "600×600",
+          "maxFileMB": 3,
+          "formats": ["jpg", "jpeg", "png"],
+          "rules": [
+            "方图 ≥600×600；白底图或场景图 ≥800×800",
+            "不得使用国家机关、媒体、高校等第三方名称、标识或建筑做背景"
+          ],
+          "verify": true,
+          "sources": [
+            "https://www.canva.cn/learn/douyin-size/",
+            "https://m.163.com/dy/article/L3A0B5730556O6PC.html"
+          ]
+        },
+        {
+          "id": "main-3x4",
+          "name": "主图（3:4，鞋包服饰）",
+          "ratio": "3:4",
+          "size": "750×1000",
+          "w": 750,
+          "h": 1000,
+          "minSize": "375×500",
+          "maxFileMB": 3,
+          "verify": true,
+          "sources": ["https://www.canva.cn/learn/douyin-size/"]
+        },
+        {
+          "id": "detail",
+          "name": "详情图",
+          "width": 750,
+          "maxFileMB": 5,
+          "verify": true,
+          "sources": ["https://www.canva.cn/learn/douyin-size/"]
+        }
+      ]
+    },
+    {
+      "id": "xiaohongshu",
+      "name": "小红书",
+      "items": [
+        {
+          "id": "note-3x4",
+          "name": "图文笔记（竖版，推荐）",
+          "ratio": "3:4",
+          "size": "1080×1440",
+          "w": 1080,
+          "h": 1440,
+          "rules": [
+            "同一篇笔记统一比例，否则系统补白边",
+            "封面即第一张图",
+            "不放二维码、微信号、手机号等导流信息"
+          ],
+          "verify": false,
+          "sources": [
+            "https://www.canva.cn/learn/xiaohongshu-cover-design/",
+            "https://www.canva.cn/sizes/little-red-book/"
+          ]
+        },
+        {
+          "id": "note-1x1",
+          "name": "图文笔记（方图）",
+          "ratio": "1:1",
+          "size": "1080×1080",
+          "w": 1080,
+          "h": 1080,
+          "verify": false,
+          "sources": ["https://www.canva.cn/learn/xiaohongshu-cover-design/"]
+        },
+        {
+          "id": "note-4x3",
+          "name": "图文笔记（横版）",
+          "ratio": "4:3",
+          "size": "1440×1080",
+          "w": 1440,
+          "h": 1080,
+          "verify": false,
+          "sources": ["https://www.canva.cn/learn/xiaohongshu-cover-design/"]
+        }
+      ]
+    },
+    {
+      "id": "douyin",
+      "name": "抖音",
+      "items": [
+        {
+          "id": "video-cover",
+          "name": "竖版视频 / 封面",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "w": 1080,
+          "h": 1920,
+          "safeZone": {
+            "x": 180,
+            "y": 220,
+            "w": 720,
+            "h": 1200,
+            "note": "TikTok 与 IG Reels 的最坏情况安全带；抖音界面相近，需实测"
+          },
+          "rules": [
+            "标题和关键画面放在安全带内",
+            "双列信息流里封面会被裁成约 3:4，主体放中间"
+          ],
+          "verify": true,
+          "sources": ["https://www.canva.cn/learn/douyin-size/"]
+        },
+        {
+          "id": "live-bg",
+          "name": "直播间背景",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "w": 1080,
+          "h": 1920,
+          "rules": [
+            "中间约 60% 留给主播",
+            "底部留给商品卡和评论区，不放重要内容",
+            "不放小字、二维码和站外联系方式"
+          ],
+          "verify": true,
+          "sources": []
+        },
+        {
+          "id": "live-sticker",
+          "name": "直播贴片",
+          "ratio": "1:1",
+          "size": "600×600",
+          "w": 600,
+          "h": 600,
+          "formats": ["png"],
+          "rules": [
+            "透明底 PNG",
+            "实际大小在直播伴侣里拖拽调整；600×600 是本站默认值"
+          ],
+          "verify": true,
+          "sources": []
+        }
+      ]
+    },
+    {
+      "id": "channels",
+      "name": "视频号",
+      "items": [
+        {
+          "id": "cover",
+          "name": "竖版封面",
+          "ratio": "6:7",
+          "size": "1080×1260",
+          "w": 1080,
+          "h": 1260,
+          "rules": ["资料较早（2020 年），以创作者后台提示为准"],
+          "verify": true,
+          "sources": ["https://www.canva.cn/learn/10-video-cover/"]
+        },
+        {
+          "id": "video",
+          "name": "竖版视频",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "w": 1080,
+          "h": 1920,
+          "verify": true,
+          "sources": []
+        }
+      ]
+    },
+    {
+      "id": "kuaishou",
+      "name": "快手",
+      "items": [
+        {
+          "id": "video",
+          "name": "竖版视频 / 封面",
+          "ratio": "9:16",
+          "size": "1080×1920",
+          "w": 1080,
+          "h": 1920,
+          "rules": ["没有找到快手官方的封面规格，按竖版视频通用尺寸出"],
+          "verify": true,
+          "sources": []
+        }
+      ]
+    }
+  ]
+}

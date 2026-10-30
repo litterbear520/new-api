@@ -20,13 +20,26 @@ import { cn } from '@/lib/utils'
 
 type MainProps = React.HTMLAttributes<HTMLElement> & {
   fluid?: boolean
+  /**
+   * The page scrolls as a whole, under the top bar's glass: the console
+   * scroller grows around it (see console-scroller). Otherwise the page fits
+   * the height and scrolls inside itself.
+   */
+  pageScroll?: boolean
 }
 
-export function Main({ className, fluid = true, ...props }: MainProps) {
+export function Main({
+  className,
+  fluid = true,
+  pageScroll,
+  ...props
+}: MainProps) {
   return (
     <main
+      data-page-scroll={pageScroll || undefined}
       className={cn(
         'flex min-h-0 flex-1 flex-col overflow-hidden',
+        pageScroll && 'overflow-visible',
         !fluid &&
           '@7xl/content:mx-auto @7xl/content:w-full @7xl/content:max-w-7xl',
         className

@@ -16,57 +16,52 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { Link, useParams, useSearch } from '@tanstack/react-router'
 import {
   ArrowLeft,
   CalendarClock,
-  Code2,
   FileText,
-  HeartPulse,
-  Info,
+  ImageIcon,
+  KeyRound,
   Layers,
   Maximize2,
+  MessageSquare,
   Sparkles,
-  Timer,
 } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { CopyButton } from '@/components/copy-button'
 import { StaticDataTable } from '@/components/data-table'
-import { sideDrawerContentClassName } from '@/components/drawer-layout'
 import { GroupBadge } from '@/components/group-badge'
 import { PublicLayout } from '@/components/layout'
-import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getPerfMetrics } from '@/features/performance-metrics/api'
 import {
-  formatLatency,
-  formatThroughput,
-  formatUptimePct,
-  getSuccessRateTextClass,
-} from '@/features/performance-metrics/lib/format'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { usd } from '@/features/bear-wallet/lib/format'
 import { PluginIcon } from '@/features/task-plugins/components/plugin-icon'
+import { toIntlLocale } from '@/i18n/languages'
+import { formatSharePercent, isDiscounted } from '@/lib/discount'
+import { formatNumber } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
-import { requireServerSuccess } from '@/lib/server-error-message'
 import { cn } from '@/lib/utils'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 
-import { DEFAULT_TOKEN_UNIT } from '../constants'
+import { DEFAULT_TOKEN_UNIT, TOKEN_UNIT_DIVISORS } from '../constants'
 import { useBillingTime } from '../hooks/use-billing-time'
 import { usePricingData } from '../hooks/use-pricing-data'
 import type { ParsedTaskTier } from '../lib/billing-expr'
 import { formatBillingCondition } from '../lib/billing-expression/condition-display'
 import {
+  formatDynamicUnitPrice,
   formatTaskUsageUnitPrice,
   getDynamicPriceEntries,
   getDynamicPriceUnitLabelKey,
@@ -77,10 +72,18 @@ import {
   isUnconfiguredTaskUsageModel,
   type DynamicPriceEntry,
 } from '../lib/dynamic-price'
-import { parseTags } from '../lib/filters'
-import { getAvailableGroups, isTokenBasedModel } from '../lib/model-helpers'
+import { headlineTokenPrices } from '../lib/headline-price'
+import {
+  getAvailableGroups,
+  getConfiguredGroupRatio,
+  isTokenBasedModel,
+} from '../lib/model-helpers'
 import { withPluginPricing } from '../lib/plugin-pricing'
-import { formatFixedPrice, formatGroupPrice } from '../lib/price'
+import {
+  calculateTokenPrice,
+  formatFixedPrice,
+  formatGroupPrice,
+} from '../lib/price'
 import {
   evaluateTaskUsageExamples,
   getTaskEnumFields,
@@ -94,6 +97,7 @@ import {
   taskTierConditions,
   pricingDisplayFallbackKey,
 } from '../lib/task-price-display'
+import { formatYuan, isImageModel } from '../lib/tools'
 import type {
   ModelCapability,
   PriceType,
@@ -104,6 +108,7 @@ import { DynamicPricingBreakdown } from './dynamic-pricing-breakdown'
 import { ModelBillingModeBadge } from './model-billing-mode-badge'
 import { ModelDetailsApi } from './model-details-api'
 import { ModelDetailsPerformance } from './model-details-performance'
+import { ModelTools } from './model-tools'
 
 // ----------------------------------------------------------------------------
 // Local UI helpers
@@ -237,70 +242,6 @@ function normalizeCatalogItems(items?: readonly string[]): string[] {
   return items.filter((item) => item.trim().length > 0)
 }
 
-function OverviewMetric(props: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value: React.ReactNode
-  valueClassName?: string
-}) {
-  const Icon = props.icon
-
-  return (
-    <div className='flex min-w-0 items-center gap-2 px-3 py-2'>
-      <Icon className='text-muted-foreground/70 size-3.5 shrink-0' />
-      <div className='min-w-0 flex-1'>
-        <div className='text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase'>
-          {props.label}
-        </div>
-        <div
-          className={cn(
-            'text-foreground truncate font-mono text-sm font-semibold tabular-nums',
-            props.valueClassName
-          )}
-        >
-          {props.value}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function OverviewSummaryGrid(props: { model: PricingModel }) {
-  const { t } = useTranslation()
-  const metricsQuery = useQuery({
-    queryKey: ['perf-metrics', props.model.model_name],
-    queryFn: async () =>
-      requireServerSuccess(await getPerfMetrics(props.model.model_name, 24)),
-    staleTime: 60 * 1000,
-  })
-
-  const summary = metricsQuery.data?.data.summary
-  const successRate = summary?.success_rate ?? Number.NaN
-  const avgTps = summary?.avg_tps ?? 0
-  const avgLatency = summary?.avg_latency_ms ?? 0
-
-  return (
-    <div className='bg-muted/20 grid overflow-hidden rounded-lg border sm:grid-cols-3 sm:divide-x'>
-      <OverviewMetric
-        icon={Timer}
-        label='TPS'
-        value={formatThroughput(avgTps)}
-      />
-      <OverviewMetric
-        icon={Timer}
-        label={t('Average latency')}
-        value={formatLatency(avgLatency)}
-      />
-      <OverviewMetric
-        icon={HeartPulse}
-        label={t('Success rate')}
-        value={formatUptimePct(successRate)}
-        valueClassName={getSuccessRateTextClass(successRate)}
-      />
-    </div>
-  )
-}
-
 function CatalogPillList(props: { items: string[] }) {
   return (
     <div className='flex min-w-0 flex-wrap gap-1.5'>
@@ -321,17 +262,6 @@ function CatalogTextValue(props: { children: React.ReactNode }) {
     <span className='text-foreground min-w-0 truncate text-sm font-semibold'>
       {props.children}
     </span>
-  )
-}
-
-function CatalogInfoCell(props: { label: string; children: React.ReactNode }) {
-  return (
-    <div className='bg-card flex min-w-0 flex-col gap-1 px-3 py-2.5'>
-      <span className='text-muted-foreground text-[10px] font-medium tracking-wider uppercase'>
-        {props.label}
-      </span>
-      {props.children}
-    </div>
   )
 }
 
@@ -514,78 +444,11 @@ function ModelBackendSignalsSection(props: { model: PricingModel }) {
   )
 }
 
-function ModelBackendProviderSection(props: { model: PricingModel }) {
-  const { t } = useTranslation()
-  const model = props.model
-  const groups = normalizeCatalogItems(model.enable_groups)
-  const endpoints = normalizeCatalogItems(model.supported_endpoint_types)
-  const tags = parseTags(model.tags)
-  const cells: React.ReactNode[] = []
-
-  if (model.vendor_name) {
-    cells.push(
-      <CatalogInfoCell key='provider' label={t('Provider')}>
-        <CatalogTextValue>{model.vendor_name}</CatalogTextValue>
-      </CatalogInfoCell>
-    )
-  }
-
-  cells.push(
-    <CatalogInfoCell key='type' label={t('Type')}>
-      <ModelBillingModeBadge model={model} />
-    </CatalogInfoCell>
-  )
-
-  if (groups.length > 0) {
-    cells.push(
-      <CatalogInfoCell key='groups' label={t('Groups')}>
-        <CatalogPillList items={groups} />
-      </CatalogInfoCell>
-    )
-  }
-
-  if (endpoints.length > 0) {
-    cells.push(
-      <CatalogInfoCell key='endpoints' label={t('Endpoints')}>
-        <CatalogPillList items={endpoints} />
-      </CatalogInfoCell>
-    )
-  }
-
-  if (tags.length > 0) {
-    cells.push(
-      <CatalogInfoCell key='tags' label={t('Tags')}>
-        <CatalogPillList items={tags} />
-      </CatalogInfoCell>
-    )
-  }
-
-  if (model.parameter_count) {
-    cells.push(
-      <CatalogInfoCell key='parameters' label={t('Parameters')}>
-        <CatalogTextValue>{model.parameter_count}</CatalogTextValue>
-      </CatalogInfoCell>
-    )
-  }
-
-  if (cells.length === 0) return null
-
-  return (
-    <section>
-      <SectionTitle>{t('Model')}</SectionTitle>
-      <div className='border-border/60 bg-border/60 grid grid-cols-1 gap-px overflow-hidden rounded-lg border sm:grid-cols-2'>
-        {cells}
-      </div>
-    </section>
-  )
-}
-
 function ModelBackendDetailsSection(props: { model: PricingModel }) {
   return (
     <>
       <ModelBackendQuickStats model={props.model} />
       <ModelBackendSignalsSection model={props.model} />
-      <ModelBackendProviderSection model={props.model} />
     </>
   )
 }
@@ -594,42 +457,194 @@ function ModelBackendDetailsSection(props: { model: PricingModel }) {
 // Model header (always visible above the detail sections)
 // ----------------------------------------------------------------------------
 
+const API_FORMAT_LABELS: Record<string, string> = {
+  openai: 'OpenAI',
+  'openai-response': 'OpenAI Responses',
+  anthropic: 'Anthropic',
+  gemini: 'Gemini',
+  'jina-rerank': 'Rerank',
+  embeddings: 'Embeddings',
+}
+
 function ModelHeader(props: { model: PricingModel }) {
   const { t } = useTranslation()
   const model = props.model
   const modelIconKey = model.icon || model.vendor_icon
-  const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 20) : null
+  const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 26) : null
   const description = model.description || model.vendor_description || null
+  const image = isImageModel(model)
 
   return (
-    <header className='pb-4'>
-      <div className='flex items-center gap-2.5'>
-        {modelIcon}
-        <h1 className='font-mono text-xl font-bold tracking-tight sm:text-2xl'>
-          {model.model_name}
-        </h1>
-        <CopyButton
-          value={model.model_name || ''}
-          className='size-6'
-          iconClassName='size-3'
-          tooltip={t('Copy model name')}
-          successTooltip={t('Copied!')}
-          aria-label={t('Copy model name')}
-        />
-      </div>
-      <div className='mt-1 flex flex-wrap items-center gap-1.5 text-xs'>
-        {model.vendor_name && (
-          <span className='text-muted-foreground'>{model.vendor_name}</span>
+    <header className='flex flex-col gap-5 md:flex-row md:items-start md:justify-between'>
+      <div className='min-w-0'>
+        <div className='flex min-w-0 items-center gap-3'>
+          {modelIcon && (
+            <span
+              aria-hidden
+              className='bg-muted/60 flex size-11 shrink-0 items-center justify-center rounded-xl'
+            >
+              {modelIcon}
+            </span>
+          )}
+          <h1 className='min-w-0 truncate font-mono text-2xl font-semibold tracking-tight sm:text-[28px]'>
+            {model.model_name}
+          </h1>
+          <CopyButton
+            value={model.model_name || ''}
+            className='size-7 shrink-0'
+            iconClassName='size-3.5'
+            tooltip={t('Copy model name')}
+            successTooltip={t('Copied!')}
+            aria-label={t('Copy model name')}
+          />
+        </div>
+        <div className='mt-3 flex flex-wrap items-center gap-2 text-sm'>
+          {model.vendor_name && (
+            <span className='text-muted-foreground'>{model.vendor_name}</span>
+          )}
+          {isDynamicPricingModel(model) && (
+            <ModelBillingModeBadge model={model} />
+          )}
+          <ModelTools model={model} />
+        </div>
+        {description && (
+          <p className='text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed'>
+            {description}
+          </p>
         )}
-        <span className='text-muted-foreground/30'>·</span>
-        <ModelBillingModeBadge model={model} />
       </div>
-      {description && (
-        <p className='text-muted-foreground mt-2 text-sm leading-relaxed'>
-          {description}
-        </p>
-      )}
+      <div className='flex shrink-0 flex-wrap gap-2'>
+        {image ? (
+          <Link to='/draw' className={buttonVariants({ variant: 'outline' })}>
+            <ImageIcon />
+            {t('Try in drawing')}
+          </Link>
+        ) : (
+          <Link
+            to='/playground'
+            search={{ model: model.model_name }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            <MessageSquare />
+            {t('Try in chat')}
+          </Link>
+        )}
+        <Link to='/keys' className={buttonVariants()}>
+          <KeyRound />
+          {t('Get API key')}
+        </Link>
+      </div>
     </header>
+  )
+}
+
+/** OpenModel-style strip under the title: headline prices and API formats */
+function ModelStatsStrip(props: {
+  model: PricingModel
+  priceRate: number
+  usdExchangeRate: number
+}) {
+  const { t, i18n } = useTranslation()
+  const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
+  const currency = useSystemConfigStore((state) => state.config.currency)
+  const billingTime = useBillingTime(props.model.billing_expr)
+  const headline = useMemo(
+    () => {
+      const tokenPrices = headlineTokenPrices(
+        props.model,
+        billingTime === undefined ? undefined : new Date(billingTime)
+      )
+      return (['input', 'output'] as const).flatMap((type) => {
+        const value = tokenPrices?.[type]
+        if (value === undefined || !Number.isFinite(value)) return []
+        return [
+          {
+            type,
+            value,
+            formatted: formatDynamicUnitPrice(value, {
+              tokenUnit: DEFAULT_TOKEN_UNIT,
+              groupRatioMultiplier: 1,
+            }),
+          },
+        ]
+      })
+    },
+    // Currency is read indirectly by the price formatter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.model, billingTime, currency]
+  )
+
+  const deal = isDiscounted(props.priceRate, props.usdExchangeRate)
+  const prices = headline.map((price) => ({
+    key: price.type,
+    label: price.type === 'input' ? t('Input') : t('Output'),
+    value: price.formatted,
+    yuan: deal ? formatYuan(price.value, props.priceRate, locale) : null,
+  }))
+  const formats = (props.model.supported_endpoint_types ?? [])
+    .map((type) => API_FORMAT_LABELS[type])
+    .filter(Boolean)
+
+  if (prices.length === 0 && formats.length === 0) return null
+
+  return (
+    <dl className='grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4'>
+      {prices.map((price) => (
+        <div key={price.key} className='min-w-0 border-s ps-4'>
+          <dt className='text-muted-foreground text-xs'>{price.label}</dt>
+          <dd className='mt-1 font-mono text-lg font-semibold tabular-nums'>
+            {price.value}
+            <span className='text-muted-foreground ms-1 text-xs font-normal'>
+              /1M
+            </span>
+          </dd>
+          {price.yuan && (
+            <dd className='text-success font-mono text-xs tabular-nums'>
+              ≈ {price.yuan}
+            </dd>
+          )}
+        </div>
+      ))}
+      {formats.length > 0 && (
+        <div className='col-span-2 min-w-0 border-s ps-4'>
+          <dt className='text-muted-foreground text-xs'>{t('API formats')}</dt>
+          <dd className='mt-1.5 text-sm font-medium'>{formats.join(' · ')}</dd>
+        </div>
+      )}
+    </dl>
+  )
+}
+
+/** A titled block of the details page, OpenModel-style: rule, title, content */
+function DetailSection(props: { title: string; children: React.ReactNode }) {
+  return (
+    <section className='border-t pt-8'>
+      <h2 className='mb-5 text-lg font-semibold tracking-tight'>
+        {props.title}
+      </h2>
+      {props.children}
+    </section>
+  )
+}
+
+/** How USD list prices turn into what the user pays */
+function PayNote(props: { priceRate: number; usdExchangeRate: number }) {
+  const { t, i18n } = useTranslation()
+  if (!isDiscounted(props.priceRate, props.usdExchangeRate)) return null
+  const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
+  return (
+    <p className='text-muted-foreground text-xs leading-relaxed'>
+      {t(
+        'Prices are in USD and come off your balance. ¥1 buys {{credit}} of credit, so you pay about {{percent}} of the official price ($1 = ¥{{rate}}).',
+        {
+          credit: usd(1 / props.priceRate, locale),
+          percent: formatSharePercent(
+            (props.priceRate / props.usdExchangeRate) * 100
+          ),
+          rate: formatNumber(props.usdExchangeRate, locale),
+        }
+      )}
+    </p>
   )
 }
 
@@ -684,7 +699,7 @@ function PriceSection(props: {
     available: boolean
   }[] = [
     {
-      label: t('Cached input'),
+      label: t('Cache Read'),
       type: 'cache',
       available: props.model.cache_ratio != null,
     },
@@ -862,57 +877,120 @@ function PriceSection(props: {
     )
   }
 
-  const secondaryItems = secondaryPriceTypes.filter((p) => p.available)
-  const renderPrice = (type: PriceType) => (
-    <>
-      {formatGroupPrice(
-        props.model,
-        baseGroupKey,
-        type,
-        props.tokenUnit,
-        props.showRechargePrice,
-        props.priceRate,
-        props.usdExchangeRate,
-        baseGroupRatioMap
-      )}
-      <span className='text-muted-foreground/40 ml-1 text-xs font-normal'>
-        / {tokenUnitLabel}
-      </span>
-    </>
-  )
+  const columns = [
+    ...primaryPriceTypes,
+    ...secondaryPriceTypes.filter((p) => p.available),
+  ]
+  const deal = isDiscounted(props.priceRate, props.usdExchangeRate)
+  const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
+  // calculateTokenPrice is per 1M; the yuan rows follow the header's unit
+  const unitDivisor = TOKEN_UNIT_DIVISORS[props.tokenUnit]
+  const rows: {
+    key: string
+    label: React.ReactNode
+    cell: (type: PriceType) => string
+    className?: string
+  }[] = [
+    {
+      key: 'balance',
+      label: t('From your balance'),
+      cell: (type) =>
+        formatGroupPrice(
+          props.model,
+          baseGroupKey,
+          type,
+          props.tokenUnit,
+          false,
+          props.priceRate,
+          props.usdExchangeRate,
+          baseGroupRatioMap
+        ),
+    },
+  ]
+  if (deal) {
+    rows.push(
+      {
+        key: 'pay',
+        label: (
+          <span className='flex flex-wrap items-center gap-1.5'>
+            {t('You pay')}
+            <span className='bg-success/10 text-success rounded px-1.5 py-0.5 text-[11px]! font-medium'>
+              {t('{{percent}} of official', {
+                percent: formatSharePercent(
+                  (props.priceRate / props.usdExchangeRate) * 100
+                ),
+              })}
+            </span>
+          </span>
+        ),
+        cell: (type) =>
+          formatYuan(
+            calculateTokenPrice(props.model, type, 1) / unitDivisor,
+            props.priceRate,
+            locale
+          ) ?? '—',
+        className: 'text-success',
+      },
+      {
+        key: 'official',
+        label: t('Official price'),
+        cell: (type) =>
+          formatYuan(
+            calculateTokenPrice(props.model, type, 1) / unitDivisor,
+            props.usdExchangeRate,
+            locale
+          ) ?? '—',
+        className: 'text-muted-foreground',
+      }
+    )
+  }
 
   return (
-    <section>
-      <SectionTitle>{t('Base Price')}</SectionTitle>
-      <div className='grid grid-cols-2 gap-2'>
-        {primaryPriceTypes.map((item) => (
-          <div key={item.type} className='bg-muted/20 rounded-lg border p-3'>
-            <div className='text-muted-foreground text-xs'>{item.label}</div>
-            <div className='text-foreground mt-1 font-mono text-base font-semibold tabular-nums'>
-              {renderPrice(item.type)}
-            </div>
-          </div>
-        ))}
-      </div>
-      {secondaryItems.length > 0 && (
-        <div className='bg-muted/20 mt-3 rounded-lg border px-3 py-2.5'>
-          <div className='space-y-1.5'>
-            {secondaryItems.map((item) => (
-              <div
-                key={item.type}
-                className='flex items-baseline justify-between gap-4'
+    <section className='-mx-1 px-1'>
+      <Table className='min-w-[520px] [&_td]:font-normal [&_thead_th]:text-xs'>
+        <TableHeader>
+          <TableRow className='hover:[background-color:transparent]'>
+            <TableHead
+              scope='col'
+              className='text-muted-foreground h-auto py-2.5 ps-0 pe-3 text-start whitespace-normal'
+            >
+              {t('Per {{unit}} tokens', { unit: tokenUnitLabel })}
+            </TableHead>
+            {columns.map((column) => (
+              <TableHead
+                key={column.type}
+                scope='col'
+                className='text-muted-foreground h-auto px-3 py-2.5 text-end'
               >
-                <span className='text-muted-foreground/70 text-sm'>
-                  {item.label}
-                </span>
-                <span className='text-muted-foreground font-mono text-sm tabular-nums'>
-                  {renderPrice(item.type)}
-                </span>
-              </div>
+                {column.label}
+              </TableHead>
             ))}
-          </div>
-        </div>
-      )}
+          </TableRow>
+        </TableHeader>
+        <TableBody className='[&>tr]:h-auto'>
+          {rows.map((row) => (
+            <TableRow
+              key={row.key}
+              className='hover:[background-color:transparent]'
+            >
+              <TableHead
+                scope='row'
+                className='h-auto py-3 ps-0 pe-3 text-start whitespace-normal'
+              >
+                {row.label}
+              </TableHead>
+              {columns.map((column) => (
+                <TableCell
+                  key={column.type}
+                  className={cn('px-3 py-3 text-end font-mono', row.className)}
+                >
+                  {row.cell(column.type)}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </section>
   )
 }
@@ -1444,18 +1522,6 @@ function ProviderGroupPricingSection(
   )
 }
 
-const TAB_VALUES = ['overview', 'performance', 'api'] as const
-type TabValue = (typeof TAB_VALUES)[number]
-
-const TAB_META: Record<
-  TabValue,
-  { icon: React.ComponentType<{ className?: string }>; labelKey: string }
-> = {
-  overview: { icon: Info, labelKey: 'Overview' },
-  performance: { icon: HeartPulse, labelKey: 'Performance' },
-  api: { icon: Code2, labelKey: 'API' },
-}
-
 export interface ModelDetailsContentProps {
   model: PricingModel
   groupRatio: Record<string, number>
@@ -1481,57 +1547,53 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
     props.model.billing_expr,
     props.model.billing_usage_schema
   )
+  // A tiered model's breakdown table already lists every price
   const showBasePrices =
-    !props.model.billing_usage_schema ||
-    simpleTaskPricing ||
-    taskTiers.length === 0
+    (!isDynamic || simpleTaskPricing) &&
+    (!props.model.billing_usage_schema ||
+      simpleTaskPricing ||
+      taskTiers.length === 0)
+  // The table above is the viewer's price unless they have several groups
+  // or their one group is priced differently
+  const groups = getAvailableGroups(props.model, props.usableGroup)
+  const showGroupPrices =
+    groups.length > 1 ||
+    groups.some(
+      (group) => getConfiguredGroupRatio(props.groupRatio, group) !== 1
+    )
 
   return (
-    <div className='@container/details space-y-4'>
+    <div className='@container/details space-y-8'>
       <ModelHeader model={props.model} />
+      <ModelStatsStrip
+        model={props.model}
+        priceRate={props.priceRate}
+        usdExchangeRate={props.usdExchangeRate}
+      />
 
-      <Tabs defaultValue='overview' className='gap-4'>
-        <TabsList className='bg-muted/60 grid w-full grid-cols-3 gap-1 rounded-lg p-1 group-data-horizontal/tabs:h-auto'>
-          {TAB_VALUES.map((value) => {
-            const Icon = TAB_META[value].icon
-            return (
-              <TabsTrigger
-                key={value}
-                value={value}
-                className='h-8 min-w-0 gap-1.5 rounded-md px-3 text-xs sm:text-sm'
-              >
-                <Icon className='size-3.5' />
-                <span className='truncate'>{t(TAB_META[value].labelKey)}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
-
-        <TabsContent value='overview' className='space-y-6 outline-none'>
-          <OverviewSummaryGrid model={props.model} />
-
-          <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
-            <SectionTitle>{t('Pricing')}</SectionTitle>
-            {showBasePrices && (
-              <PriceSection
-                model={props.model}
-                priceRate={props.priceRate}
-                usdExchangeRate={props.usdExchangeRate}
-                tokenUnit={props.tokenUnit}
-                showRechargePrice={showRechargePrice}
-              />
-            )}
-            {isDynamic && !simpleTaskPricing && (
-              <DynamicPricingBreakdown
-                billingExpr={props.model.billing_expr}
-                usageSchema={props.model.billing_usage_schema}
-                taskPriceOptions={{
-                  showRechargePrice,
-                  priceRate: props.priceRate,
-                  usdExchangeRate: props.usdExchangeRate,
-                }}
-              />
-            )}
+      <DetailSection title={t('Pricing')}>
+        <div className='space-y-5'>
+          {showBasePrices && (
+            <PriceSection
+              model={props.model}
+              priceRate={props.priceRate}
+              usdExchangeRate={props.usdExchangeRate}
+              tokenUnit={props.tokenUnit}
+              showRechargePrice={showRechargePrice}
+            />
+          )}
+          {isDynamic && !simpleTaskPricing && (
+            <DynamicPricingBreakdown
+              billingExpr={props.model.billing_expr}
+              usageSchema={props.model.billing_usage_schema}
+              taskPriceOptions={{
+                showRechargePrice,
+                priceRate: props.priceRate,
+                usdExchangeRate: props.usdExchangeRate,
+              }}
+            />
+          )}
+          {showGroupPrices && (
             <GroupPricingSection
               model={props.model}
               groupRatio={props.groupRatio}
@@ -1542,56 +1604,24 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
               tokenUnit={props.tokenUnit}
               showRechargePrice={showRechargePrice}
             />
-          </section>
-
-          <ModelBackendDetailsSection model={props.model} />
-        </TabsContent>
-
-        <TabsContent value='performance' className='outline-none'>
-          <ModelDetailsPerformance model={props.model} />
-        </TabsContent>
-
-        <TabsContent value='api' className='outline-none'>
-          <ModelDetailsApi
-            model={props.model}
-            endpointMap={props.endpointMap}
+          )}
+          <PayNote
+            priceRate={props.priceRate}
+            usdExchangeRate={props.usdExchangeRate}
           />
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
-}
-
-// ----------------------------------------------------------------------------
-// Drawer & page wrappers
-// ----------------------------------------------------------------------------
-
-export interface ModelDetailsDrawerProps extends ModelDetailsContentProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
-export function ModelDetailsDrawer(props: ModelDetailsDrawerProps) {
-  const { t } = useTranslation()
-  const { open, onOpenChange, ...contentProps } = props
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side='right'
-        className={sideDrawerContentClassName(
-          'sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl'
-        )}
-      >
-        <SheetHeader className='sr-only'>
-          <SheetTitle>{props.model.model_name}</SheetTitle>
-          <SheetDescription>{t('Model details')}</SheetDescription>
-        </SheetHeader>
-        <div className='flex-1 overflow-y-auto px-4 pt-11 pb-5 sm:px-6 sm:pt-12 sm:pb-6'>
-          <ModelDetailsContent {...contentProps} />
         </div>
-      </SheetContent>
-    </Sheet>
+      </DetailSection>
+
+      <DetailSection title={t('Stability & performance')}>
+        <ModelDetailsPerformance model={props.model} />
+      </DetailSection>
+
+      <DetailSection title={t('How to call it')}>
+        <ModelDetailsApi model={props.model} endpointMap={props.endpointMap} />
+      </DetailSection>
+
+      <ModelBackendDetailsSection model={props.model} />
+    </div>
   )
 }
 
@@ -1599,7 +1629,6 @@ export function ModelDetails() {
   const { t } = useTranslation()
   const { modelId } = useParams({ from: '/pricing/$modelId/' })
   const search = useSearch({ from: '/pricing/$modelId/' })
-  const navigate = useNavigate()
 
   const {
     models,
@@ -1619,10 +1648,6 @@ export function ModelDetails() {
     if (!models || !modelId) return null
     return models.find((m) => m.model_name === modelId) || null
   }, [models, modelId])
-
-  const handleBack = () => {
-    navigate({ to: '/pricing', search })
-  }
 
   if (isLoading) {
     return (
@@ -1659,8 +1684,12 @@ export function ModelDetails() {
           <p className='text-muted-foreground mb-4 text-sm'>
             {t("The model you're looking for doesn't exist.")}
           </p>
-          <Button onClick={handleBack} variant='outline' size='sm'>
-            {t('Back to Models')}
+          <Button
+            variant='outline'
+            size='sm'
+            render={<Link to='/pricing' search={search} />}
+          >
+            {t('Back to Model Square')}
           </Button>
         </div>
       </PublicLayout>
@@ -1669,16 +1698,15 @@ export function ModelDetails() {
 
   return (
     <PublicLayout>
-      <div className='mx-auto max-w-5xl px-4 sm:px-6'>
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={handleBack}
-          className='text-muted-foreground hover:text-foreground mb-4 h-auto gap-1 px-0 py-1 text-xs'
+      <div className='mx-auto max-w-5xl px-4 pb-16 sm:px-6'>
+        <Link
+          to='/pricing'
+          search={search}
+          className='text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm transition-colors'
         >
           <ArrowLeft className='size-3.5' />
-          {t('Back')}
-        </Button>
+          {t('Back to Model Square')}
+        </Link>
 
         <ModelDetailsContent
           model={model}
