@@ -48,13 +48,6 @@ const BRAND_INSET = 14
 /** Room for the hairline between the brand and the dock: 4 + 1 + 4 px. */
 const SEAM = 9
 
-/** Full-screen work areas: the bar stays assembled over them. */
-const PINNED = ['/playground', '/chat', '/draw']
-
-function isPinned(pathname: string) {
-  return PINNED.some((p) => pathname === p || pathname.startsWith(`${p}/`))
-}
-
 /** Scrollers inside these never move the bar. */
 const OVERLAYS =
   '[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-sidebar],[data-site-bar]'
@@ -105,6 +98,7 @@ function Bar(props: { pathname: string }) {
   })
   const dark = useSiteBarStore((s) => s.darkPages > 0)
   const quiet = useSiteBarStore((s) => s.quietPages > 0)
+  const held = useSiteBarStore((s) => s.splitPages > 0)
   const signIn = useSiteBarStore((s) => s.signIn)
   const openMenu = useSiteBarStore((s) => s.openMenu)
   const user = useAuthStore((s) => s.auth.user)
@@ -115,7 +109,6 @@ function Bar(props: { pathname: string }) {
   const links = useTopNavLinks()
   const notifications = useNotifications()
   const prompt = useSignInPrompt()
-  const pinned = isPinned(props.pathname)
 
   const barRef = useRef<HTMLElement>(null)
   const glassRef = useRef<HTMLDivElement>(null)
@@ -170,7 +163,7 @@ function Bar(props: { pathname: string }) {
 
     const still = window.matchMedia('(prefers-reduced-motion: reduce)')
     const morph = new BarMorph({
-      pinned,
+      held,
       top: pageTop(),
       // opened from a page whose bar was together: start where it was
       start: takeHandoff(),
@@ -235,7 +228,7 @@ function Bar(props: { pathname: string }) {
       morphRef.current = null
       tracked.current = null
     }
-    // the morph is built once; pinning changes go through setPinned below
+    // the morph is built once; a new page goes through follow() below
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -246,10 +239,10 @@ function Bar(props: { pathname: string }) {
   useLayoutEffect(() => {
     const frame = requestAnimationFrame(() => {
       tracked.current?.set(pageScroller() ?? document, pageTop())
-      morphRef.current?.follow(pinned, pageTop())
+      morphRef.current?.follow(held, pageTop())
     })
     return () => cancelAnimationFrame(frame)
-  }, [props.pathname, pinned])
+  }, [props.pathname, held])
 
   // The docs' copy of this bar shows the same avatar (see account-note.ts).
   // Forget it only once the session check has found nobody: while it runs

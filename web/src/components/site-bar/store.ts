@@ -26,6 +26,8 @@ type SiteBarState = {
   darkPages: number
   /** Pages that hold something over everything (the night sea's sign-in). */
   quietPages: number
+  /** Work areas that keep the bar split whatever scrolls (chat, the canvas). */
+  splitPages: number
   /** A page's own sign-in, e.g. the night sea's dialog over the sky. */
   signIn: ClickHandler | null
   /** The console's drawer, opened by the phone menu button. */
@@ -35,6 +37,7 @@ type SiteBarState = {
 export const useSiteBarStore = create<SiteBarState>(() => ({
   darkPages: 0,
   quietPages: 0,
+  splitPages: 0,
   signIn: null,
   openMenu: null,
 }))
@@ -56,6 +59,18 @@ export function useQuietSiteBar(quiet: boolean) {
     return () =>
       useSiteBarStore.setState((s) => ({ quietPages: s.quietPages - 1 }))
   }, [quiet])
+}
+
+/**
+ * The bar stays split while this page is up: a full-screen work area (chat,
+ * the drawing canvas) whose own scrolling must not move it.
+ */
+export function useSplitSiteBar() {
+  useEffect(() => {
+    useSiteBarStore.setState((s) => ({ splitPages: s.splitPages + 1 }))
+    return () =>
+      useSiteBarStore.setState((s) => ({ splitPages: s.splitPages - 1 }))
+  }, [])
 }
 
 /**

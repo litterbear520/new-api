@@ -21,6 +21,7 @@ import { useEffect } from 'react'
 import z from 'zod'
 
 import { Main } from '@/components/layout'
+import { useSplitSiteBar } from '@/components/site-bar/store'
 import { BearChat } from '@/features/bear-chat'
 import { isSidebarModuleEnabled } from '@/lib/nav-modules'
 import { useBearChatStore } from '@/stores/bear-chat-store'
@@ -40,6 +41,7 @@ export const Route = createFileRoute('/_authenticated/playground/')({
 function PlaygroundPage() {
   const { model } = Route.useSearch()
   const navigate = Route.useNavigate()
+  useSplitSiteBar()
 
   // 「在聊天里试试」 on the model square: pick that model once, then tidy the URL
   useEffect(() => {

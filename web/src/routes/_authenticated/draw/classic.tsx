@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { Main } from '@/components/layout'
+import { useSplitSiteBar } from '@/components/site-bar/store'
 import { Draw } from '@/features/draw'
 import { isSidebarModuleEnabled } from '@/lib/nav-modules'
 
@@ -33,6 +34,7 @@ export const Route = createFileRoute('/_authenticated/draw/classic')({
 })
 
 function ClassicDrawPage() {
+  useSplitSiteBar()
   return (
     <Main className='p-0'>
       <Draw />

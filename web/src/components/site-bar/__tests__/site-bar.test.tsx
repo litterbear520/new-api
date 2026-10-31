@@ -38,7 +38,12 @@ import { useAuthStore } from '@/stores/auth-store'
 import { ACCOUNT_NOTE_KEY } from '../account-note'
 import { HANDOFF_KEY, LENS_HANDOFF_KEY } from '../handoff'
 import { SiteBar } from '../site-bar'
-import { useDarkSiteBar, useSiteBarMenu, useSiteBarSignIn } from '../store'
+import {
+  useDarkSiteBar,
+  useSiteBarMenu,
+  useSiteBarSignIn,
+  useSplitSiteBar,
+} from '../store'
 
 const signInSpy = vi.fn()
 const menuSpy = vi.fn()
@@ -128,6 +133,25 @@ function NightSeaStub() {
   return <main>night sea</main>
 }
 
+function ChatStub() {
+  useSplitSiteBar()
+  return (
+    <main>
+      <div
+        data-testid='thread'
+        ref={(el) => {
+          if (el) {
+            Object.defineProperty(el, 'clientHeight', {
+              value: 900,
+              configurable: true,
+            })
+          }
+        }}
+      />
+    </main>
+  )
+}
+
 function ConsoleStub() {
   const ref = useRef<HTMLDivElement>(null)
   useSiteBarMenu(menuSpy)
@@ -161,12 +185,8 @@ function buildRouter(initial: string) {
     id: '_authenticated',
     component: ConsoleStub,
   })
-  const consolePage = (path: string) =>
-    createRoute({
-      getParentRoute: () => authed,
-      path,
-      component: () => <main>{path}</main>,
-    })
+  const consolePage = (path: string, component = () => <main>{path}</main>) =>
+    createRoute({ getParentRoute: () => authed, path, component })
   return createRouter({
     routeTree: root.addChildren([
       page('/', NightSeaStub),
@@ -176,7 +196,7 @@ function buildRouter(initial: string) {
       authed.addChildren([
         consolePage('/dashboard/overview'),
         consolePage('/keys'),
-        consolePage('/playground'),
+        consolePage('/playground', ChatStub),
         consolePage('/draw'),
       ]),
     ]),
@@ -385,21 +405,40 @@ test('scrolling inside a dialog leaves the bar alone', async () => {
   dialog.remove()
 })
 
-test('chat and drawing keep the bar assembled without scrolling', async () => {
-  const chat = await renderAt('/playground', { signedIn: true })
-  expect(chat.bar).toHaveAttribute('data-state', 'assembled')
+test('chat keeps the bar split, even while its thread scrolls', async () => {
+  const { bar } = await renderAt('/playground', { signedIn: true })
+  settle()
+  expect(bar).toHaveAttribute('data-state', 'split')
 
-  await act(() => chat.router.navigate({ to: '/draw' }))
-  expect(chat.bar).toHaveAttribute('data-state', 'assembled')
-})
-
-test('leaving chat for a page at its top splits the bar', async () => {
-  const { router, bar } = await renderAt('/playground', { signedIn: true })
-
-  await act(() => router.navigate({ to: '/keys' }))
+  scrollElementTo(screen.getByTestId('thread'), 400)
   settle()
 
   expect(bar).toHaveAttribute('data-state', 'split')
+})
+
+test('opening chat from a scrolled page splits the bar', async () => {
+  const { router, bar } = await renderAt('/keys', { signedIn: true })
+  scrollElementTo(screen.getByTestId('console-scroller'), 300)
+  settle()
+  expect(bar).toHaveAttribute('data-state', 'assembled')
+
+  await act(() => router.navigate({ to: '/playground' }))
+  settle()
+
+  expect(bar).toHaveAttribute('data-state', 'split')
+})
+
+test('the drawing page moves the bar with its feed, like any page', async () => {
+  const { bar } = await renderAt('/draw', { signedIn: true })
+  const feed = document.createElement('div')
+  Object.defineProperty(feed, 'clientHeight', { value: 900 })
+  document.body.append(feed)
+
+  scrollElementTo(feed, 150)
+  settle()
+
+  expect(bar).toHaveAttribute('data-state', 'assembled')
+  feed.remove()
 })
 
 test('the night-sea pages dress the bar in dark glass, other pages follow the theme', async () => {

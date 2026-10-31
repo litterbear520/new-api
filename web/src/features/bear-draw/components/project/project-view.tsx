@@ -21,6 +21,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { useSplitSiteBar } from '@/components/site-bar/store'
 import { useTheme } from '@/context/theme-provider'
 import { cn } from '@/lib/utils'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
@@ -205,6 +206,8 @@ function ProjectScreen(props: { project: Project }) {
  * sheet over it.
  */
 export function ProjectView(props: { projectId: string }) {
+  // the canvas is a work area: its chat scrolling must not move the bar
+  useSplitSiteBar()
   const project = useBearDrawStore(
     (s) => s.projects.find((p) => p.id === props.projectId) ?? null
   )

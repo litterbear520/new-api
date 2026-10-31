@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { Main } from '@/components/layout'
+import { useSplitSiteBar } from '@/components/site-bar/store'
 import { Playground } from '@/features/playground'
 import { isSidebarModuleEnabled } from '@/lib/nav-modules'
 
@@ -33,6 +34,7 @@ export const Route = createFileRoute('/_authenticated/playground/classic')({
 })
 
 function ClassicPlaygroundPage() {
+  useSplitSiteBar()
   return (
     <Main className='p-0'>
       <Playground />

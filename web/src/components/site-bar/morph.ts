@@ -69,12 +69,12 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
  * MORPH_DISTANCE px of a page it follows the scroll, a px of scroll moving it
  * as much wherever it starts; once the scroll rests it springs to the nearer
  * end, leaning the way the reader was going. At the very top it always
- * splits, past MORPH_DISTANCE it is always together, and pinned (chat,
- * drawing) it stays together.
+ * splits, past MORPH_DISTANCE it is always together, and held (chat, the
+ * drawing canvas) it stays split.
  */
 export class BarMorph {
   private q: number
-  private pinned: boolean
+  private held: boolean
   private heading = 0
   private stopSpring: (() => void) | null = null
   /** Where the running spring is headed, if one runs. */
@@ -84,18 +84,17 @@ export class BarMorph {
   private readonly reducedMotion: () => boolean
 
   constructor(options: {
-    pinned: boolean
+    held: boolean
     top: number
     /** Where the bar stood on the page this one was opened from. */
     start?: number
     onChange: (q: number) => void
     reducedMotion: () => boolean
   }) {
-    this.pinned = options.pinned
-    this.q =
-      options.pinned || options.top >= MORPH_DISTANCE
-        ? 1
-        : clamp01(options.start ?? 0)
+    this.held = options.held
+    if (options.held) this.q = 0
+    else if (options.top >= MORPH_DISTANCE) this.q = 1
+    else this.q = clamp01(options.start ?? 0)
     this.onChange = options.onChange
     this.reducedMotion = options.reducedMotion
   }
@@ -105,23 +104,23 @@ export class BarMorph {
   }
 
   /**
-   * A new page: chat and drawing keep the bar together; elsewhere it opens
-   * or closes for where the page's scroller stands.
+   * A new page: chat and the drawing canvas keep the bar split; elsewhere it
+   * opens or closes for where the page's scroller stands.
    */
-  follow(pinned: boolean, top: number) {
-    this.pinned = pinned
-    this.towards(pinned || top >= MORPH_DISTANCE ? 1 : 0)
+  follow(held: boolean, top: number) {
+    this.held = held
+    this.towards(!held && top >= MORPH_DISTANCE ? 1 : 0)
   }
 
   /** A scroller the bar had not seen yet stands at `top`. */
   meet(top: number) {
-    if (!this.pinned && top >= MORPH_DISTANCE) this.towards(1)
+    if (!this.held && top >= MORPH_DISTANCE) this.towards(1)
   }
 
   /** A scroller the bar follows moved from `from` to `to` px. */
   scroll(from: number, to: number) {
     const delta = to - from
-    if (this.pinned || delta === 0) return
+    if (this.held || delta === 0) return
     this.heading = Math.sign(delta)
     clearTimeout(this.restTimer)
 
