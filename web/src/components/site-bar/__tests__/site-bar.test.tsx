@@ -923,3 +923,157 @@ test('a click on 控制台 slides the lens there at once, while the console load
   expect(lensLeft(bar)).toBe(to)
   await act(async () => loaded())
 })
+
+/** One mouse pointer, as a browser reports it. */
+const MOUSE = { pointerId: 1, pointerType: 'mouse', isPrimary: true }
+/** …with its main button held down. */
+const HELD = { ...MOUSE, buttons: 1 }
+
+/** The middle of a link, where a finger would press it. */
+function middleOf(bar: HTMLElement, name: string) {
+  return leftOf(bar, name) + 32
+}
+
+/** Where the held pointer is. */
+let pointerAt = 0
+
+function press(bar: HTMLElement, name: string) {
+  const link = within(siteLinks(bar)).getByRole('link', { name })
+  pointerAt = middleOf(bar, name)
+  act(() => {
+    fireEvent.pointerDown(link, { ...MOUSE, clientX: pointerAt, button: 0 })
+  })
+}
+
+/** Moves the held pointer to `x` in small steps, a frame each. */
+function dragTo(bar: HTMLElement, x: number, step = 8) {
+  const nav = siteLinks(bar)
+  while (pointerAt !== x) {
+    pointerAt =
+      x > pointerAt
+        ? Math.min(pointerAt + step, x)
+        : Math.max(pointerAt - step, x)
+    act(() => {
+      fireEvent.pointerMove(nav, { ...HELD, clientX: pointerAt })
+      vi.advanceTimersByTime(16)
+    })
+  }
+  return bar.querySelector<HTMLElement>('[data-site-lens]')
+}
+
+function letGo(bar: HTMLElement) {
+  fireEvent.pointerUp(siteLinks(bar), MOUSE)
+}
+
+test('dragging the lens to another link and letting go opens that page', async () => {
+  layOutLinks()
+  const { router, bar } = await renderAt('/pricing')
+
+  press(bar, 'Model Square')
+  dragTo(bar, middleOf(bar, 'Offers'))
+  await act(async () => letGo(bar))
+  settle()
+
+  expect(router.state.location.pathname).toBe('/activity')
+  expect(
+    within(siteLinks(bar)).getByRole('link', { current: 'page' })
+  ).toHaveTextContent('Offers')
+  expect(lensLeft(bar)).toBe(leftOf(bar, 'Offers'))
+})
+
+test('a held lens swells and lights the link under it, and settles back when let go', async () => {
+  layOutLinks()
+  const { bar } = await renderAt('/pricing')
+
+  press(bar, 'Model Square')
+  const lens = dragTo(bar, middleOf(bar, 'Offers'))
+  settle()
+
+  expect(lens).toHaveAttribute('data-swollen')
+  expect(
+    within(siteLinks(bar)).getByRole('link', { name: 'Offers' })
+  ).toHaveClass('text-foreground')
+  expect(
+    within(siteLinks(bar)).getByRole('link', { name: 'Model Square' })
+  ).toHaveClass('text-muted-foreground')
+
+  await act(async () => letGo(bar))
+  settle()
+  expect(lens).not.toHaveAttribute('data-swollen')
+})
+
+test('letting go back over the current link opens nothing and the lens goes home', async () => {
+  layOutLinks()
+  const { router, bar } = await renderAt('/pricing')
+
+  press(bar, 'Model Square')
+  dragTo(bar, middleOf(bar, 'Offers'))
+  dragTo(bar, middleOf(bar, 'Model Square'))
+  await act(async () => letGo(bar))
+  settle()
+
+  expect(router.state.location.pathname).toBe('/pricing')
+  expect(lensLeft(bar)).toBe(leftOf(bar, 'Model Square'))
+})
+
+test('Escape while dragging puts the lens back and opens nothing', async () => {
+  layOutLinks()
+  const { router, bar } = await renderAt('/pricing')
+
+  press(bar, 'Model Square')
+  dragTo(bar, middleOf(bar, 'Offers'))
+  act(() => {
+    fireEvent.keyDown(window, { key: 'Escape' })
+  })
+  await act(async () => letGo(bar))
+  settle()
+
+  expect(router.state.location.pathname).toBe('/pricing')
+  expect(lensLeft(bar)).toBe(leftOf(bar, 'Model Square'))
+})
+
+test('a press that barely moves is still a plain click', async () => {
+  layOutLinks()
+  const { router, bar } = await renderAt('/pricing')
+  const offers = within(siteLinks(bar)).getByRole('link', { name: 'Offers' })
+
+  act(() => {
+    fireEvent.pointerDown(offers, {
+      ...MOUSE,
+      clientX: middleOf(bar, 'Offers'),
+    })
+    fireEvent.pointerMove(offers, {
+      ...HELD,
+      clientX: middleOf(bar, 'Offers') + 3,
+    })
+    fireEvent.pointerUp(offers, MOUSE)
+  })
+  await act(async () => clickLink(offers))
+  settle()
+
+  expect(router.state.location.pathname).toBe('/activity')
+})
+
+test('a mouse let go outside the links leaves nothing held: moving over them later drags nothing', async () => {
+  layOutLinks()
+  const { router, bar } = await renderAt('/pricing')
+  const nav = siteLinks(bar)
+
+  // pressed, then let go above the bar, where the links never saw it
+  press(bar, 'Model Square')
+  act(() => {
+    fireEvent.pointerMove(nav, {
+      ...MOUSE,
+      buttons: 0,
+      clientX: pointerAt + 40,
+    })
+  })
+  settle()
+  await act(async () => letGo(bar))
+  settle()
+
+  const lens = bar.querySelector<HTMLElement>('[data-site-lens]')
+  expect(lens).not.toHaveAttribute('data-swollen')
+  expect(router.state.location.pathname).toBe('/pricing')
+  expect(lensLeft(bar)).toBe(leftOf(bar, 'Model Square'))
+})
