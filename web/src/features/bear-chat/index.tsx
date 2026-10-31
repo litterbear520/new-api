@@ -232,7 +232,11 @@ export function BearChat() {
       if (first) {
         setTimeout(
           () =>
-            toast(t('You found the night sea. It stays in the theme menu.')),
+            toast(
+              t(
+                'You found the night sea. Use the theme button at the top right to switch to it.'
+              )
+            ),
           DAWN_MS
         )
       }
