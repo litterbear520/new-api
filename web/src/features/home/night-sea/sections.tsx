@@ -763,7 +763,6 @@ export function HomeEnd(props: HomeSectionsProps) {
           <Link to='/activity'>活动</Link>
           <a href='/docs/'>文档</a>
           <a href='/docs/changelog/'>更新日志</a>
-          <a href='https://github.com/litterbear520/new-api'>源代码</a>
         </nav>
         <p className='ns-legal'>
           <span>
