@@ -75,13 +75,25 @@ export const SUGGEST_MODELS = [
 ]
 
 /**
- * Typical token counts measured on 小熊API (2026-10-19), used only for the
- * estimate before sending. The real cost comes from the usage in the reply.
+ * Typical token counts measured on 小熊API, used only for the estimate before
+ * sending. The real cost comes from the usage in the reply. The outputs are
+ * the 2026-10-19 low-quality counts × 1.75, the medium/low ratio measured on
+ * 2026-10-31 (601 / 343 at 1536x1024); clear and edit are the 10-19 counts
+ * under quality auto, not re-measured at medium.
  */
+/**
+ * Sent with every picture request. Through CLIProxyAPI the Codex image tool
+ * gives at most medium (asking for high returned medium, 2026-10-31), and
+ * auto chose low for simple prompts. moderation low is 小熊's choice: fewer
+ * false refusals; OpenAI's usage policies still apply.
+ */
+export const IMAGE_QUALITY = 'medium'
+export const IMAGE_MODERATION = 'low'
+
 export const TYPICAL_TOKENS = {
   text: 80,
   inputImage: 1521,
-  output: { auto: 343, square: 515, land: 301, port: 301 } as Record<
+  output: { auto: 601, square: 901, land: 527, port: 527 } as Record<
     DrawRatio,
     number
   >,

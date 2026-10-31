@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
 
-import { MAX_SPLIT } from './constants'
+import { IMAGE_MODERATION, IMAGE_QUALITY, MAX_SPLIT } from './constants'
 import { readImageStream } from './lib/image-stream'
 import { base64ToBlob } from './lib/images'
 import type { DrawErrorKind, DrawPlanPart, DrawUsage } from './types'
@@ -97,6 +97,8 @@ export async function requestImage(opts: {
     form.append('model', opts.model)
     form.append('prompt', opts.prompt)
     form.append('n', '1')
+    form.append('quality', IMAGE_QUALITY)
+    form.append('moderation', IMAGE_MODERATION)
     if (opts.clear) form.append('background', 'transparent')
     opts.images.forEach((img) => form.append('image[]', img.blob, img.name))
     body = form
@@ -106,6 +108,8 @@ export async function requestImage(opts: {
       model: opts.model,
       prompt: opts.prompt,
       n: 1,
+      quality: IMAGE_QUALITY,
+      moderation: IMAGE_MODERATION,
       // Streamed so bytes keep flowing past Cloudflare's 100 s limit (see
       // lib/image-stream.ts). Edits stay plain JSON: CLIProxyAPI v8.0.31
       // answers a streamed edit with a JSON body labelled text/event-stream,
