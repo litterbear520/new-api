@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { api } from '@/lib/api'
 
 import { MAX_SPLIT } from './constants'
+import { readImageStream } from './lib/image-stream'
 import { base64ToBlob } from './lib/images'
 import type { DrawErrorKind, DrawPlanPart, DrawUsage } from './types'
 
@@ -105,6 +106,11 @@ export async function requestImage(opts: {
       model: opts.model,
       prompt: opts.prompt,
       n: 1,
+      // Streamed so bytes keep flowing past Cloudflare's 100 s limit (see
+      // lib/image-stream.ts). Edits stay plain JSON: CLIProxyAPI v8.0.31
+      // answers a streamed edit with a JSON body labelled text/event-stream,
+      // which new-api relays as an empty stream.
+      stream: true,
       ...(opts.clear
         ? { background: 'transparent', output_format: 'png' }
         : {}),
@@ -128,10 +134,34 @@ export async function requestImage(opts: {
   }
 
   let reply: ImageReply = {}
-  try {
-    reply = (await res.json()) as ImageReply
-  } catch {
-    // An HTML error page (e.g. a proxy timeout) is classified by status.
+  const streamed =
+    res.ok &&
+    res.body !== null &&
+    (res.headers.get('Content-Type') ?? '').includes('text/event-stream')
+  if (streamed && res.body) {
+    try {
+      const result = await readImageStream(res.body)
+      reply = {
+        data: result.images.map((img) => ({
+          b64_json: img.b64,
+          revised_prompt: img.revised,
+        })),
+        output_format: result.images[0]?.format,
+        usage: result.usage,
+        error: result.error,
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error
+      }
+      throw new DrawApiError('busy', 'Network error', res.status)
+    }
+  } else {
+    try {
+      reply = (await res.json()) as ImageReply
+    } catch {
+      // An HTML error page (e.g. a proxy timeout) is classified by status.
+    }
   }
   if (!res.ok || reply.error) {
     const message = reply.error?.message || reply.error?.code || res.statusText
