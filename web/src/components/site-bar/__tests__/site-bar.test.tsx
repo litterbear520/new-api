@@ -78,6 +78,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  consoleLoading = Promise.resolve()
   vi.useRealTimers()
   vi.restoreAllMocks()
   signInSpy.mockReset()
@@ -152,6 +153,9 @@ function ChatStub() {
   )
 }
 
+/** The console's first page loads until a test lets it. */
+let consoleLoading: Promise<void> = Promise.resolve()
+
 function ConsoleStub() {
   const ref = useRef<HTMLDivElement>(null)
   useSiteBarMenu(menuSpy)
@@ -187,6 +191,12 @@ function buildRouter(initial: string) {
   })
   const consolePage = (path: string, component = () => <main>{path}</main>) =>
     createRoute({ getParentRoute: () => authed, path, component })
+  const consoleHome = createRoute({
+    getParentRoute: () => authed,
+    path: '/dashboard',
+    loader: () => consoleLoading,
+    component: () => <main>/dashboard</main>,
+  })
   return createRouter({
     routeTree: root.addChildren([
       page('/', NightSeaStub),
@@ -194,6 +204,7 @@ function buildRouter(initial: string) {
       page('/activity'),
       page('/setup'),
       authed.addChildren([
+        consoleHome,
         consolePage('/dashboard/overview'),
         consolePage('/keys'),
         consolePage('/playground', ChatStub),
@@ -884,4 +895,31 @@ test('super admins also reach the system settings from the account menu', async 
     'System Settings',
     'Sign out',
   ])
+})
+
+test('a click on 控制台 slides the lens there at once, while the console loads', async () => {
+  layOutLinks()
+  let loaded = () => {}
+  consoleLoading = new Promise<void>((resolve) => {
+    loaded = resolve
+  })
+  const { bar } = await renderAt('/pricing', { signedIn: true })
+  const from = leftOf(bar, 'Model Square')
+  const to = leftOf(bar, 'Console')
+
+  clickLink(within(siteLinks(bar)).getByRole('link', { name: 'Console' }))
+  act(() => {
+    vi.advanceTimersByTime(48)
+  })
+
+  // on its way, never gone
+  const lens = bar.querySelector<HTMLElement>('[data-site-lens]')
+  expect(lens?.style.opacity).toBe('1')
+  expect(lensLeft(bar)).toBeLessThan(from)
+  expect(lensLeft(bar)).toBeGreaterThan(to - 16)
+  expect(screen.getByText('/pricing')).toBeInTheDocument()
+
+  settle()
+  expect(lensLeft(bar)).toBe(to)
+  await act(async () => loaded())
 })

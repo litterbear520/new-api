@@ -28,6 +28,7 @@ import { installBuildMetadata } from '@/lib/build-metadata'
 import '@/lib/dayjs'
 import { applyFaviconToDom } from '@/lib/dom-utils'
 import { initializeFrontendCache } from '@/lib/frontend-cache'
+import { crossFades } from '@/lib/page-swap'
 import { createAppQueryClient } from '@/lib/query-client'
 import { readCachedStatus, statusQueryOptions } from '@/lib/status-query'
 import { clearRetiredThemePreferences } from '@/lib/theme-storage'
@@ -59,12 +60,19 @@ const queryClient = createAppQueryClient(() => {
  * be guessed from its route, which misses a home page the admin replaced:
  * then two light pages cross-fade, which does no harm.
  */
-function onNightSky(pathname: string) {
+function onNightSky(pathname: string): boolean {
   return router
     .matchRoutes(pathname)
     .some(
       (match) => match.routeId === '/' || match.routeId.startsWith('/(auth)')
     )
+}
+
+/** Whether a page sits in the console's frame (its sidebar). */
+function inConsole(pathname: string): boolean {
+  return router
+    .matchRoutes(pathname)
+    .some((match) => match.routeId === '/_authenticated')
 }
 
 // Create a new router instance
@@ -73,17 +81,22 @@ const router = createRouter({
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
-  // Going between the night sky and the light pages cross-fades the whole
-  // screen under the site bar, which stays put (see
+  // Going between the night sky and the light pages, or into and out of the
+  // console's frame, cross-fades the whole screen once the next page is
+  // ready, while the site bar's lens slides on (see
   // components/site-bar/site-bar.css); other page changes only fade the page in.
   defaultViewTransition: {
     types: ({ fromLocation, toLocation, pathChanged }) => {
       if (!fromLocation || !pathChanged) return false
-      const fromDark = useSiteBarStore.getState().darkPages > 0
-      if (fromDark === onNightSky(toLocation.pathname)) {
-        return false
+      const from = {
+        dark: useSiteBarStore.getState().darkPages > 0,
+        console: inConsole(fromLocation.pathname),
       }
-      return ['page']
+      const to = {
+        dark: onNightSky(toLocation.pathname),
+        console: inConsole(toLocation.pathname),
+      }
+      return crossFades(from, to) ? ['page'] : false
     },
   },
 })

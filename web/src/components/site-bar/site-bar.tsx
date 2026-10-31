@@ -16,8 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link, useRouterState } from '@tanstack/react-router'
-import { useEffect, useLayoutEffect, useRef, type MouseEvent } from 'react'
+import { Link, useRouter, useRouterState } from '@tanstack/react-router'
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type MouseEvent,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { TopNavLink } from '@/components/layout/types'
@@ -93,9 +99,21 @@ export function SiteBar() {
 
 function Bar(props: { pathname: string }) {
   const { t } = useTranslation()
+  const router = useRouter()
+  // The console's frame on screen: its controls (the drawer's menu button)
+  // go with the page that is up.
   const inConsole = useRouterState({
     select: (s) => s.matches.some((m) => m.routeId === '/_authenticated'),
   })
+  // The lens goes with the address instead: it changes at the click, the
+  // page only once it has loaded, and the lens must not wait for it.
+  const headingToConsole = useMemo(
+    () =>
+      router
+        .matchRoutes(props.pathname)
+        .some((m) => m.routeId === '/_authenticated'),
+    [router, props.pathname]
+  )
   const dark = useSiteBarStore((s) => s.darkPages > 0)
   const quiet = useSiteBarStore((s) => s.quietPages > 0)
   const held = useSiteBarStore((s) => s.splitPages > 0)
@@ -233,16 +251,19 @@ function Bar(props: { pathname: string }) {
   }, [])
 
   // A new page: its scroller (the window, or a new console scroller) may
-  // stand anywhere, and the one that moved the bar may be gone. The router
-  // shows the new address a moment before the old page leaves, so look on
-  // the next frame.
+  // stand anywhere, and the one that moved the bar may be gone. The address
+  // changes at the click, while the old page stays until the new one has
+  // loaded, so look once it has, on the frame after it is laid out.
+  const loaded = useRouterState({
+    select: (s) => s.resolvedLocation?.pathname,
+  })
   useLayoutEffect(() => {
     const frame = requestAnimationFrame(() => {
       tracked.current?.set(pageScroller() ?? document, pageTop())
       morphRef.current?.follow(held, pageTop())
     })
     return () => cancelAnimationFrame(frame)
-  }, [props.pathname, held])
+  }, [loaded, held])
 
   // The docs' copy of this bar shows the same avatar (see account-note.ts).
   // Forget it only once the session check has found nobody: while it runs
@@ -317,7 +338,7 @@ function Bar(props: { pathname: string }) {
             <>
               <SiteNavLinks
                 links={links}
-                inConsole={inConsole}
+                inConsole={headingToConsole}
                 onLinkClick={onLinkClick}
                 className='hidden lg:flex'
               />

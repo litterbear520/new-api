@@ -16,6 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useState } from 'react'
+
+import { inPageSwap } from '@/lib/page-swap'
+import { cn } from '@/lib/utils'
+
 type PublicLayoutProps = {
   children: React.ReactNode
   showMainContainer?: boolean
@@ -23,8 +28,16 @@ type PublicLayoutProps = {
 
 /** A page outside the console, under the site bar (mounted above the routes). */
 export function PublicLayout(props: PublicLayoutProps) {
+  // arriving through the screen's cross-fade, it is already in
+  const [swapped] = useState(inPageSwap)
   return (
-    <div className='bg-background text-foreground relative min-h-svh overflow-x-clip motion-safe:animate-[site-page-enter_0.26s_ease-out_backwards]'>
+    <div
+      className={cn(
+        'bg-background text-foreground relative min-h-svh overflow-x-clip',
+        !swapped &&
+          'motion-safe:animate-[site-page-enter_0.26s_ease-out_backwards]'
+      )}
+    >
       {props.showMainContainer !== false ? (
         <main className='container px-4 py-6 pt-20 md:px-4'>
           {props.children}

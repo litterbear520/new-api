@@ -21,7 +21,7 @@ For commercial licensing, please contact support@quantumnous.com
  * Changing pages keeps the site bar still: it lives above the routes. Pages
  * outside the console come in with a short fade (the console has its own,
  * AnimatedOutlet; PublicLayout uses this one), and the site bar's lens
- * slides to the new link over it.
+ * slides to the new link over it from the click on.
  */
 @keyframes site-page-enter {
   /* opacity only: a transform would hold the page's fixed parts while it runs */
@@ -31,11 +31,12 @@ For commercial licensing, please contact support@quantumnous.com
 }
 
 /*
- * Between the night-sky pages (home, sign-in) and the rest, the whole screen
- * cross-fades instead (the router's view transition, see main.tsx), dark
- * into light. The bar is the same on both sides, at the same place, so it
- * holds still; it is deliberately not its own transition group: a captured
- * element has nothing behind it, and its glass would lose the page it frosts.
+ * Between the night-sky pages (home, sign-in) and the rest, and into or out
+ * of the console's frame, the whole screen cross-fades instead (the router's
+ * view transition, type page, see main.tsx), once the next page is ready.
+ * The bar's glass stays in that cross-fade (dark into light where the two
+ * differ): a captured element has nothing behind it, and the glass would lose
+ * the page it frosts. Its links and lens leave it, as below.
  */
 /* The docs are a separate site on this domain with the same bar: going to
    them cross-fades the same way (they opt in too, with the same type). */
@@ -54,18 +55,27 @@ html:active-view-transition-type(site)::view-transition-old(root),
 html:active-view-transition-type(site)::view-transition-new(root) {
   animation-duration: 0.24s;
 }
+/* the next page is already drawn: a quick swap, not a slow dissolve (the
+   root's group too: while it runs, clicks land on nothing) */
+html:active-view-transition-type(page)::view-transition-group(root),
+html:active-view-transition-type(page)::view-transition-old(root),
+html:active-view-transition-type(page)::view-transition-new(root),
+html:active-view-transition-type(page)::view-transition-old(*.site-link),
+html:active-view-transition-type(page)::view-transition-new(*.site-link) {
+  animation-duration: 0.15s;
+}
 
 /*
- * Page to page (here ↔ the docs), the site links and the lens under them
- * stay out of that cross-fade: they follow the new page's live bar, where
- * the lens carries on the slide the click started (site-nav-links.tsx).
- * Each link is its own group, painted over the lens, so the lens never
- * veils the words.
+ * Both ways (here ↔ the docs, and the page cross-fade above), the site links
+ * and the lens under them stay out of the screen's cross-fade: they follow
+ * the live bar, where the lens carries on the slide the click started
+ * (site-nav-links.tsx). Each link is its own group, painted over the lens,
+ * so the lens never veils the words.
  */
-html:active-view-transition-type(site) [data-site-bar] [data-site-lens] {
+html:active-view-transition-type(site, page) [data-site-bar] [data-site-lens] {
   view-transition-name: site-lens;
 }
-html:active-view-transition-type(site) [data-site-bar] [data-site-link] {
+html:active-view-transition-type(site, page) [data-site-bar] [data-site-link] {
   view-transition-name: var(--site-vt);
   view-transition-class: site-link;
 }
@@ -85,6 +95,11 @@ html:active-view-transition-type(site) [data-site-bar] [data-site-link] {
 }
 ::view-transition-old(site-lens) {
   animation: site-lens-out 0.14s ease-out both;
+}
+/* in this document the lens never stopped: only the live one shows */
+html:active-view-transition-type(page)::view-transition-old(site-lens) {
+  animation: none;
+  opacity: 0;
 }
 ::view-transition-new(site-lens) {
   animation: none;

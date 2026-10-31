@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Outlet, useRouterState } from '@tanstack/react-router'
 import { motion, useReducedMotion, type Variants } from 'motion/react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import {
   CARD_ITEM_VARIANTS,
@@ -30,6 +30,7 @@ import {
   TABLE_ROW_VARIANTS,
   TABLE_STAGGER_VARIANTS,
 } from '@/lib/motion'
+import { inPageSwap } from '@/lib/page-swap'
 
 interface PageTransitionProps {
   children: ReactNode
@@ -74,14 +75,24 @@ export function AnimatedOutlet() {
   }
 
   return (
+    <ConsolePageEnter key={routeKey}>
+      <Outlet />
+    </ConsolePageEnter>
+  )
+}
+
+function ConsolePageEnter(props: { children: ReactNode }) {
+  // Arriving through the screen's cross-fade (main.tsx), the page is
+  // already in; from one console page to the next it fades in.
+  const [swapped] = useState(inPageSwap)
+  return (
     <motion.div
-      key={routeKey}
-      initial={MOTION_VARIANTS.pageEnter.initial}
+      initial={swapped ? false : MOTION_VARIANTS.pageEnter.initial}
       animate={MOTION_VARIANTS.pageEnter.animate}
       transition={MOTION_TRANSITION.fast}
       className='flex min-h-0 flex-1 flex-col'
     >
-      <Outlet />
+      {props.children}
     </motion.div>
   )
 }
