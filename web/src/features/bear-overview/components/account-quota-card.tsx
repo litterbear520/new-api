@@ -26,20 +26,23 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { toIntlLocale } from '@/i18n/languages'
 import { formatTimestampRelative } from '@/lib/format'
+import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
 import {
-  LOW_LEFT,
   REFRESH_MINUTES,
   SOON_DAYS,
-  STALE_AFTER_SECONDS,
   gmtLabel,
+  hasReset,
+  liveResets,
   newRequestId,
-  planLabel,
   quotaLevel,
   resetExpiry,
+  resetParts,
   resetTime,
+  subscription,
   type AccountQuota,
+  type PlanTier,
   type QuotaWindowId,
   type ResetCards,
   type ResetResult,
@@ -47,7 +50,7 @@ import {
 
 function windowLabel(t: TFunction, id: QuotaWindowId) {
   if (id === 'five_hour') return t('5-hour limit')
-  if (id === 'weekly') return t('Weekly limit')
+  if (id === 'weekly') return t('7-day limit')
   return t('Monthly limit')
 }
 
@@ -76,6 +79,31 @@ function resetMessage(t: TFunction, result: ResetResult) {
         "No reset was used: the account can't be read right now. Try again later."
       )
   }
+}
+
+function quotaValue(
+  t: TFunction,
+  reset: boolean,
+  left: number,
+  percent: Intl.NumberFormat
+) {
+  if (reset) return t('Has reset')
+  if (left <= 0) return t('Used up')
+  return t('{{percent}} left', { percent: percent.format(left / 100) })
+}
+
+/** The plan on a plate of its tier's material; plan names stay untranslated */
+function Nameplate(props: { plan: string; tier: PlanTier }) {
+  return (
+    <span className={cn('bo-qx-np', `bo-qx-np-${props.tier}`)}>
+      <span>{props.plan}</span>
+      {props.tier === 'diamond' && (
+        <svg viewBox='0 0 12 12' width='11' height='11' aria-hidden='true'>
+          <path d='M6 0c.5 3.4 2.1 5 5.5 5.5v1C8.1 7 6.5 8.6 6 12h-.2C5.3 8.6 3.7 7 .3 6.5v-1C3.7 5 5.3 3.4 5.8 0z' />
+        </svg>
+      )}
+    </span>
+  )
 }
 
 /** When each manual reset expires */
@@ -225,67 +253,91 @@ export function AccountQuotaCard(props: {
   })
   const now = new Date(props.now ?? Date.now())
   const nowSeconds = Math.floor(now.getTime() / 1000)
-  const plan = planLabel(props.quota.plan)
-  const usedUp = props.quota.windows.some((w) => w.left <= 0)
-  const resets =
-    !props.quota.error && props.quota.resets?.available
-      ? props.quota.resets
-      : null
-  const old =
-    props.quota.fetchedAt !== null &&
-    (props.quota.stale ||
-      nowSeconds - props.quota.fetchedAt > STALE_AFTER_SECONDS)
+  const sub = subscription(props.quota.provider, props.quota.plan)
+  // The numbers can be old: nothing refreshes by itself, so a limit may have
+  // reset, and a manual reset expired, since the last reading.
+  const usedUp = props.quota.windows.some(
+    (w) => w.left <= 0 && !hasReset(w, nowSeconds)
+  )
+  const live = liveResets(props.quota.resets, nowSeconds)
+  const resets = !props.quota.error && live?.available ? live : null
   const waiting = nowSeconds < props.quota.nextRefreshAt
   const waitId = useId()
-  // Re-render when the refresh wait ends so the button comes back by itself.
+  // Re-render during the refresh wait: the minutes count down, then the button
+  // comes back by itself.
   const [, setWoken] = useState(0)
   useEffect(() => {
     if (!waiting) return
-    const id = window.setTimeout(
-      () => setWoken((n) => n + 1),
-      (props.quota.nextRefreshAt - nowSeconds) * 1000 + 500
-    )
-    return () => window.clearTimeout(id)
-  }, [waiting, props.quota.nextRefreshAt, nowSeconds])
+    const id = window.setInterval(() => setWoken((n) => n + 1), 15 * 1000)
+    return () => window.clearInterval(id)
+  }, [waiting])
 
   return (
-    <section className='bo-card bo-qx' aria-labelledby='bo-qx-title'>
+    <section
+      className={cn('bo-card bo-qx', `bo-qx-tier-${sub.tier}`)}
+      aria-labelledby='bo-qx-title'
+    >
       <div className='bo-qx-h'>
-        <h2 id='bo-qx-title'>{t('Dedicated account quota')}</h2>
-        {plan && <span className='bo-qx-plan'>{plan}</span>}
+        <div
+          className={cn(
+            'bo-qx-logo',
+            props.quota.provider === 'claude' && 'bo-qx-logo-claude'
+          )}
+          aria-hidden='true'
+        >
+          {getLobeIcon(sub.icon, props.quota.provider === 'claude' ? 24 : 34)}
+        </div>
+        <div className='bo-qx-who'>
+          <h2 id='bo-qx-title'>
+            {sub.brand}
+            {sub.plan && ' '}
+            {sub.plan && <Nameplate plan={sub.plan} tier={sub.tier} />}
+          </h2>
+          <p className='bo-qx-desc'>
+            {t('Dedicated account quota')} ·{' '}
+            {t('Keys in the {{group}} group use only this account', {
+              group: props.quota.group,
+            })}
+          </p>
+        </div>
       </div>
-      <p className='bo-qx-desc'>
-        {t('Keys in the {{group}} group use only this account', {
-          group: props.quota.group,
-        })}
-      </p>
 
+      {props.quota.never && (
+        <p className='bo-qx-empty'>
+          {t('No quota reading yet. Select Refresh quota to see it.')}
+        </p>
+      )}
       {props.quota.error ? (
         <p className='bo-qx-empty'>{t("Can't read the quota right now.")}</p>
       ) : (
         props.quota.windows.map((w) => {
           const label = windowLabel(t, w.id)
-          const left = Math.round(w.left)
+          const reset = hasReset(w, nowSeconds)
+          const left = reset ? 100 : Math.round(w.left)
           const level = quotaLevel(left)
-          const when = w.resetAt
-            ? resetTime(w.resetAt, now, locale, t('Today'))
-            : null
-          let sub = when ? t('Resets {{time}}', { time: when }) : ''
-          if (left <= 0 && when) sub = t('Back {{time}}', { time: when })
-          else if (left <= LOW_LEFT) {
-            sub = [t('Almost used up'), sub].filter(Boolean).join(' · ')
-          }
+          const when = w.resetAt ? resetParts(w.resetAt, now, locale) : null
           return (
             <div key={w.id} className='bo-qx-row'>
               <div className='bo-qx-top'>
-                <span>{label}</span>
-                <b className={`bo-qx-${level}-t`}>
-                  {left <= 0
-                    ? t('Used up')
-                    : t('{{percent}} left', {
-                        percent: percent.format(left / 100),
-                      })}
-                </b>
+                <span className='bo-qx-label'>{label}</span>
+                <span className='bo-qx-val'>
+                  <b className={`bo-qx-${level}-t`}>
+                    {quotaValue(t, reset, left, percent)}
+                  </b>
+                  {reset && (
+                    <span className='bo-qx-when'>
+                      {t('Select Refresh quota for the latest')}
+                    </span>
+                  )}
+                  {when && !reset && (
+                    <span className='bo-qx-when'>
+                      {when.date} ·{' '}
+                      <span className={cn(when.soon && 'bo-qx-soon')}>
+                        {when.until}
+                      </span>
+                    </span>
+                  )}
+                </span>
               </div>
               <div
                 className={cn('bo-bar', BAR_CLASS[level])}
@@ -297,7 +349,6 @@ export function AccountQuotaCard(props: {
               >
                 <i style={{ width: `${left}%` }} />
               </div>
-              {sub && <div className='bo-qx-sub'>{sub}</div>}
             </div>
           )
         })
@@ -314,7 +365,7 @@ export function AccountQuotaCard(props: {
 
       {resets && <ResetExpiry resets={resets} now={now} locale={locale} />}
 
-      <div className={cn('bo-qx-foot', old && 'bo-qx-old')}>
+      <div className={cn('bo-qx-foot', props.quota.stale && 'bo-qx-old')}>
         <span>
           {props.quota.fetchedAt !== null &&
             t('Updated {{time}}', {
@@ -324,7 +375,7 @@ export function AccountQuotaCard(props: {
                 locale
               ),
             })}
-          {old && ` · ${t('Numbers may have changed')}`}
+          {props.quota.stale && ` · ${t('Numbers may have changed')}`}
         </span>
         <div className='bo-qx-acts'>
           {resets && props.onReset && (
@@ -347,16 +398,20 @@ export function AccountQuotaCard(props: {
               aria-hidden='true'
               className={cn(props.refreshing && 'animate-spin')}
             />
-            {t('Refresh')}
+            {t('Refresh quota')}
           </Button>
         </div>
       </div>
       {/* Visible text, not a title: touch screens never show a title */}
       {waiting && (
         <p id={waitId} className='bo-qx-wait'>
-          {t('Refreshes at most once every {{minutes}} minutes', {
-            minutes: REFRESH_MINUTES,
-          })}
+          {t(
+            'One refresh every {{minutes}} minutes. Try again in {{wait}} min.',
+            {
+              minutes: REFRESH_MINUTES,
+              wait: Math.ceil((props.quota.nextRefreshAt - nowSeconds) / 60),
+            }
+          )}
         </p>
       )}
     </section>

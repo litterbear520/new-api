@@ -32,6 +32,7 @@ const S = Math.floor(NOW / 1000)
 function quota(over: Partial<AccountQuota> = {}): AccountQuota {
   return {
     group: 'team_a',
+    provider: 'codex',
     plan: 'plus',
     windows: [
       { id: 'five_hour', left: 34, resetAt: S + 3600 },
@@ -41,6 +42,7 @@ function quota(over: Partial<AccountQuota> = {}): AccountQuota {
     nextRefreshAt: S - 1,
     resets: null,
     stale: false,
+    never: false,
     error: false,
     ...over,
   }
@@ -72,12 +74,15 @@ afterEach(() => {
 })
 
 describe('AccountQuotaCard', () => {
-  it('shows what is left in each window, with the plan and group', async () => {
+  it('shows what is left in each window, with the subscription and group', async () => {
     const onRefresh = renderCard(quota())
-    expect(screen.getByText('Dedicated account quota')).toBeInTheDocument()
-    expect(screen.getByText('ChatGPT Plus')).toBeInTheDocument()
     expect(
-      screen.getByText('Keys in the team_a group use only this account')
+      screen.getByRole('heading', { name: 'ChatGPT Plus' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Dedicated account quota · Keys in the team_a group use only this account'
+      )
     ).toBeInTheDocument()
     expect(screen.getByText('5-hour limit')).toBeInTheDocument()
     expect(screen.getByText('34% left')).toBeInTheDocument()
@@ -86,9 +91,11 @@ describe('AccountQuotaCard', () => {
       'aria-valuenow',
       '34'
     )
-    expect(screen.getByText(/^Resets Today/)).toBeInTheDocument()
+    expect(screen.getByText('in 1 hour')).not.toHaveClass('bo-qx-soon')
+    expect(screen.getByText('in 6 days')).not.toHaveClass('bo-qx-soon')
+    expect(screen.getByText('7-day limit')).toBeInTheDocument()
     expect(screen.queryByText(/Numbers may have changed/)).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh quota' }))
     expect(onRefresh).toHaveBeenCalledOnce()
   })
 
@@ -102,8 +109,6 @@ describe('AccountQuotaCard', () => {
       })
     )
     expect(screen.getByText('Used up')).toBeInTheDocument()
-    expect(screen.getByText(/^Back Today/)).toBeInTheDocument()
-    expect(screen.getByText(/^Almost used up · Resets/)).toBeInTheDocument()
     expect(
       screen.getByText(/keys in the team_a group return errors/)
     ).toBeInTheDocument()
@@ -111,23 +116,18 @@ describe('AccountQuotaCard', () => {
 
   it('holds the refresh button until the next read is allowed and says why in visible text', () => {
     renderCard(quota({ nextRefreshAt: S + 200 }))
-    const button = screen.getByRole('button', { name: 'Refresh' })
+    const button = screen.getByRole('button', { name: 'Refresh quota' })
     expect(button).toBeDisabled()
+    const reason = 'One refresh every 5 minutes. Try again in 4 min.'
     // A title alone never shows on touch screens
-    expect(
-      screen.getByText('Refreshes at most once every 5 minutes')
-    ).toBeVisible()
-    expect(button).toHaveAccessibleDescription(
-      'Refreshes at most once every 5 minutes'
-    )
+    expect(screen.getByText(reason)).toBeVisible()
+    expect(button).toHaveAccessibleDescription(reason)
   })
 
   it('drops the wait reason once a refresh is allowed again', () => {
     renderCard(quota({ nextRefreshAt: S - 1 }))
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled()
-    expect(
-      screen.queryByText('Refreshes at most once every 5 minutes')
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh quota' })).toBeEnabled()
+    expect(screen.queryByText(/One refresh every/)).not.toBeInTheDocument()
   })
 
   it('marks only the first manual reset amber when several expire within 3 days', () => {
@@ -153,6 +153,116 @@ describe('AccountQuotaCard', () => {
       screen.getByText("Can't read the quota right now.")
     ).toBeInTheDocument()
     expect(screen.queryByRole('meter')).toBeNull()
+  })
+
+  it('does not keep calling a limit used up after its reset time has passed', () => {
+    renderCard(
+      quota({
+        fetchedAt: S - 86400,
+        windows: [
+          { id: 'five_hour', left: 0, resetAt: S - 3600 },
+          { id: 'weekly', left: 65, resetAt: S + 86400 },
+        ],
+      })
+    )
+    expect(screen.getByText('Has reset')).toHaveClass('bo-qx-good-t')
+    expect(
+      screen.getByText('Select Refresh quota for the latest')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Used up')).toBeNull()
+    expect(screen.queryByText(/return errors/)).toBeNull()
+    expect(screen.getByRole('meter', { name: '5-hour limit' })).toHaveClass(
+      'bo-qx-good'
+    )
+    expect(screen.getByRole('meter', { name: '5-hour limit' })).toHaveAttribute(
+      'aria-valuenow',
+      '100'
+    )
+    expect(screen.getByText('65% left')).toBeInTheDocument()
+  })
+
+  it('stops listing manual resets that have expired since the last reading', () => {
+    renderCard(
+      quota({
+        resets: {
+          available: 2,
+          usable: 0,
+          expiresAt: [S - 600, S + 5 * 86400],
+        },
+      })
+    )
+    expect(screen.getByText('Reset 1')).toBeInTheDocument()
+    expect(screen.queryByText('Reset 2')).toBeNull()
+    expect(screen.getByText(/ · in 5 days$/)).toBeInTheDocument()
+    cleanup()
+    renderCard(
+      quota({ resets: { available: 1, usable: 0, expiresAt: [S - 600] } })
+    )
+    expect(screen.queryByText('Reset 1')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Reset quota' })).toBeNull()
+  })
+
+  it('marks a limit that resets within the hour', () => {
+    renderCard(
+      quota({ windows: [{ id: 'five_hour', left: 92, resetAt: S + 48 * 60 }] })
+    )
+    expect(screen.getByText('in 48 minutes')).toHaveClass('bo-qx-soon')
+  })
+
+  it('does not call old numbers wrong: nothing refreshes by itself any more', () => {
+    renderCard(quota({ fetchedAt: S - 2 * 3600 }))
+    expect(screen.queryByText(/Numbers may have changed/)).toBeNull()
+    expect(screen.getByText(/^Updated /)).toBeInTheDocument()
+  })
+
+  it('asks for a first refresh when the account was never read', async () => {
+    const onRefresh = renderCard(
+      quota({
+        plan: null,
+        windows: [],
+        fetchedAt: null,
+        nextRefreshAt: 0,
+        never: true,
+      })
+    )
+    expect(screen.getByRole('heading', { name: 'ChatGPT' })).toBeInTheDocument()
+    expect(
+      screen.getByText('No quota reading yet. Select Refresh quota to see it.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText("Can't read the quota right now.")).toBeNull()
+    expect(screen.queryByText(/^Updated /)).toBeNull()
+    expect(screen.queryByRole('meter')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh quota' }))
+    expect(onRefresh).toHaveBeenCalledOnce()
+  })
+
+  it('wears the nameplate of the subscription tier', () => {
+    const plate = (name: string) => screen.getByText(name).parentElement
+    renderCard(quota({ provider: 'claude', plan: 'pro' }))
+    expect(plate('Pro')).toHaveClass('bo-qx-np-gold')
+    expect(document.querySelector('.bo-qx')).toHaveClass('bo-qx-tier-gold')
+    cleanup()
+    renderCard(quota({ provider: 'claude', plan: 'max_5x' }))
+    expect(plate('Max 5x')).toHaveClass('bo-qx-np-platinum')
+    cleanup()
+    renderCard(quota({ provider: 'claude', plan: 'max_20x' }))
+    expect(plate('Max 20x')).toHaveClass('bo-qx-np-diamond')
+    expect(document.querySelector('.bo-qx')).toHaveClass('bo-qx-tier-diamond')
+    cleanup()
+    renderCard(quota({ provider: 'codex', plan: 'free' }))
+    expect(plate('Free')).toHaveClass('bo-qx-np-plain')
+  })
+
+  it('tints the Claude logo tile and leaves the OpenAI logo bare', () => {
+    renderCard(quota({ provider: 'claude', plan: 'pro' }))
+    expect(document.querySelector('.bo-qx-logo')).toHaveClass(
+      'bo-qx-logo-claude'
+    )
+    cleanup()
+    renderCard(quota({ provider: 'codex', plan: 'plus' }))
+    expect(document.querySelector('.bo-qx-logo')).not.toHaveClass(
+      'bo-qx-logo-claude'
+    )
   })
 
   it('colours each window green, amber or red by what is left', () => {

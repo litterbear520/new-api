@@ -1237,49 +1237,213 @@ For commercial licensing, please contact support@quantumnous.com
 .bo-qx-h {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.bo-qx-logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: var(--bo-ink);
+}
+.bo-qx-logo-claude {
+  background: color-mix(in oklab, #d97757 15%, transparent);
+}
+.bo-qx-who {
+  min-width: 0;
 }
 .bo-qx-h h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-.bo-qx-plan {
-  margin-left: auto;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--bo-hov);
-  font-size: 12px;
-  color: var(--bo-ink2);
-  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 .bo-qx-desc {
-  margin: 4px 0 14px;
+  margin: 2px 0 0;
   font-size: 12px;
   color: var(--bo-ink3);
+}
+/* Nameplates: metal looks the same on light and dark pages, like a real plate */
+.bo-qx-np {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 11px;
+  border-radius: 7px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.bo-qx-np-plain {
+  background: var(--bo-hov);
+  box-shadow: inset 0 0 0 1px var(--bo-bd);
+  color: var(--bo-ink2);
+  font-weight: 600;
+}
+.bo-qx-np-gold {
+  background: linear-gradient(
+    135deg,
+    #94701f 0%,
+    #e6c25f 17%,
+    #fff0b3 31%,
+    #dcb24c 48%,
+    #a97f24 64%,
+    #f3d981 83%,
+    #9c7621 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 60%),
+    inset 0 -1px 0 rgb(70 42 0 / 45%),
+    inset 0 0 0 1px rgb(90 60 0 / 28%),
+    0 1px 2px rgb(90 60 0 / 30%);
+  color: #3b2700;
+  text-shadow: 0 1px 0 rgb(255 241 190 / 65%);
+}
+.bo-qx-np-platinum {
+  background: linear-gradient(
+    135deg,
+    #8d99a5 0%,
+    #dfe5ea 18%,
+    #fff 32%,
+    #c3ccd5 50%,
+    #a3aeb9 65%,
+    #f2f5f7 84%,
+    #97a3ae 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 85%),
+    inset 0 -1px 0 rgb(40 55 70 / 40%),
+    inset 0 0 0 1px rgb(60 75 90 / 30%),
+    0 1px 3px rgb(50 65 85 / 35%);
+  color: #1d2732;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 75%);
+}
+.bo-qx-np-diamond {
+  padding-right: 8px;
+  background:
+    conic-gradient(
+      from 210deg at 24% 42%,
+      rgb(255 255 255 / 60%),
+      rgb(255 255 255 / 0%) 20%,
+      rgb(70 130 255 / 42%) 36%,
+      rgb(255 255 255 / 0%) 52%,
+      rgb(170 110 255 / 42%) 70%,
+      rgb(255 255 255 / 60%)
+    ),
+    linear-gradient(
+      115deg,
+      #7cc4ff 0%,
+      #e9fbff 20%,
+      #7fa9ff 38%,
+      #dcc4ff 52%,
+      #86e8ff 68%,
+      #fff 82%,
+      #7ea6ff 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 95%),
+    inset 0 -1px 0 rgb(40 80 170 / 40%),
+    inset 0 0 0 1px rgb(60 105 215 / 50%),
+    0 0 12px rgb(90 150 255 / 60%);
+  color: #10234d;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 80%);
+}
+.bo-qx-np-diamond svg {
+  flex: none;
+  fill: #2f62c9;
+}
+.bo-qx-np-diamond::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  bottom: -40%;
+  left: 0;
+  width: 34%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 95%),
+    transparent
+  );
+  pointer-events: none;
+  transform: translateX(-140%) skewX(-20deg);
+  animation: bo-qx-sheen 5.5s ease-in-out infinite;
+}
+@keyframes bo-qx-sheen {
+  0%,
+  62% {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(420%) skewX(-20deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bo-qx-np-diamond::after {
+    display: none;
+  }
+}
+.bo-qx.bo-qx-tier-gold {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #c79a35 42%, var(--bo-bd));
+}
+.bo-qx.bo-qx-tier-platinum {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, #94a3b3 60%, var(--bo-bd)),
+    0 2px 10px rgb(70 90 115 / 10%);
+}
+.bo-qx.bo-qx-tier-diamond {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--bo-s2), var(--bo-s2)) padding-box,
+    linear-gradient(120deg, #5fa8ff, #c9a6ff 34%, #6fe3ff 62%, #6c9bff)
+      border-box;
+  box-shadow: 0 3px 18px rgb(90 150 255 / 24%);
 }
 .bo-qx-row + .bo-qx-row {
   margin-top: 14px;
 }
 .bo-qx-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 2px 12px;
   margin-bottom: 6px;
   font-size: 13px;
 }
-.bo-qx-top span {
+.bo-qx-label {
   color: var(--bo-ink2);
+}
+.bo-qx-val {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0 8px;
+  margin-left: auto;
+}
+.bo-qx-when {
+  font-size: 12px;
+  color: var(--bo-ink3);
+  font-variant-numeric: tabular-nums;
+}
+.bo-qx-when .bo-qx-soon {
+  color: var(--bo-qx-warn-ink);
 }
 .bo-qx-top b {
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.bo-qx-sub {
-  margin-top: 5px;
-  font-size: 12px;
-  color: var(--bo-ink3);
   font-variant-numeric: tabular-nums;
 }
 /* What is left: green from 70%, amber from 30%, red below */
@@ -1366,7 +1530,7 @@ For commercial licensing, please contact support@quantumnous.com
 .bo-qx-foot.bo-qx-old > span {
   color: var(--bo-qx-warn-ink);
 }
-/* Why 刷新 is greyed out: a title never shows on touch screens */
+/* Why 刷新额度 is greyed out: a title never shows on touch screens */
 .bo-qx-wait {
   margin: 6px 0 0;
   font-size: 12px;

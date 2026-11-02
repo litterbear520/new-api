@@ -17,17 +17,22 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/lib/api'
 
-import { useResetAccountQuota } from '../hooks/use-account-quota'
+import {
+  useAccountQuota,
+  useRefreshAccountQuota,
+  useResetAccountQuota,
+} from '../hooks/use-account-quota'
 
 vi.mock('@/lib/api', () => ({ api: { post: vi.fn(), get: vi.fn() } }))
 
 const post = vi.mocked(api.post)
+const get = vi.mocked(api.get)
 const account = {
   group: 'team_a',
   windows: [{ id: 'five_hour', used_percent: 0, reset_at: null }],
@@ -43,6 +48,57 @@ function setup() {
   })
   return { client, reset: result.current.mutateAsync }
 }
+
+function wrapperFor(client: QueryClient) {
+  return ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  )
+}
+
+describe('reading the quota', () => {
+  beforeEach(() => {
+    post.mockReset()
+    get.mockReset()
+  })
+
+  it('opening the page only gets the last reading, never a refresh', async () => {
+    get.mockResolvedValue({ data: { account } })
+    const client = new QueryClient()
+    const { result } = renderHook(() => useAccountQuota('team_a'), {
+      wrapper: wrapperFor(client),
+    })
+    await waitFor(() => expect(result.current.data).toBeTruthy())
+    expect(get).toHaveBeenCalledWith('/pay/quota', {
+      skipErrorHandler: true,
+      skipAuthRefresh: true,
+    })
+    expect(post).not.toHaveBeenCalled()
+  })
+
+  it('default-group users never ask', () => {
+    const client = new QueryClient()
+    renderHook(() => useAccountQuota('default'), {
+      wrapper: wrapperFor(client),
+    })
+    expect(get).not.toHaveBeenCalled()
+  })
+
+  it('the refresh button posts and puts the new numbers into the card', async () => {
+    post.mockResolvedValue({ data: { account } })
+    const client = new QueryClient()
+    const { result } = renderHook(() => useRefreshAccountQuota('team_a'), {
+      wrapper: wrapperFor(client),
+    })
+    await result.current.mutateAsync()
+    expect(post).toHaveBeenCalledWith('/pay/quota/refresh', null, {
+      skipErrorHandler: true,
+      skipAuthRefresh: true,
+    })
+    expect(
+      client.getQueryData(['bear-overview', 'account-quota', 'team_a'])
+    ).toMatchObject({ group: 'team_a', windows: [{ left: 100 }] })
+  })
+})
 
 describe('useResetAccountQuota', () => {
   beforeEach(() => post.mockReset())

@@ -8359,16 +8359,11 @@
     "Dedicated account quota": "Лимиты выделенного аккаунта",
     "Keys in the {{group}} group use only this account": "Ключи группы {{group}} используют только этот аккаунт",
     "5-hour limit": "Лимит на 5 часов",
-    "Weekly limit": "Недельный лимит",
     "Monthly limit": "Месячный лимит",
     "{{percent}} left": "Осталось {{percent}}",
-    "Resets {{time}}": "Сброс {{time}}",
-    "Back {{time}}": "Восстановится {{time}}",
-    "Almost used up": "Почти исчерпан",
     "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.": "До сброса ключи группы {{group}} возвращают ошибки. Если нужно срочно, используйте ключ из группы default.",
     "Can't read the quota right now.": "Сейчас не удаётся получить лимиты.",
     "Numbers may have changed": "Значения могли измениться",
-    "Refreshes at most once every {{minutes}} minutes": "Обновлять можно не чаще чем раз в {{minutes}} мин.",
     "Hide the canvas": "Скрыть холст",
     "Hide the chat": "Скрыть чат",
     "Show the chat": "Показать чат",
@@ -8560,6 +8555,12 @@
     "Could not check this payment. Refresh this page in a few minutes.": "Не удалось проверить платёж. Обновите страницу через несколько минут.",
     "Single payments from {{min}} get up to {{max}}% bonus.": "За платёж от {{min}} — бонус до {{max}}%.",
     "Site links": "Ссылки сайта",
-    "Site menu": "Меню сайта"
+    "Site menu": "Меню сайта",
+    "Refresh quota": "Обновить квоту",
+    "7-day limit": "Лимит за 7 дней",
+    "No quota reading yet. Select Refresh quota to see it.": "Квота ещё не считывалась. Выберите «Обновить квоту», чтобы увидеть её.",
+    "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "Обновлять можно раз в {{minutes}} мин. Повторите через {{wait}} мин.",
+    "Has reset": "Сброшено",
+    "Select Refresh quota for the latest": "Выберите «Обновить квоту», чтобы увидеть актуальные данные"
   }
 }

@@ -8359,16 +8359,11 @@
     "Dedicated account quota": "Quota du compte dédié",
     "Keys in the {{group}} group use only this account": "Les clés du groupe {{group}} utilisent uniquement ce compte",
     "5-hour limit": "Limite sur 5 heures",
-    "Weekly limit": "Limite hebdomadaire",
     "Monthly limit": "Limite mensuelle",
     "{{percent}} left": "{{percent}} restant",
-    "Resets {{time}}": "Réinitialisation {{time}}",
-    "Back {{time}}": "Rétabli {{time}}",
-    "Almost used up": "Presque épuisé",
     "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.": "Jusqu'à la réinitialisation, les clés du groupe {{group}} renvoient des erreurs. En cas d'urgence, utilisez une clé du groupe default.",
     "Can't read the quota right now.": "Impossible de lire le quota pour le moment.",
     "Numbers may have changed": "Les valeurs ont peut-être changé",
-    "Refreshes at most once every {{minutes}} minutes": "Actualisation au plus une fois toutes les {{minutes}} minutes",
     "Hide the canvas": "Masquer le canevas",
     "Hide the chat": "Masquer la conversation",
     "Show the chat": "Afficher la conversation",
@@ -8560,6 +8555,12 @@
     "Could not check this payment. Refresh this page in a few minutes.": "Impossible de vérifier ce paiement. Actualisez cette page dans quelques minutes.",
     "Single payments from {{min}} get up to {{max}}% bonus.": "Dès {{min}} par paiement, jusqu’à {{max}} % de bonus.",
     "Site links": "Liens du site",
-    "Site menu": "Menu du site"
+    "Site menu": "Menu du site",
+    "Refresh quota": "Actualiser le quota",
+    "7-day limit": "Limite sur 7 jours",
+    "No quota reading yet. Select Refresh quota to see it.": "Aucun relevé pour l'instant. Sélectionnez Actualiser le quota pour le voir.",
+    "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "Une actualisation toutes les {{minutes}} minutes. Réessayez dans {{wait}} min.",
+    "Has reset": "Réinitialisé",
+    "Select Refresh quota for the latest": "Sélectionnez Actualiser le quota pour voir le dernier relevé"
   }
 }

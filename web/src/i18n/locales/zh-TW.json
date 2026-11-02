@@ -8359,16 +8359,11 @@
     "Dedicated account quota": "專屬帳號額度",
     "Keys in the {{group}} group use only this account": "分組為 {{group}} 的金鑰只使用這個帳號",
     "5-hour limit": "5 小時限額",
-    "Weekly limit": "週限額",
     "Monthly limit": "月度限額",
     "{{percent}} left": "剩餘 {{percent}}",
-    "Resets {{time}}": "{{time}} 重置",
-    "Back {{time}}": "{{time}} 恢復",
-    "Almost used up": "快用完了",
     "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.": "恢復前，{{group}} 分組的金鑰會報錯。急用請改用 default 分組的金鑰。",
     "Can't read the quota right now.": "暫時讀不到額度。",
     "Numbers may have changed": "數字可能已變",
-    "Refreshes at most once every {{minutes}} minutes": "每 {{minutes}} 分鐘最多重新整理一次",
     "Hide the canvas": "收起畫布",
     "Hide the chat": "收起對話",
     "Show the chat": "展開對話",
@@ -8560,6 +8555,12 @@
     "Could not check this payment. Refresh this page in a few minutes.": "沒能查詢這筆付款，請過幾分鐘重新整理本頁。",
     "Single payments from {{min}} get up to {{max}}% bonus.": "單筆滿 {{min}} 起送，最多送 {{max}}%。",
     "Site links": "站點導覽",
-    "Site menu": "站點選單"
+    "Site menu": "站點選單",
+    "Refresh quota": "重新整理額度",
+    "7-day limit": "7 天限額",
+    "No quota reading yet. Select Refresh quota to see it.": "還沒有讀取過額度。點「重新整理額度」查看。",
+    "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "{{minutes}} 分鐘內只能重新整理一次，{{wait}} 分鐘後可以再重新整理。",
+    "Has reset": "已重設",
+    "Select Refresh quota for the latest": "點「重新整理額度」查看最新"
   }
 }

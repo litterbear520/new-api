@@ -8359,16 +8359,11 @@
     "Dedicated account quota": "専用アカウントの利用枠",
     "Keys in the {{group}} group use only this account": "{{group}} グループのキーはこのアカウントだけを使います",
     "5-hour limit": "5 時間の上限",
-    "Weekly limit": "週間の上限",
     "Monthly limit": "月間の上限",
     "{{percent}} left": "残り {{percent}}",
-    "Resets {{time}}": "{{time}} にリセット",
-    "Back {{time}}": "{{time}} に回復",
-    "Almost used up": "まもなく上限です",
     "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.": "リセットまで {{group}} グループのキーはエラーになります。急ぐときは default グループのキーを使ってください。",
     "Can't read the quota right now.": "現在、利用枠を取得できません。",
     "Numbers may have changed": "数値が変わっている可能性があります",
-    "Refreshes at most once every {{minutes}} minutes": "更新は {{minutes}} 分に 1 回までです",
     "Hide the canvas": "キャンバスを隠す",
     "Hide the chat": "会話を隠す",
     "Show the chat": "会話を表示",
@@ -8560,6 +8555,12 @@
     "Could not check this payment. Refresh this page in a few minutes.": "この支払いを確認できませんでした。数分後にこのページを再読み込みしてください。",
     "Single payments from {{min}} get up to {{max}}% bonus.": "1 回 {{min}} 以上のチャージで最大 {{max}}% 上乗せ。",
     "Site links": "サイトリンク",
-    "Site menu": "サイトメニュー"
+    "Site menu": "サイトメニュー",
+    "Refresh quota": "クォータを更新",
+    "7-day limit": "7 日間の制限",
+    "No quota reading yet. Select Refresh quota to see it.": "まだクォータを読み取っていません。「クォータを更新」を選択してください。",
+    "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "更新は {{minutes}} 分に 1 回までです。{{wait}} 分後にもう一度お試しください。",
+    "Has reset": "リセット済み",
+    "Select Refresh quota for the latest": "「クォータを更新」で最新の状態を確認できます"
   }
 }

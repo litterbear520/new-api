@@ -23,10 +23,11 @@ import {
   newRequestId,
   parseAccountQuota,
   parseResetReply,
-  planLabel,
   quotaLevel,
   resetExpiry,
+  resetParts,
   resetTime,
+  subscription,
 } from '../account-quota'
 
 const reply = {
@@ -49,6 +50,7 @@ describe('parseAccountQuota', () => {
   it('turns used into left', () => {
     expect(parseAccountQuota(reply)).toEqual({
       group: 'team_a',
+      provider: 'codex',
       plan: 'plus',
       windows: [
         { id: 'five_hour', left: 34, resetAt: 1793032259 },
@@ -58,8 +60,33 @@ describe('parseAccountQuota', () => {
       fetchedAt: 1793014259,
       nextRefreshAt: 1793014559,
       stale: false,
+      never: false,
       error: false,
     })
+  })
+
+  it('reads the provider, treating anything unknown as Codex', () => {
+    const provider = (value: unknown) =>
+      parseAccountQuota({ account: { ...reply.account, provider: value } })
+        ?.provider
+    expect(provider('claude')).toBe('claude')
+    expect(provider('codex')).toBe('codex')
+    expect(provider('other')).toBe('codex')
+    expect(provider(undefined)).toBe('codex')
+  })
+
+  it('tells an account never read from a read that failed', () => {
+    const empty = { group: 'g', windows: [], fetched_at: null }
+    expect(parseAccountQuota({ account: empty })).toMatchObject({
+      never: true,
+      error: false,
+    })
+    expect(
+      parseAccountQuota({ account: { ...empty, error: 'unavailable' } })
+    ).toMatchObject({ never: false, error: true })
+    expect(
+      parseAccountQuota({ account: { ...empty, fetched_at: 5 } })
+    ).toMatchObject({ never: false, error: true })
   })
 
   it('shows nothing without an account or for a malformed reply', () => {
@@ -82,18 +109,55 @@ describe('parseAccountQuota', () => {
     })
     expect(parsed?.windows).toEqual([{ id: 'weekly', left: 0, resetAt: null }])
     expect(parsed?.error).toBe(false)
-    expect(
-      parseAccountQuota({ account: { group: 'g', windows: [] } })?.error
-    ).toBe(true)
   })
 })
 
-describe('planLabel and resetTime', () => {
-  it('names the plans', () => {
-    expect(planLabel('plus')).toBe('ChatGPT Plus')
-    expect(planLabel('prolite')).toBe('ChatGPT Pro Lite')
-    expect(planLabel('k12')).toBe('ChatGPT k12')
-    expect(planLabel(null)).toBeNull()
+describe('subscription and resetTime', () => {
+  it('gives ChatGPT plans of the same price the same tier as Claude ones', () => {
+    const codex = (plan: string) => subscription('codex', plan)
+    const claude = (plan: string) => subscription('claude', plan)
+    expect(codex('free')).toMatchObject({ plan: 'Free', tier: 'plain' })
+    expect(codex('plus')).toMatchObject({ plan: 'Plus', tier: 'gold' })
+    expect(claude('pro')).toMatchObject({ plan: 'Pro', tier: 'gold' })
+    expect(codex('prolite')).toMatchObject({
+      plan: 'Pro Lite',
+      tier: 'platinum',
+    })
+    expect(claude('max_5x')).toMatchObject({
+      plan: 'Max 5x',
+      tier: 'platinum',
+    })
+    expect(codex('pro')).toMatchObject({ plan: 'Pro', tier: 'diamond' })
+    expect(claude('max_20x')).toMatchObject({
+      plan: 'Max 20x',
+      tier: 'diamond',
+    })
+    expect(codex('team').tier).toBe('platinum')
+    expect(codex('business').tier).toBe('platinum')
+    expect(codex('enterprise').tier).toBe('diamond')
+    expect(claude('max')).toMatchObject({ plan: 'Max', tier: 'platinum' })
+  })
+
+  it('names the brand and its icon', () => {
+    expect(subscription('codex', 'plus')).toMatchObject({
+      brand: 'ChatGPT',
+      icon: 'OpenAI',
+    })
+    expect(subscription('claude', 'pro')).toMatchObject({
+      brand: 'Claude',
+      icon: 'Claude.Color',
+    })
+  })
+
+  it('shows an unknown plan as sent, and no plan before the first read', () => {
+    expect(subscription('codex', 'k12')).toMatchObject({
+      plan: 'k12',
+      tier: 'plain',
+    })
+    expect(subscription('claude', null)).toMatchObject({
+      plan: null,
+      tier: 'plain',
+    })
   })
 
   it('says today for a reset later today, else the date', () => {
@@ -110,6 +174,22 @@ describe('planLabel and resetTime', () => {
     )
     expect(later).toContain('Nov')
     expect(later).toContain('14:22')
+  })
+})
+
+describe('resetParts', () => {
+  const now = new Date(2026, 9, 26, 12, 0)
+  const at = (seconds: number) => Math.floor(now.getTime() / 1000) + seconds
+
+  it('splits the time from how long until it, and flags the last hour', () => {
+    const near = resetParts(at(48 * 60), now, 'en')
+    expect(near.until).toBe('in 48 minutes')
+    expect(near.soon).toBe(true)
+    expect(near.date).toContain('10/26')
+    expect(resetParts(at(2 * 3600), now, 'en')).toMatchObject({
+      until: 'in 2 hours',
+      soon: false,
+    })
   })
 })
 

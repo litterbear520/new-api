@@ -8359,16 +8359,11 @@
     "Dedicated account quota": "专属号额度",
     "Keys in the {{group}} group use only this account": "分组为 {{group}} 的密钥只用这个号",
     "5-hour limit": "5 小时限额",
-    "Weekly limit": "周限额",
     "Monthly limit": "月度限额",
     "{{percent}} left": "剩余 {{percent}}",
-    "Resets {{time}}": "{{time}} 重置",
-    "Back {{time}}": "{{time}} 恢复",
-    "Almost used up": "快用完了",
     "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.": "恢复前，{{group}} 分组的密钥会报错。急用请换 default 分组的密钥。",
     "Can't read the quota right now.": "暂时读不到额度。",
     "Numbers may have changed": "数字可能已变",
-    "Refreshes at most once every {{minutes}} minutes": "每 {{minutes}} 分钟最多刷新一次",
     "Hide the canvas": "收起画布",
     "Hide the chat": "收起对话",
     "Show the chat": "展开对话",
@@ -8560,6 +8555,12 @@
     "Could not check this payment. Refresh this page in a few minutes.": "没能查询这笔付款，请过几分钟刷新本页。",
     "Single payments from {{min}} get up to {{max}}% bonus.": "单笔满 {{min}} 起送，最多送 {{max}}%。",
     "Site links": "站点导航",
-    "Site menu": "站点菜单"
+    "Site menu": "站点菜单",
+    "Refresh quota": "刷新额度",
+    "7-day limit": "7 天限额",
+    "No quota reading yet. Select Refresh quota to see it.": "还没有读取过额度。点“刷新额度”查看。",
+    "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "{{minutes}} 分钟内只能刷新一次，{{wait}} 分钟后可以再刷新。",
+    "Has reset": "已重置",
+    "Select Refresh quota for the latest": "点“刷新额度”查看最新"
   }
 }

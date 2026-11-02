@@ -8359,16 +8359,11 @@
     "Dedicated account quota": "Hạn mức tài khoản riêng",
     "Keys in the {{group}} group use only this account": "Các khóa trong nhóm {{group}} chỉ dùng tài khoản này",
     "5-hour limit": "Giới hạn 5 giờ",
-    "Weekly limit": "Giới hạn tuần",
     "Monthly limit": "Giới hạn tháng",
     "{{percent}} left": "Còn {{percent}}",
-    "Resets {{time}}": "Đặt lại {{time}}",
-    "Back {{time}}": "Khôi phục {{time}}",
-    "Almost used up": "Sắp hết",
     "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.": "Trước khi đặt lại, các khóa trong nhóm {{group}} sẽ báo lỗi. Nếu cần gấp, hãy dùng khóa trong nhóm default.",
     "Can't read the quota right now.": "Hiện không đọc được hạn mức.",
     "Numbers may have changed": "Số liệu có thể đã thay đổi",
-    "Refreshes at most once every {{minutes}} minutes": "Chỉ làm mới tối đa một lần mỗi {{minutes}} phút",
     "Hide the canvas": "Ẩn khung vẽ",
     "Hide the chat": "Ẩn cuộc trò chuyện",
     "Show the chat": "Hiện cuộc trò chuyện",
@@ -8560,6 +8555,12 @@
     "Could not check this payment. Refresh this page in a few minutes.": "Không kiểm tra được khoản thanh toán này. Hãy tải lại trang sau vài phút.",
     "Single payments from {{min}} get up to {{max}}% bonus.": "Mỗi lần nạp từ {{min}} được thưởng tới {{max}}%.",
     "Site links": "Liên kết trang",
-    "Site menu": "Menu trang"
+    "Site menu": "Menu trang",
+    "Refresh quota": "Làm mới hạn mức",
+    "7-day limit": "Giới hạn 7 ngày",
+    "No quota reading yet. Select Refresh quota to see it.": "Chưa đọc hạn mức lần nào. Chọn Làm mới hạn mức để xem.",
+    "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "Mỗi {{minutes}} phút chỉ làm mới được một lần. Thử lại sau {{wait}} phút.",
+    "Has reset": "Đã đặt lại",
+    "Select Refresh quota for the latest": "Chọn Làm mới hạn mức để xem số mới nhất"
   }
 }

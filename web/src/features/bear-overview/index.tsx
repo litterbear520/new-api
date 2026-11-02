@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { ErrorState } from '@/components/error-state'
 import { Main } from '@/components/layout'
@@ -47,6 +48,7 @@ import {
 } from './constants'
 import {
   useAccountQuota,
+  useRefreshAccountQuota,
   useResetAccountQuota,
 } from './hooks/use-account-quota'
 import { useOverviewData } from './hooks/use-overview-data'
@@ -86,6 +88,7 @@ export function BearOverview() {
 
   const user = data.self.data ?? authUser
   const accountQuota = useAccountQuota(user?.group)
+  const refreshQuota = useRefreshAccountQuota(user?.group)
   const resetQuota = useResetAccountQuota(user?.group)
   const now = new Date()
   const minute = Math.floor(now.getTime() / 60000)
@@ -243,8 +246,13 @@ export function BearOverview() {
           {accountQuota.data && (
             <AccountQuotaCard
               quota={accountQuota.data}
-              refreshing={accountQuota.isFetching}
-              onRefresh={() => void accountQuota.refetch()}
+              refreshing={refreshQuota.isPending}
+              onRefresh={() =>
+                refreshQuota.mutate(undefined, {
+                  onError: () =>
+                    toast.error(t("Can't read the quota right now.")),
+                })
+              }
               onReset={(id) => resetQuota.mutateAsync(id)}
             />
           )}

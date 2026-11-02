@@ -20,11 +20,11 @@ For commercial licensing, please contact support@quantumnous.com
 /** pay-bridge's 专属号额度 endpoint (see pay-bridge README) */
 export const ACCOUNT_QUOTA_URL = '/pay/quota'
 
+/** pay-bridge's 刷新额度 endpoint: the only read that reaches the upstream */
+export const ACCOUNT_QUOTA_REFRESH_URL = '/pay/quota/refresh'
+
 /** pay-bridge's 重置额度 endpoint (spends one manual reset) */
 export const ACCOUNT_QUOTA_RESET_URL = '/pay/quota/reset'
-
-/** "Almost used up" at or under this share left */
-export const LOW_LEFT = 10
 
 /** Colour bands: green from 70% left, amber from 30%, red below */
 export const GOOD_LEFT = 70
@@ -32,9 +32,6 @@ export const WARN_LEFT = 30
 
 /** A manual reset that expires within this many days is flagged */
 export const SOON_DAYS = 3
-
-/** Numbers older than this get a "may have changed" note */
-export const STALE_AFTER_SECONDS = 60 * 60
 
 /** pay-bridge refreshes the numbers at most once per this many minutes (QUOTA_TTL) */
 export const REFRESH_MINUTES = 5
@@ -47,6 +44,11 @@ export type QuotaWindow = {
   left: number
   /** Unix seconds */
   resetAt: number | null
+}
+
+/** The window's reset time has passed since this reading was taken */
+export function hasReset(window: QuotaWindow, nowSeconds: number): boolean {
+  return window.resetAt !== null && window.resetAt <= nowSeconds
 }
 
 export type QuotaLevel = 'good' | 'warn' | 'bad'
@@ -70,8 +72,26 @@ export type ResetCards = {
   expiresAt: number[]
 }
 
+/** The manual resets that have not expired since this reading was taken */
+export function liveResets(
+  resets: ResetCards | null,
+  nowSeconds: number
+): ResetCards | null {
+  if (!resets) return null
+  const expiresAt = resets.expiresAt.filter((at) => at > nowSeconds)
+  const expired = resets.expiresAt.length - expiresAt.length
+  return {
+    ...resets,
+    available: Math.max(0, resets.available - expired),
+    expiresAt,
+  }
+}
+
+export type AccountProvider = 'codex' | 'claude'
+
 export type AccountQuota = {
   group: string
+  provider: AccountProvider
   plan: string | null
   windows: QuotaWindow[]
   /** null when OpenAI sent nothing about manual resets */
@@ -80,7 +100,9 @@ export type AccountQuota = {
   nextRefreshAt: number
   /** The last read failed; these are older numbers */
   stale: boolean
-  /** Nothing could be read yet */
+  /** Nobody has pressed refresh yet, so there are no numbers */
+  never: boolean
+  /** A read failed and there are no older numbers to show */
   error: boolean
 }
 
@@ -134,33 +156,63 @@ export function parseAccountQuota(raw: unknown): AccountQuota | null {
       resetAt: num(w.reset_at),
     })
   }
+  const fetchedAt = num(a.fetched_at)
+  const never =
+    windows.length === 0 && fetchedAt === null && a.error !== 'unavailable'
   return {
     group: a.group,
+    provider: a.provider === 'claude' ? 'claude' : 'codex',
     plan: typeof a.plan === 'string' && a.plan ? a.plan : null,
     windows,
     resets: parseResets(a.resets),
-    fetchedAt: num(a.fetched_at),
+    fetchedAt,
     nextRefreshAt: num(a.next_refresh_at) ?? 0,
     stale: a.stale === true,
-    error: windows.length === 0,
+    never,
+    error: windows.length === 0 && !never,
   }
 }
 
-const PLAN_NAMES: Record<string, string> = {
-  free: 'Free',
-  plus: 'Plus',
-  pro: 'Pro',
-  prolite: 'Pro Lite',
-  team: 'Team',
-  business: 'Business',
-  enterprise: 'Enterprise',
-  edu: 'Edu',
+/** The nameplate's material. Plans of about the same price share one. */
+export type PlanTier = 'plain' | 'gold' | 'platinum' | 'diamond'
+
+type PlanName = { name: string; tier: PlanTier }
+
+const PLANS: Record<AccountProvider, Record<string, PlanName>> = {
+  codex: {
+    free: { name: 'Free', tier: 'plain' },
+    edu: { name: 'Edu', tier: 'gold' },
+    plus: { name: 'Plus', tier: 'gold' },
+    prolite: { name: 'Pro Lite', tier: 'platinum' },
+    team: { name: 'Team', tier: 'platinum' },
+    business: { name: 'Business', tier: 'platinum' },
+    pro: { name: 'Pro', tier: 'diamond' },
+    enterprise: { name: 'Enterprise', tier: 'diamond' },
+  },
+  claude: {
+    free: { name: 'Free', tier: 'plain' },
+    pro: { name: 'Pro', tier: 'gold' },
+    max: { name: 'Max', tier: 'platinum' },
+    max_5x: { name: 'Max 5x', tier: 'platinum' },
+    team: { name: 'Team', tier: 'platinum' },
+    max_20x: { name: 'Max 20x', tier: 'diamond' },
+    enterprise: { name: 'Enterprise', tier: 'diamond' },
+  },
 }
 
-/** "ChatGPT Plus"; an unknown plan type is shown as sent */
-export function planLabel(plan: string | null): string | null {
-  if (!plan) return null
-  return `ChatGPT ${PLAN_NAMES[plan.toLowerCase()] ?? plan}`
+const BRANDS = {
+  codex: { brand: 'ChatGPT', icon: 'OpenAI' },
+  claude: { brand: 'Claude', icon: 'Claude.Color' },
+} as const
+
+/** What the card's header shows. An unknown plan type is shown as sent. */
+export function subscription(provider: AccountProvider, plan: string | null) {
+  const known = plan ? PLANS[provider][plan.toLowerCase()] : undefined
+  return {
+    ...BRANDS[provider],
+    plan: known?.name ?? plan,
+    tier: known?.tier ?? ('plain' as PlanTier),
+  }
 }
 
 /** "今天 13:14" today, else "11月1日周日 14:22" */
@@ -197,12 +249,12 @@ export function gmtLabel(offsetMinutes: number): string {
     : `GMT${sign}${hours}`
 }
 
-/** "10/30 01:24 · 2天后": when a manual reset expires, in whole days rounded down */
-export function resetExpiry(
+/** "10/30 01:24" and "2天后" (rounded down) for a moment in the future */
+export function resetParts(
   expiresAt: number,
   now: Date,
   locale: Intl.LocalesArgument
-): string {
+) {
   const date = new Date(expiresAt * 1000).toLocaleString(locale, {
     month: '2-digit',
     day: '2-digit',
@@ -215,6 +267,16 @@ export function resetExpiry(
   let until = rtf.format(Math.max(1, Math.floor(left / 60)), 'minute')
   if (left >= 86400) until = rtf.format(Math.floor(left / 86400), 'day')
   else if (left >= 3600) until = rtf.format(Math.floor(left / 3600), 'hour')
+  return { date, until, soon: left < 3600 }
+}
+
+/** "10/30 01:24 · 2天后": when a manual reset expires */
+export function resetExpiry(
+  expiresAt: number,
+  now: Date,
+  locale: Intl.LocalesArgument
+): string {
+  const { date, until } = resetParts(expiresAt, now, locale)
   return `${date} · ${until}`
 }
 

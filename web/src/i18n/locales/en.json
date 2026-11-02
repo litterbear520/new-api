@@ -8359,16 +8359,11 @@
     "Dedicated account quota": "Dedicated account quota",
     "Keys in the {{group}} group use only this account": "Keys in the {{group}} group use only this account",
     "5-hour limit": "5-hour limit",
-    "Weekly limit": "Weekly limit",
     "Monthly limit": "Monthly limit",
     "{{percent}} left": "{{percent}} left",
-    "Resets {{time}}": "Resets {{time}}",
-    "Back {{time}}": "Back {{time}}",
-    "Almost used up": "Almost used up",
     "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.": "Until it resets, keys in the {{group}} group return errors. If you need it now, use a key in the default group.",
     "Can't read the quota right now.": "Can't read the quota right now.",
     "Numbers may have changed": "Numbers may have changed",
-    "Refreshes at most once every {{minutes}} minutes": "Refreshes at most once every {{minutes}} minutes",
     "Hide the canvas": "Hide the canvas",
     "Hide the chat": "Hide the chat",
     "Show the chat": "Show the chat",
@@ -8560,6 +8555,12 @@
     "Could not check this payment. Refresh this page in a few minutes.": "Could not check this payment. Refresh this page in a few minutes.",
     "Single payments from {{min}} get up to {{max}}% bonus.": "Single payments from {{min}} get up to {{max}}% bonus.",
     "Site links": "Site links",
-    "Site menu": "Site menu"
+    "Site menu": "Site menu",
+    "Refresh quota": "Refresh quota",
+    "7-day limit": "7-day limit",
+    "No quota reading yet. Select Refresh quota to see it.": "No quota reading yet. Select Refresh quota to see it.",
+    "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "One refresh every {{minutes}} minutes. Try again in {{wait}} min.",
+    "Has reset": "Has reset",
+    "Select Refresh quota for the latest": "Select Refresh quota for the latest"
   }
 }

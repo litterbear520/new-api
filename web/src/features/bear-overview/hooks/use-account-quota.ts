@@ -21,6 +21,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 
 import {
+  ACCOUNT_QUOTA_REFRESH_URL,
   ACCOUNT_QUOTA_RESET_URL,
   ACCOUNT_QUOTA_URL,
   parseAccountQuota,
@@ -34,8 +35,9 @@ const quotaKey = (group: string | undefined) =>
 
 /**
  * 专属号额度 for a user in their own group; default-group users never ask.
- * A refused token here must not sign anyone out, so it skips the auth
- * refresh and the error toast and simply shows nothing.
+ * This is the last reading: it never reaches the upstream, only
+ * useRefreshAccountQuota does. A refused token here must not sign anyone out,
+ * so it skips the auth refresh and the error toast and simply shows nothing.
  */
 export function useAccountQuota(group: string | undefined) {
   return useQuery({
@@ -50,6 +52,21 @@ export function useAccountQuota(group: string | undefined) {
     enabled: Boolean(group) && group !== 'default',
     staleTime: 60 * 1000,
     retry: 1,
+  })
+}
+
+/** 刷新额度: reads the upstream, at most once per REFRESH_MINUTES per account */
+export function useRefreshAccountQuota(group: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post(ACCOUNT_QUOTA_REFRESH_URL, null, {
+        skipErrorHandler: true,
+        skipAuthRefresh: true,
+      })
+      return parseAccountQuota(res.data)
+    },
+    onSuccess: (quota) => queryClient.setQueryData(quotaKey(group), quota),
   })
 }
 
