@@ -22,9 +22,7 @@ For commercial licensing, please contact support@quantumnous.com
  */
 
 .bd-lib {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
+  flex: 1 0 auto;
   padding: 26px 36px 80px;
   background: var(--bd-s1);
   color: var(--bd-ink);

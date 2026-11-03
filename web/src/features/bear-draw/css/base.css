@@ -135,6 +135,11 @@ For commercial licensing, please contact support@quantumnous.com
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
+/* the home and the skills: as tall as they are, the console scroller moves them */
+[data-page-scroll] > .bd {
+  flex: 1 0 auto;
+  height: auto;
+}
 .bd button {
   cursor: pointer;
 }

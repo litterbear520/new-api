@@ -22,11 +22,17 @@ For commercial licensing, please contact support@quantumnous.com
  * skills page). Dark theme: the night sky sits behind everything.
  */
 
+/* It reaches up under the site bar, so the sky fills the screen. Clipped without
+   becoming a scroller: the strips stick to the console scroller, not to this.
+   A flex column, so that the layers' negative margins don't collapse. */
 .bd-home {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
+  flex: 1 0 auto;
+  margin-top: calc(-1 * var(--app-header-height));
+  padding-top: var(--app-header-height);
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
   background: var(--bd-s1);
   color: var(--bd-ink);
 }
@@ -34,7 +40,7 @@ For commercial licensing, please contact support@quantumnous.com
 .bd-home:not(.bd-night)::before {
   content: '';
   position: absolute;
-  inset: 0 0 auto;
+  inset: var(--app-header-height) 0 auto;
   height: 720px;
   pointer-events: none;
   background-image: radial-gradient(
@@ -56,11 +62,22 @@ For commercial licensing, please contact support@quantumnous.com
     transparent 80%
   );
 }
-.bd-home-sky {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+/* One screen that stays put while the page moves, taking no room in it. */
+.bd-home-sky,
+.bd-home-layer {
+  position: sticky;
+  top: 0;
+  flex: none;
+  height: 100svh;
+  margin-top: calc(-1 * var(--app-header-height));
+  margin-bottom: calc(var(--app-header-height) - 100svh);
   pointer-events: none;
+}
+.bd-home-sky {
+  z-index: 0;
+}
+.bd-home-flights {
+  z-index: 6;
 }
 /* right after a wish the sky spreads over the plain dark (meteor.tsx) */
 .bd-home.bd-night.bd-dawn {
@@ -70,13 +87,10 @@ For commercial licensing, please contact support@quantumnous.com
   position: absolute;
   inset: 0;
 }
-.bd-home-scroll {
-  position: absolute;
-  inset: 0;
+.bd-home-page {
+  position: relative;
   z-index: 1;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scroll-behavior: smooth;
+  flex: 1 0 auto;
 }
 
 /* ---------- hero ---------- */
@@ -399,22 +413,111 @@ For commercial licensing, please contact support@quantumnous.com
   --bd-feed-bar: 60px;
   padding-top: 26px;
 }
-/* the switch (and on wide screens the categories) stay on top while the
-   wall scrolls under them; once stuck they get the page colour, full width */
-.bd-feed.is-stuck .bd-feed-bar,
-.bd-feed.is-stuck .bd-cats {
-  background: var(--bd-s1);
-  box-shadow: 0 0 0 100vmax var(--bd-s1);
-  clip-path: inset(0 -100vmax);
+/*
+ * The switch (and on wide screens the categories) stay under the site bar while
+ * the wall scrolls: stuck, each is a capsule of the bar's glass with the pictures
+ * going under it. The slot keeps the row's place and lets clicks through beside
+ * the capsule; nothing around the glass may filter, fade or mask, or it would
+ * lose the pictures.
+ */
+.bd-strip-slot {
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.bd-strip {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 999px;
+  pointer-events: auto;
+}
+.bd-strip > :not(.bd-strip-glass) {
+  position: relative;
+}
+.bd-strip > .bd-strip-glass {
+  --glass-radius: 22px;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    background-color 0.28s,
+    box-shadow 0.28s,
+    opacity 0.2s,
+    visibility 0s linear 0.2s;
+}
+.is-stuck > .bd-strip > .bd-strip-glass {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    background-color 0.28s,
+    box-shadow 0.28s,
+    opacity 0.2s;
+}
+/* the words take the colour that reads over what is under them, as on the bar
+   (components/site-bar/bar-ink.ts) */
+.bd-feed .bd-strip [data-ink='light'] {
+  color: #fff;
+  text-shadow: 0 0 4px rgb(0 0 0 / 0.35);
+}
+.bd-feed .bd-strip [data-ink='dark'] {
+  color: #0c0c0f;
+  text-shadow: 0 0 4px rgb(255 255 255 / 0.35);
+}
+.bd-feed .bd-strip [data-ink] {
+  isolation: isolate;
+  transition:
+    color 0.18s,
+    text-shadow 0.18s;
+}
+/* a word across light and dark: a soft plate of the opposite colour */
+.bd-feed .bd-strip [data-ink]::after {
+  content: '';
+  position: absolute;
+  inset: 3px -4px;
+  z-index: -1;
+  height: auto;
+  border-radius: 999px;
+  filter: blur(6px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.bd-feed .bd-strip [data-ink='light']::after {
+  background: rgb(0 0 0 / 0.55);
+}
+.bd-feed .bd-strip [data-ink='dark']::after {
+  background: rgb(255 255 255 / 0.7);
+}
+.bd-feed .bd-strip [data-plate]::after {
+  opacity: 1;
 }
 .bd-feed-bar {
   position: sticky;
-  top: 0;
+  /* the capsule, centred in the row, stops just under the site bar */
+  top: calc(var(--app-header-height) - (var(--bd-feed-bar) - 44px) / 2);
   z-index: 3;
-  display: flex;
   align-items: center;
-  justify-content: center;
   height: var(--bd-feed-bar);
+}
+.bd-feed-bar.is-stuck .bd-feed-tabs {
+  background: transparent;
+}
+/* the picked word stays on its own solid pill, whatever is under the glass */
+.bd-feed .bd-feed-tabs .bd-feed-tab[aria-selected='true'] {
+  color: var(--bd-ink);
+  text-shadow: none;
+}
+.bd-feed .bd-feed-tabs .bd-feed-tab[aria-selected='true']::after {
+  opacity: 0;
+}
+.bd-feed-bar.is-stuck .bd-feed-ind {
+  background: var(--bd-s2);
+}
+.bd-feed-bar.is-stuck .bd-feed-tab:not([aria-selected='true']):hover {
+  background: color-mix(in srgb, currentColor 13%, transparent);
 }
 /* 创意 | 技能 on the hero's centre line: a track, and a pill that slides to
    the picked side */
@@ -425,6 +528,7 @@ For commercial licensing, please contact support@quantumnous.com
   padding: 4px;
   border-radius: 999px;
   background: var(--bd-bubble);
+  transition: background-color 0.2s;
 }
 .bd-feed-ind {
   position: absolute;
@@ -519,10 +623,22 @@ For commercial licensing, please contact support@quantumnous.com
   font-size: 13px;
 }
 /* the categories: one centred line over a hairline; too long, it scrolls */
+.bd-strip-mark:has(+ .bd-cats-slot) {
+  margin-top: 14px;
+}
+.bd-cats-slot {
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--bd-bd);
+  transition: border-color 0.2s;
+}
+.bd-cats-slot .bd-strip {
+  flex: 0 1 auto;
+}
 .bd-feed .bd-cats {
   flex-wrap: nowrap;
   gap: 24px;
-  margin: 14px 0 18px;
+  margin: 0;
+  border: 0;
 }
 .bd-feed .bd-cats > :first-child {
   margin-left: auto;
@@ -534,11 +650,33 @@ For commercial licensing, please contact support@quantumnous.com
   bottom: 0;
 }
 @media (min-width: 761px) {
-  .bd-feed .bd-cats {
+  /* 6 px under the switch's 44 px capsule */
+  .bd-cats-slot {
     position: sticky;
-    top: var(--bd-feed-bar);
+    top: calc(var(--app-header-height) + 44px + 6px);
     z-index: 2;
   }
+}
+/* stuck: no hairline, and the picked word gets a capsule of its own */
+.bd-cats-slot.is-stuck {
+  border-bottom-color: transparent;
+}
+.bd-cats-slot.is-stuck .bd-tab {
+  isolation: isolate;
+}
+.bd-cats-slot.is-stuck .bd-cats {
+  padding-inline: 20px;
+  border-radius: 999px;
+}
+.bd-cats-slot.is-stuck
+  .bd-tab:is([data-active], [aria-selected='true'])::before,
+.bd-cats-slot.is-stuck .bd-tab:hover::before {
+  content: '';
+  position: absolute;
+  inset: 5px -12px;
+  z-index: -1;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
 }
 .bd-floor {
   margin-top: 30px;
@@ -811,6 +949,12 @@ For commercial licensing, please contact support@quantumnous.com
 }
 
 /* ---------- mini composer + footer ---------- */
+.bd-mini-slot {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  height: 0;
+}
 .bd-mini {
   position: absolute;
   left: 50%;
@@ -912,21 +1056,20 @@ For commercial licensing, please contact support@quantumnous.com
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px 12px;
   }
-  /* the stuck switch and the scrolling categories reach the screen edges */
+  /* the categories scroll from one screen edge to the other */
   .bd-feed {
     --bd-feed-bar: 58px;
   }
-  .bd-feed-bar,
-  .bd-feed .bd-cats {
+  .bd-cats-slot {
     margin-inline: -16px;
-    padding-inline: 16px;
   }
-  .bd-feed.is-stuck .bd-feed-bar {
-    border-bottom: 1px solid var(--bd-bd);
+  .bd-cats-slot .bd-strip {
+    width: 100%;
   }
   .bd-feed .bd-cats {
-    width: auto;
+    width: 100%;
     gap: 18px;
+    padding-inline: 16px;
   }
   .bd-mini {
     gap: 16px;

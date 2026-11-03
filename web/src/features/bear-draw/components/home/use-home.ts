@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useState, type RefObject } from 'react'
 
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
@@ -52,24 +52,52 @@ export function useHomeDraft(composer: RefObject<ComposerHandle | null>) {
   }, [draft, composer])
 }
 
-/** True once `target` has scrolled out of `root`. */
+/** The console's scroller, which the home and skills pages scroll in. */
+export function pageScroller(el: Element): HTMLElement | null {
+  return el.closest<HTMLElement>('[data-slot="console-scroller"]')
+}
+
+/** How much of the scroller's top the site bar covers, in px. */
+export function barHeight(box: HTMLElement | null): number {
+  if (!box) return 0
+  return Number.parseFloat(getComputedStyle(box).scrollPaddingTop) || 0
+}
+
+/** True once `target` has gone up under the site bar. */
 export function useScrolledAway(
-  root: RefObject<HTMLElement | null>,
   target: RefObject<HTMLElement | null>
 ): boolean {
   const [away, setAway] = useState(false)
   useEffect(() => {
-    const r = root.current
     const el = target.current
-    if (!r || !el || typeof IntersectionObserver === 'undefined') return
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const root = pageScroller(el)
     const io = new IntersectionObserver(
       (entries) => setAway(!(entries.at(-1)?.isIntersecting ?? true)),
-      { root: r, threshold: 0 }
+      {
+        root,
+        rootMargin: `${-barHeight(root)}px 0px 0px 0px`,
+        threshold: 0,
+      }
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [root, target])
+  }, [target])
   return away
+}
+
+/**
+ * The console scroller only starts a new address at the top, and the home, the
+ * skills and a project share one: a new view starts at the top here.
+ */
+export function useViewStartsAtTop(
+  view: string,
+  anchor: RefObject<HTMLElement | null>
+): void {
+  useLayoutEffect(() => {
+    const box = anchor.current && pageScroller(anchor.current)
+    if (box) box.scrollTop = 0
+  }, [view, anchor])
 }
 
 /**

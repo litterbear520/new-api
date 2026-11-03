@@ -44,8 +44,9 @@ export const Route = createFileRoute('/_authenticated/draw/')({
 
 function DrawPage() {
   const search = Route.useSearch()
+  // the home and the skills go under the site bar; a project fits the screen
   return (
-    <Main className='p-0'>
+    <Main className='p-0' pageScroll={!search.p}>
       <BearDraw search={search} />
     </Main>
   )

@@ -78,6 +78,21 @@ beforeEach(() => {
 })
 
 describe('Composer sending', () => {
+  it('leaves the scrolling to the page when it is focused from outside', () => {
+    const { ref, box } = setup('home')
+    const focus = vi.spyOn(box, 'focus')
+
+    act(() => ref.current?.focus())
+    act(() => ref.current?.setText('a line'))
+    act(() => ref.current?.setSkill(null))
+    act(() => ref.current?.applyPreset(portrait))
+
+    expect(focus).toHaveBeenCalledTimes(4)
+    for (const call of focus.mock.calls) {
+      expect(call[0]).toEqual({ preventScroll: true })
+    }
+  })
+
   it('sends the trimmed text in Agent mode when Enter is pressed, then clears', async () => {
     const { onSend, box, user } = setup()
     await user.type(box, '  给保温杯做主图  ')

@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import type { GalleryItem } from '../../data/gallery'
+import { FloatingStrip } from '../home/floating-strip'
 import { GalleryDetail } from './gallery-detail'
 import { GalleryWall, WallPlaceholder } from './gallery-wall'
 import { useGallery } from './use-gallery'
@@ -84,20 +85,22 @@ export function GalleryPanel(props: { onUse: (item: GalleryItem) => void }) {
           onValueChange={(v) => setCat(String(v))}
           className='bd-tabs-root'
         >
-          <TabsList
-            variant='line'
-            className='bd-tabs bd-cats'
-            aria-label={t('Idea categories')}
-          >
-            <TabsTrigger value={ALL} className='bd-tab'>
-              {t('All')}
-            </TabsTrigger>
-            {cats.map((c) => (
-              <TabsTrigger key={c} value={c} className='bd-tab'>
-                {c}
+          <FloatingStrip className='bd-cats-slot'>
+            <TabsList
+              variant='line'
+              className='bd-tabs bd-cats'
+              aria-label={t('Idea categories')}
+            >
+              <TabsTrigger value={ALL} className='bd-tab'>
+                {t('All')}
               </TabsTrigger>
-            ))}
-          </TabsList>
+              {cats.map((c) => (
+                <TabsTrigger key={c} value={c} className='bd-tab'>
+                  {c}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </FloatingStrip>
           <TabsContent value={cat} className='bd-tabpanel'>
             <GalleryWall
               key={cat}

@@ -23,23 +23,16 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useRef } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HomeFeed } from '../components/home/home-feed'
 
 function Feed() {
-  const scrollRef = useRef<HTMLDivElement>(null)
   return (
-    <div ref={scrollRef}>
-      <HomeFeed
-        scrollRef={scrollRef}
-        onUse={vi.fn()}
-        onOpenSkill={vi.fn()}
-        onAddSkill={vi.fn()}
-      />
+    <div data-slot='console-scroller' style={{ scrollPaddingTop: '56px' }}>
+      <HomeFeed onUse={vi.fn()} onOpenSkill={vi.fn()} onAddSkill={vi.fn()} />
     </div>
   )
 }
@@ -59,6 +52,55 @@ function renderFeed() {
 }
 
 describe('HomeFeed', () => {
+  beforeEach(() => {
+    // jsdom has no scrolling
+    Element.prototype.scrollTo = vi.fn()
+  })
+
+  it('starts the other tab at its top, just under the site bar', async () => {
+    const user = userEvent.setup()
+    renderFeed()
+    const skills = await screen.findByRole('tab', { name: 'Skills' })
+    const box = document.querySelector<HTMLElement>(
+      '[data-slot="console-scroller"]'
+    )
+    const feed = document.querySelector<HTMLElement>('.bd-feed')
+    if (!box || !feed) throw new Error('no feed')
+    const scrollTo = vi.fn()
+    box.scrollTo = scrollTo
+    box.scrollTop = 3000
+    feed.getBoundingClientRect = () => new DOMRect(0, -1000, 100, 5000)
+
+    await user.click(skills)
+    await user.click(screen.getByRole('tab', { name: 'Ideas' }))
+
+    await waitFor(() => expect(scrollTo).toHaveBeenCalled())
+    // 3000 + (-1000 - 56): the feed's top comes to rest below the 56 px bar
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      top: 1944,
+      behavior: 'instant',
+    })
+  })
+
+  it('leaves the scroll alone when the feed is not above the bar yet', async () => {
+    const user = userEvent.setup()
+    renderFeed()
+    const ideas = await screen.findByRole('tab', { name: 'Ideas' })
+    const box = document.querySelector<HTMLElement>(
+      '[data-slot="console-scroller"]'
+    )
+    const feed = document.querySelector<HTMLElement>('.bd-feed')
+    if (!box || !feed) throw new Error('no feed')
+    const scrollTo = vi.fn()
+    box.scrollTo = scrollTo
+    feed.getBoundingClientRect = () => new DOMRect(0, 400, 100, 5000)
+
+    await user.click(screen.getByRole('tab', { name: 'Skills' }))
+    await user.click(ideas)
+
+    expect(scrollTo).not.toHaveBeenCalled()
+  })
+
   it('opens on the ideas wall and switches to the skills in one click', async () => {
     const user = userEvent.setup()
     const view = renderFeed()

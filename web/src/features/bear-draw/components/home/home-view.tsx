@@ -48,7 +48,12 @@ import { useKept, useSkill } from '../library/use-skills'
 import { Hero } from './hero'
 import { HomeSky, MiniComposer } from './home-chrome'
 import { HomeFeed } from './home-feed'
-import { useHomeDraft, useScrolledAway, useWarmOnUse } from './use-home'
+import {
+  pageScroller,
+  useHomeDraft,
+  useScrolledAway,
+  useWarmOnUse,
+} from './use-home'
 
 // opened from a skill card: its module (sample carousel…) loads the first time
 const SkillDetail = lazy(() =>
@@ -73,12 +78,12 @@ export function HomeView() {
   const [dawn, setDawn] = useState(false)
   const wishAt = useRef<{ x: number; y: number } | null>(null)
   const composer = useRef<ComposerHandle>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const flightsRef = useRef<HTMLDivElement>(null)
   const slotRef = useRef<HTMLDivElement>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
   const detail = useSkill(detailId)
   const shownDetail = useKept(detail)
-  const away = useScrolledAway(scrollRef, slotRef)
+  const away = useScrolledAway(slotRef)
 
   useHomeDraft(composer)
   useWarmOnUse(slotRef)
@@ -92,7 +97,8 @@ export function HomeView() {
 
   // up to the composer; focus once the scroll (or a closing dialog) is done
   const toComposer = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    const slot = slotRef.current
+    if (slot) pageScroller(slot)?.scrollTo({ top: 0, behavior: 'smooth' })
     window.setTimeout(() => composer.current?.focus(), FOCUS_AFTER_MS)
   }, [])
 
@@ -148,11 +154,11 @@ export function HomeView() {
 
   // meteors stay above the composer while it is in view
   const meteorFloor = useCallback(() => {
-    const home = homeRef.current
+    const flights = flightsRef.current
     const slot = slotRef.current
-    if (!home || !slot) return null
+    if (!flights || !slot) return null
     const top =
-      slot.getBoundingClientRect().top - home.getBoundingClientRect().top
+      slot.getBoundingClientRect().top - flights.getBoundingClientRect().top
     return top > 140 ? top - 28 : null
   }, [])
 
@@ -185,7 +191,7 @@ export function HomeView() {
     if (!night || !at || !home) return
     wishAt.current = null
     const sky = home.querySelector<HTMLElement>('.bd-home-sky')
-    if (sky) spreadSky(sky, home, at)
+    if (sky) spreadSky(sky, sky, at)
   }, [night])
 
   return (
@@ -196,14 +202,16 @@ export function HomeView() {
     >
       {night && <HomeSky />}
       {dark && (
-        <Meteors
-          active={!night}
-          floor={meteorFloor}
-          onSighting={onSighting}
-          onWish={onWish}
-        />
+        <div ref={flightsRef} className='bd-home-layer bd-home-flights'>
+          <Meteors
+            active={!night}
+            floor={meteorFloor}
+            onSighting={onSighting}
+            onWish={onWish}
+          />
+        </div>
       )}
-      <div ref={scrollRef} className='bd-home-scroll'>
+      <div className='bd-home-page'>
         <Hero
           composer={
             <div ref={slotRef} className='bd-hero-comp'>
@@ -220,7 +228,6 @@ export function HomeView() {
           onPick={pickSkill}
         />
         <HomeFeed
-          scrollRef={scrollRef}
           onUse={applyPreset}
           onOpenSkill={openSkill}
           onAddSkill={addSkill}
@@ -231,7 +238,9 @@ export function HomeView() {
           </Link>
         </footer>
       </div>
-      <MiniComposer on={away} onClick={toComposer} />
+      <div className='bd-mini-slot'>
+        <MiniComposer on={away} onClick={toComposer} />
+      </div>
       {shownDetail && (
         <Suspense fallback={null}>
           <SkillDetail

@@ -35,6 +35,15 @@ function newContext(size: number): CanvasRenderingContext2D | null {
   return canvas.getContext('2d', { willReadFrequently: true })
 }
 
+/**
+ * Pictures read so far, for every reader on the page: the bar and the strips
+ * under it see the same pictures, and reading one back is the dear part.
+ */
+const thumbs = new WeakMap<
+  HTMLImageElement,
+  { src: string; data: Uint8ClampedArray | null }
+>()
+
 const SOLID = /^rgba?\(([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)(?:[,/ ]+([\d.]+))?\)$/
 
 /**
@@ -44,10 +53,6 @@ const SOLID = /^rgba?\(([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)(?:[,/ ]+([\d.]+))?\)$/
  * `data-bar-backdrop`, or else counts as the theme's own background.
  */
 export class PageReader {
-  private readonly thumbs = new WeakMap<
-    HTMLImageElement,
-    { src: string; data: Uint8ClampedArray | null }
-  >()
   private readonly colors = new Map<string, Layer | null>()
   /** Turns any CSS colour into pixels. Never draws pictures, so stays readable. */
   private colorContext: CanvasRenderingContext2D | null | undefined
@@ -156,7 +161,7 @@ export class PageReader {
   }
 
   private thumbnail(img: HTMLImageElement): Uint8ClampedArray | null {
-    const known = this.thumbs.get(img)
+    const known = thumbs.get(img)
     if (known?.src === img.currentSrc) return known.data
     if (this.newThumbs >= THUMBS_PER_READ) {
       this.waiting = true
@@ -164,7 +169,7 @@ export class PageReader {
     }
     this.newThumbs++
     const thumb = { src: img.currentSrc, data: this.drawThumb(img) }
-    this.thumbs.set(img, thumb)
+    thumbs.set(img, thumb)
     return thumb.data
   }
 

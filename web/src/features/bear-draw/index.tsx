@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useNavigate } from '@tanstack/react-router'
-import { lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/empty-state'
@@ -27,6 +27,7 @@ import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { DialogHost } from './components/dialogs/dialog-bus'
 import { HomeView } from './components/home/home-view'
+import { useViewStartsAtTop } from './components/home/use-home'
 import { loadLibraryView, loadProjectView } from './components/lazy-views'
 import { useBearDrawAlerts } from './hooks/use-alerts'
 import {
@@ -100,6 +101,11 @@ export function BearDraw(props: { search: BearDrawSearch }) {
     projectId ? s.projects.some((p) => p.id === projectId) : false
   )
   useRailRestore(Boolean(projectId && exists))
+  const rootRef = useRef<HTMLDivElement>(null)
+  useViewStartsAtTop(
+    projectId ? 'project' : (props.search.view ?? 'home'),
+    rootRef
+  )
 
   // A project that is gone (deleted, other browser): back to the home page.
   useEffect(() => {
@@ -129,7 +135,7 @@ export function BearDraw(props: { search: BearDrawSearch }) {
   }
 
   return (
-    <div className='bd'>
+    <div ref={rootRef} className='bd'>
       <Suspense fallback={<LoadingState className='bd-loading' />}>
         {view}
       </Suspense>

@@ -55,17 +55,17 @@ export function useComposerHandle(
   useImperativeHandle(
     ref,
     () => ({
-      focus: () => taRef.current?.focus(),
+      focus: () => taRef.current?.focus({ preventScroll: true }),
       setText: (value) => {
         write(value, value.length)
-        taRef.current?.focus()
+        taRef.current?.focus({ preventScroll: true })
       },
       setSkill: (id) => {
         setSkillId(id)
         if (id && useBearDrawStore.getState().prefs.mode !== 'agent') {
           setPrefs({ mode: 'agent' })
         }
-        taRef.current?.focus()
+        taRef.current?.focus({ preventScroll: true })
       },
       // a 玩法: Image mode, its ratio, its prompt; maybe a photo first
       applyPreset: (item) => {
@@ -84,13 +84,13 @@ export function useComposerHandle(
         write(item.prompt, 0)
         const ta = taRef.current
         if (ta) {
-          ta.focus()
+          ta.focus({ preventScroll: true })
           ta.scrollTop = 0
         }
       },
       addRefs: (list) => {
         addRefs(list)
-        taRef.current?.focus()
+        taRef.current?.focus({ preventScroll: true })
       },
     }),
     [taRef, write, setSkillId, setPreset, addRefs, setPrefs]
