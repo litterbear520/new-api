@@ -42,10 +42,14 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-test('the page scroller is the console one', () => {
+test('the page scroller is the console one, when there is one', () => {
   const { box, inner } = scene()
   expect(pageScroller(inner)).toBe(box)
   expect(pageScroller(document.body)).toBeNull()
+})
+
+test("the bar's height is the scroller's padding, and none without a scroller", () => {
+  const { box } = scene()
   expect(barHeight(box)).toBe(56)
   expect(barHeight(null)).toBe(0)
 })

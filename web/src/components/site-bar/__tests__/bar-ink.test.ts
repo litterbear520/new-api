@@ -265,7 +265,7 @@ test("after another site's picture, later pictures can still be read", () => {
 })
 
 /** A browser that can decode a picture's bytes off the main thread. */
-function decodesOffThread(fail = false) {
+function browserDecodesOffThread(fail = false) {
   const fetched: string[] = []
   vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
     fetched.push(url)
@@ -282,7 +282,7 @@ function decodesOffThread(fail = false) {
 
 test("a picture from this site is decoded off the main thread and read when that's done", async () => {
   const drawn = fakeCanvases()
-  decodesOffThread()
+  browserDecodesOffThread()
   const img = picture(250)
   stackAt = () => [img]
   const ink = new BarInk({ bar, glass })
@@ -295,9 +295,9 @@ test("a picture from this site is decoded off the main thread and read when that
   expect(word).toHaveAttribute('data-ink', 'dark')
 })
 
-test('a picture off the main thread is decoded once, however many readers see it', async () => {
+test("a picture off the main thread is decoded once, however many readers see it", async () => {
   fakeCanvases()
-  const fetched = decodesOffThread()
+  const fetched = browserDecodesOffThread()
   const img = picture(250)
   stackAt = () => [img]
   const ink = new BarInk({ bar, glass })
@@ -314,7 +314,7 @@ test('a picture off the main thread is decoded once, however many readers see it
 
 test('a picture not in the cache is drawn as before, with no download', async () => {
   const drawn = fakeCanvases()
-  decodesOffThread(true)
+  browserDecodesOffThread(true)
   const img = picture(250)
   stackAt = () => [img]
   const ink = new BarInk({ bar, glass })
@@ -329,7 +329,7 @@ test('a picture not in the cache is drawn as before, with no download', async ()
 
 test("another site's picture is not asked for: the cache can't give it", async () => {
   fakeCanvases()
-  const fetched = decodesOffThread()
+  const fetched = browserDecodesOffThread()
   const img = picture(250)
   Object.defineProperty(img, 'currentSrc', {
     value: 'https://elsewhere.example/picture-250.webp',
@@ -448,6 +448,23 @@ test('reading at the words, a short word between the bar points still counts', (
   ink.dispose()
 
   expect(word).toHaveAttribute('data-ink', 'light')
+})
+
+test('a word scrolled out past the glass does not count towards its tint', () => {
+  const black = page({ backgroundColor: BLACK_PAGE })
+  const white = page({ backgroundColor: WHITE_PAGE })
+  stackAt = (x) => (x < 500 ? [black] : [white])
+  word.getBoundingClientRect = () => rect(200, 60)
+  const hidden = document.createElement('button')
+  hidden.getBoundingClientRect = () => rect(600, 60)
+  bar.append(hidden)
+
+  const ink = new BarInk({ bar, glass, atWords: true })
+  ink.ask()
+  settled()
+  ink.dispose()
+
+  expect(glass.style.getPropertyValue('--glass-tint')).toContain('52 61 62')
 })
 
 test('a slower strip reads less often while moving', () => {

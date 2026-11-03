@@ -191,7 +191,7 @@ export class BarInk {
     const box = this.glass.getBoundingClientRect()
     const y = box.top + box.height / 2
 
-    const row = this.atWords ? this.readWords(y) : this.readRow(box, y)
+    const row = this.atWords ? this.readWords(box, y) : this.readRow(box, y)
     if (!row.length) return
     const tint = this.tintGlass(row)
 
@@ -239,8 +239,11 @@ export class BarInk {
     return row
   }
 
-  /** Two points on each word, one above the middle and one below. */
-  private readWords(y: number): Point[] {
+  /**
+   * Two points on each word, one above the middle and one below. A word scrolled
+   * out past the glass has none: what is out there does not tint it.
+   */
+  private readWords(box: DOMRect, y: number): Point[] {
     const row: Point[] = []
     for (const word of this.bar.querySelectorAll<HTMLElement>(WORDS)) {
       const r = word.getBoundingClientRect()
@@ -250,6 +253,7 @@ export class BarInk {
         [0.75, ZIGZAG],
       ]) {
         const x = r.left + r.width * part
+        if (x < box.left || x > box.right) continue
         row.push({ x, color: this.reader.at(x, y + off) })
       }
     }

@@ -25,7 +25,7 @@ import {
 } from '@tanstack/react-router'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HomeFeed } from '../components/home/home-feed'
 
@@ -52,9 +52,15 @@ function renderFeed() {
 }
 
 describe('HomeFeed', () => {
+  const realScrollTo = Element.prototype.scrollTo
+
   beforeEach(() => {
     // jsdom has no scrolling
     Element.prototype.scrollTo = vi.fn()
+  })
+
+  afterEach(() => {
+    Element.prototype.scrollTo = realScrollTo
   })
 
   it('starts the other tab at its top, just under the site bar', async () => {

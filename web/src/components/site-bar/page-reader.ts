@@ -33,7 +33,7 @@ export const MARKED: Record<string, Rgb> = {
  * off the main thread from the bytes in the browser's cache, with no download;
  * another site's can't be asked for that way.
  */
-function decodesOffThread(src: string): boolean {
+function canDecodeOffThread(src: string): boolean {
   return (
     typeof createImageBitmap === 'function' &&
     new URL(src, location.href).origin === location.origin
@@ -189,7 +189,7 @@ export class PageReader {
     this.newThumbs++
     const thumb: Thumb = { src: img.currentSrc, data: null, decoding: false }
     thumbs.set(img, thumb)
-    if (decodesOffThread(thumb.src)) {
+    if (canDecodeOffThread(thumb.src)) {
       thumb.decoding = true
       this.waiting = true
       void this.decodeOffThread(img, thumb)

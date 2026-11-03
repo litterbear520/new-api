@@ -21,30 +21,6 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { FloatingStrip } from '../components/home/floating-strip'
 
-const ink = vi.hoisted(() => ({
-  made: [] as {
-    ask: ReturnType<typeof vi.fn>
-    newPage: ReturnType<typeof vi.fn>
-    hold: ReturnType<typeof vi.fn>
-    dispose: ReturnType<typeof vi.fn>
-    parts: { bar: HTMLElement; glass: HTMLElement }
-  }[],
-}))
-
-vi.mock('@/components/site-bar/bar-ink', () => ({
-  BarInk: class {
-    ask = vi.fn()
-    newPage = vi.fn()
-    hold = vi.fn()
-    dispose = vi.fn()
-    parts: { bar: HTMLElement; glass: HTMLElement }
-    constructor(parts: { bar: HTMLElement; glass: HTMLElement }) {
-      this.parts = parts
-      ink.made.push(this)
-    }
-  },
-}))
-
 type Seen = {
   callback: IntersectionObserverCallback
   options?: IntersectionObserverInit
@@ -54,10 +30,21 @@ type Seen = {
 
 const observers: Seen[] = []
 let sheet: HTMLStyleElement
+const reads = vi.fn<() => Element[]>(() => [])
 
 beforeEach(() => {
   observers.length = 0
-  ink.made.length = 0
+  reads.mockClear()
+  vi.useFakeTimers({
+    toFake: [
+      'setTimeout',
+      'clearTimeout',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'performance',
+    ],
+  })
+  document.elementsFromPoint = reads
   vi.stubGlobal(
     'IntersectionObserver',
     class {
@@ -84,9 +71,15 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
+  Reflect.deleteProperty(document, 'elementsFromPoint')
   sheet.remove()
 })
+
+function settle() {
+  act(() => vi.advanceTimersByTime(2000))
+}
 
 function renderStrip(className = 'sticks') {
   const view = render(
@@ -101,7 +94,13 @@ function renderStrip(className = 'sticks') {
   )
   const slot = view.container.querySelector<HTMLElement>('.bd-strip-slot')
   if (!box || !slot) throw new Error('no strip')
-  return { ...view, box, slot }
+  // jsdom has no layout: the word has to sit on the glass to be read
+  const word = screen.getByRole('button')
+  word.getBoundingClientRect = () => new DOMRect(10, 10, 60, 20)
+  const glass = slot.querySelector<HTMLElement>('.bd-strip-glass')
+  if (!glass) throw new Error('no glass')
+  glass.getBoundingClientRect = () => new DOMRect(0, 10, 200, 40)
+  return { ...view, box, slot, word }
 }
 
 function pass(seen: Seen, top: number, rootTop: number) {
@@ -127,50 +126,55 @@ test('watches the console scroller, at the line the slot sticks to', () => {
 })
 
 test('reads no colours until it is stuck, and stops once it is not', () => {
-  const { box, slot } = renderStrip()
-  expect(ink.made).toHaveLength(0)
+  const { box, slot, word } = renderStrip()
+  settle()
+  expect(reads).not.toHaveBeenCalled()
   expect(slot).not.toHaveClass('is-stuck')
 
   pass(observers[0], 20, 48)
+  settle()
   expect(slot).toHaveClass('is-stuck')
-  expect(ink.made).toHaveLength(1)
-  const made = ink.made[0]
-  expect(made.parts.bar).toContainElement(screen.getByRole('button'))
-  expect(made.parts.glass).toHaveClass('rounded-full')
-  expect(made.newPage).toHaveBeenCalledTimes(1)
+  expect(reads).toHaveBeenCalled()
+  expect(word).toHaveAttribute('data-ink')
 
-  act(() => {
-    box.dispatchEvent(new Event('scroll'))
-  })
-  expect(made.ask).toHaveBeenCalledTimes(1)
+  reads.mockClear()
+  box.dispatchEvent(new Event('scroll'))
+  settle()
+  expect(reads).toHaveBeenCalled()
 
   pass(observers[0], 60, 48)
   expect(slot).not.toHaveClass('is-stuck')
-  expect(made.hold).toHaveBeenCalledWith(true)
-  expect(made.dispose).toHaveBeenCalled()
+  expect(word).not.toHaveAttribute('data-ink')
 
-  act(() => {
-    box.dispatchEvent(new Event('scroll'))
-  })
-  expect(made.ask).toHaveBeenCalledTimes(1)
+  reads.mockClear()
+  box.dispatchEvent(new Event('scroll'))
+  settle()
+  expect(reads).not.toHaveBeenCalled()
+})
+
+test('the glass keeps the capsule shape', () => {
+  const { container } = renderStrip()
+  expect(container.querySelector('.bd-strip-glass')).toHaveClass('rounded-full')
 })
 
 test('a new category re-reads the wall under the strip', () => {
-  renderStrip()
+  const { word } = renderStrip()
   pass(observers[0], 20, 48)
-  const made = ink.made[0]
-  made.newPage.mockClear()
+  settle()
+  reads.mockClear()
 
-  act(() => screen.getByRole('button').click())
+  act(() => word.click())
+  settle()
 
-  expect(made.newPage).toHaveBeenCalledTimes(1)
+  expect(reads).toHaveBeenCalled()
 })
 
 test('a slot that does not stick (categories on a phone) never gets the glass', () => {
   const { slot } = renderStrip('plain')
+  settle()
   expect(observers).toHaveLength(0)
   expect(slot).not.toHaveClass('is-stuck')
-  expect(ink.made).toHaveLength(0)
+  expect(reads).not.toHaveBeenCalled()
 })
 
 test('turning the phone re-reads the line', () => {
