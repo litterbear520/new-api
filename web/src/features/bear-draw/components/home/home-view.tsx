@@ -95,12 +95,16 @@ export function HomeView() {
     }
   }, [])
 
-  // up to the composer; focus once the scroll (or a closing dialog) is done
-  const toComposer = useCallback(() => {
+  const scrollToComposer = useCallback(() => {
     const slot = slotRef.current
     if (slot) pageScroller(slot)?.scrollTo({ top: 0, behavior: 'smooth' })
-    window.setTimeout(() => composer.current?.focus(), FOCUS_AFTER_MS)
   }, [])
+
+  // up to the composer; focus once the scroll (or a closing dialog) is done
+  const toComposer = useCallback(() => {
+    scrollToComposer()
+    window.setTimeout(() => composer.current?.focus(), FOCUS_AFTER_MS)
+  }, [scrollToComposer])
 
   const onSend = useCallback(
     (input: SendInput) => {
@@ -120,12 +124,16 @@ export function HomeView() {
     [toComposer]
   )
 
-  const pickSkill = useCallback((skill: Skill, text: string) => {
-    warmProject()
-    composer.current?.setSkill(skill.id)
-    if (text) composer.current?.setText(text)
-    composer.current?.focus()
-  }, [])
+  const pickSkill = useCallback(
+    (skill: Skill, text: string) => {
+      warmProject()
+      composer.current?.setSkill(skill.id)
+      if (text) composer.current?.setText(text)
+      composer.current?.focus()
+      scrollToComposer()
+    },
+    [scrollToComposer]
+  )
 
   const addSkill = useCallback(
     (skill: Skill) => {

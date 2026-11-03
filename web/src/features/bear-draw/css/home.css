@@ -22,6 +22,10 @@ For commercial licensing, please contact support@quantumnous.com
  * skills page). Dark theme: the night sky sits behind everything.
  */
 
+/* Pulling on past the top must not reload the page and lose what is being written. */
+[data-slot='console-scroller']:has(.bd-home) {
+  overscroll-behavior-y: contain;
+}
 /* It reaches up under the site bar, so the sky fills the screen. Clipped without
    becoming a scroller: the sky sticks to the console scroller, not to this.
    A flex column, so that the layers' negative margins don't collapse. */

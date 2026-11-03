@@ -108,9 +108,16 @@ For commercial licensing, please contact support@quantumnous.com
   color: var(--bar-word);
   text-shadow: 0 0 4px var(--bar-halo);
 }
-[data-site-bar]
-  :is([data-site-link], button:not([data-bar-skip])):not([aria-current]):hover {
-  background-color: color-mix(in srgb, currentColor 13%, transparent);
+[data-site-bar] [data-bar-skip] {
+  text-shadow: none;
+}
+@media (hover: hover) {
+  [data-site-bar]
+    :is([data-site-link], button:not([data-bar-skip])):not(
+      [aria-current]
+    ):hover {
+    background-color: color-mix(in srgb, currentColor 13%, transparent);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .dock-glass {
