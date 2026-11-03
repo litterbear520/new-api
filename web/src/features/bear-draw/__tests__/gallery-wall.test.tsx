@@ -41,10 +41,15 @@ const items = Array.from(
 
 // one observer at a time: the wall watches the marker under its last row
 let notify: ((entries: { isIntersecting: boolean }[]) => void) | null = null
+let observerOptions: IntersectionObserverInit | undefined
 
 class FakeObserver {
-  constructor(cb: (entries: { isIntersecting: boolean }[]) => void) {
+  constructor(
+    cb: (entries: { isIntersecting: boolean }[]) => void,
+    options?: IntersectionObserverInit
+  ) {
     notify = cb
+    observerOptions = options
   }
   observe() {}
   disconnect() {}
@@ -57,6 +62,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals()
   notify = null
+  observerOptions = undefined
 })
 
 const cards = () => screen.getAllByRole('figure')
@@ -72,6 +78,24 @@ describe('GalleryWall', () => {
 
     act(() => notify?.([{ isIntersecting: true }]))
     expect(cards()).toHaveLength(20)
+  })
+
+  it('reaches ahead from the box that scrolls it, where a margin on the screen would stop at the box', () => {
+    render(
+      <div data-testid='scroll-box' style={{ overflowY: 'auto' }}>
+        <div style={{ overflow: 'visible' }}>
+          <GalleryWall items={items} onOpen={vi.fn()} onUse={vi.fn()} />
+        </div>
+      </div>
+    )
+
+    expect(observerOptions?.root).toBe(screen.getByTestId('scroll-box'))
+  })
+
+  it('reaches ahead from the screen when nothing but the page scrolls it', () => {
+    render(<GalleryWall items={items} onOpen={vi.fn()} onUse={vi.fn()} />)
+
+    expect(observerOptions?.root ?? null).toBeNull()
   })
 
   it('loads the top row at once and the rest lazily, at the size the screen needs', () => {

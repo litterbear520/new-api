@@ -57,6 +57,22 @@ const AHEAD = 1200
 const TOP_ROW_WAIT_MS = 4000
 
 /**
+ * The nearest box that scrolls `el`, or null when the page does. An observer's
+ * margin stops at the edge of a box that clips its target, so a target inside
+ * one only reaches ahead when that box is the observer's root.
+ */
+function scrollBox(el: HTMLElement): HTMLElement | null {
+  for (
+    let box = el.parentElement;
+    box && box !== document.body;
+    box = box.parentElement
+  ) {
+    if (/auto|scroll/.test(getComputedStyle(box).overflowY)) return box
+  }
+  return null
+}
+
+/**
  * How many cards to render. The wall grows a few rows at a time, so the top
  * row's pictures load first with nothing else in the way; once they are in,
  * the next rows render well before they scroll into view.
@@ -86,7 +102,7 @@ function useShownCount(
           setRows((n) => n + STEP_ROWS)
         }
       },
-      { rootMargin: `0px 0px ${ahead}px 0px` }
+      { root: scrollBox(el), rootMargin: `0px 0px ${ahead}px 0px` }
     )
     io.observe(el)
     return () => io.disconnect()
