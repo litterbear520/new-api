@@ -18,6 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
+  Suspense,
+  lazy,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -35,7 +37,6 @@ import { useSystemConfig } from '@/hooks/use-system-config'
 import { cn } from '@/lib/utils'
 
 import { preloadSky } from '../black-hole/assets'
-import { Gateway } from '../black-hole/gateway'
 import {
   PHONE_QUERY,
   afterFirstPaint,
@@ -43,22 +44,45 @@ import {
   layoutNow,
   subscribeLayout,
 } from '../black-hole/support'
+import posterDesktopAvif from '../black-hole/tex/hole-desktop.avif'
 import posterDesktop from '../black-hole/tex/hole-desktop.webp'
+import posterPhoneAvif from '../black-hole/tex/hole-phone.avif'
 import posterPhone from '../black-hole/tex/hole-phone.webp'
-import { NightSeaAuthDialog } from './auth-dialog/night-sea-auth-dialog'
 import {
   useNightSeaAuth,
   type NightSeaAuthView,
 } from './auth-dialog/use-night-sea-auth'
-import { HERO, HERO_SHELL_ID, POSTER_FADE_MS, WORDS_FADE_MS } from './hero-copy'
+import { whenBelowFoldWanted } from './below-fold'
+import {
+  HERO,
+  HERO_SHELL_ID,
+  PHONE_POSTER_QUERY,
+  POSTER_FADE_MS,
+  WORDS_FADE_MS,
+} from './hero-copy'
 import { dropHeroShell } from './hero-shell'
-import { HomeEnd, HomeSections } from './sections'
-import { heroOffer } from './sections-content'
-import { useCopyLabel } from './use-copy-label'
-import { useHomeOffers } from './use-home-offers'
 
 import './night-sea.css'
 import '../black-hole/black-hole.css'
+
+// Comes while the visitor reads the first screen: if the line fails it then, the
+// first screen stays as it is instead of giving way to an error page
+const nothing = () => <div hidden />
+const loadBelow = (): Promise<typeof import('./home-below')> =>
+  import('./home-below').catch(() => ({
+    BelowSections: nothing,
+    HomeEnd: nothing,
+  }))
+const BelowSections = lazy(() =>
+  loadBelow().then((m) => ({ default: m.BelowSections }))
+)
+const HomeEnd = lazy(() => loadBelow().then((m) => ({ default: m.HomeEnd })))
+
+// The sign-in dialog's code comes with what lies below, or on the first click
+const loadAuthDialog = () => import('./auth-dialog/night-sea-auth-dialog')
+const NightSeaAuthDialog = lazy(() =>
+  loadAuthDialog().then((m) => ({ default: m.NightSeaAuthDialog }))
+)
 
 /** Calls back after each frame of the sky, while its picture can be read */
 type FrameHub = {
@@ -78,6 +102,10 @@ function frameHub(): FrameHub {
   }
 }
 
+function BelowWait() {
+  return <div className='ns-sections ns-below-wait' id='ns-more' />
+}
+
 type NightSeaHomeProps = {
   isAuthenticated: boolean
   /** Arrive with this dialog open: the /sign-in and /sign-up pages. */
@@ -87,7 +115,7 @@ type NightSeaHomeProps = {
 }
 
 /**
- * The default home page: a first screen over the black hole and the night
+ * The default home page: a first screen over the black hole and a small night
  * Earth (../black-hole), the gateway under it, the night carrying on below.
  * Always dark, whatever the console theme. The first screen's poster comes
  * with the page's HTML (hero-shell.ts); the hole is drawn live over it where
@@ -104,12 +132,28 @@ export function NightSeaHome(props: NightSeaHomeProps) {
     !window.matchMedia(PHONE_QUERY).matches &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
     canDrawBlackHole()
+  // the browser's own colours (its bar on a phone) go with the night: see
+  // use-theme-color-meta.ts, which reads the body's colour on this class change
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.add('ns-night-page')
+    return () => root.classList.remove('ns-night-page')
+  }, [])
+  const [below, setBelow] = useState(false)
+  useEffect(() => whenBelowFoldWanted(() => setBelow(true)), [])
+  useEffect(() => {
+    if (below) void loadAuthDialog().catch(() => undefined)
+  }, [below])
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const posterRef = useRef<HTMLImageElement>(null)
   const firstRef = useRef<HTMLElement>(null)
   const { systemName } = useSystemConfig()
   const navigate = useNavigate()
   const auth = useNightSeaAuth(props.authView)
+  const [dialogWanted, setDialogWanted] = useState(auth.open)
+  useEffect(() => {
+    if (auth.open) setDialogWanted(true)
+  }, [auth.open])
   // On /sign-in and /sign-up, closing the dialog leaves for the home page.
   const onOpenChange = (open: boolean) => {
     auth.dialogProps.onOpenChange(open)
@@ -123,10 +167,6 @@ export function NightSeaHome(props: NightSeaHomeProps) {
   useSiteBarSignIn(authClick('sign-in'))
   useQuietSiteBar(auth.open)
   const name = systemName || '小熊API'
-  const offer = heroOffer(useHomeOffers())
-  // Every line (domain) shows its own address.
-  const baseUrl = `${window.location.origin}/v1`
-  const copyBaseUrl = useCopyLabel(baseUrl)
 
   // The page's HTML showed this first screen already (hero-shell.ts), over
   // this one, its words on their way in: these pick up where those are. It
@@ -225,7 +265,13 @@ export function NightSeaHome(props: NightSeaHomeProps) {
         <section ref={firstRef} className='ns-first' aria-label={name}>
           {/* the poster, and the live sky over it where it can be drawn */}
           <picture className='ns-sky ns-sky-poster'>
-            <source media={PHONE_QUERY} srcSet={posterPhone} />
+            <source
+              media={PHONE_POSTER_QUERY}
+              type='image/avif'
+              srcSet={posterPhoneAvif}
+            />
+            <source media={PHONE_POSTER_QUERY} srcSet={posterPhone} />
+            <source type='image/avif' srcSet={posterDesktopAvif} />
             <img ref={posterRef} src={posterDesktop} alt='' />
           </picture>
           {live && (
@@ -237,24 +283,10 @@ export function NightSeaHome(props: NightSeaHomeProps) {
           )}
           <div className='ns-sky-fade' aria-hidden='true' />
           <div className='ns-hero'>
-            {/* the offer's place is kept until it comes (black-hole.css) */}
-            <div className='ns-offer-slot'>
-              {offer && (
-                <Link to='/activity' className='ns-offer-pill'>
-                  <span className='ns-offer-tag'>活动</span>
-                  {offer}
-                  <span aria-hidden='true'>›</span>
-                </Link>
-              )}
-            </div>
             <h1>
               <span className='ns-phrase'>{HERO.title[0]}</span>{' '}
               <span className='ns-phrase'>{HERO.title[1]}</span>
             </h1>
-            <p className='ns-poem'>
-              <span className='ns-phrase'>{HERO.poem[0]}</span>{' '}
-              <span className='ns-phrase'>{HERO.poem[1]}</span>
-            </p>
             <p className='ns-what'>
               <span className='ns-phrase'>{HERO.what[0]}</span>{' '}
               <span className='ns-phrase'>{HERO.what[1]}</span>
@@ -271,20 +303,9 @@ export function NightSeaHome(props: NightSeaHomeProps) {
                 {HERO.docs}
               </a>
             </div>
-            <div className='ns-endpoint'>
-              <code translate='no'>{baseUrl}</code>
-              <button
-                type='button'
-                onClick={copyBaseUrl.copy}
-                aria-live='polite'
-              >
-                {copyBaseUrl.label}
-              </button>
-            </div>
           </div>
 
           <div className='ns-shore'>
-            <p className='ns-prayer'>{HERO.prayer}</p>
             <a
               href='#ns-more'
               onClick={showMore}
@@ -298,28 +319,52 @@ export function NightSeaHome(props: NightSeaHomeProps) {
           </div>
         </section>
 
-        <HomeSections
-          name={name}
-          isAuthenticated={props.isAuthenticated}
-          authClick={authClick}
-          gateway={<Gateway />}
-        />
+        {/* the room to scroll into, and where the arrow goes, until it is in */}
+        <Suspense fallback={<BelowWait />}>
+          {below ? (
+            <BelowSections
+              name={name}
+              isAuthenticated={props.isAuthenticated}
+              authClick={authClick}
+            />
+          ) : (
+            <BelowWait />
+          )}
+        </Suspense>
       </main>
 
-      <HomeEnd
-        name={name}
-        isAuthenticated={props.isAuthenticated}
-        authClick={authClick}
-        skyCredit
-      />
+      {below && (
+        <Suspense fallback={null}>
+          <HomeEnd
+            name={name}
+            isAuthenticated={props.isAuthenticated}
+            authClick={authClick}
+            skyCredit
+          />
+        </Suspense>
+      )}
 
-      <NightSeaAuthDialog
-        canvasRef={canvasRef}
-        skyFrames={live ? frames.subscribe : undefined}
-        redirectTo={props.redirectTo}
-        {...auth.dialogProps}
-        onOpenChange={onOpenChange}
-      />
+      {(dialogWanted || auth.open) && (
+        <Suspense
+          fallback={
+            auth.open ? (
+              <div
+                className='ns-auth-wait'
+                role='status'
+                aria-label='正在打开'
+              />
+            ) : null
+          }
+        >
+          <NightSeaAuthDialog
+            canvasRef={canvasRef}
+            skyFrames={live ? frames.subscribe : undefined}
+            redirectTo={props.redirectTo}
+            {...auth.dialogProps}
+            onOpenChange={onOpenChange}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

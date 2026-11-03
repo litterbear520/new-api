@@ -21,7 +21,6 @@ For commercial licensing, please contact support@quantumnous.com
  * screen. The home page is Chinese only, like the copy above them. Tool
  * settings follow the docs pages under /docs/tools/.
  */
-import type { Offer } from '@/features/activity/lib/offers'
 import { formatSharePercent, isDiscounted } from '@/lib/discount'
 
 export type Line = {
@@ -388,18 +387,6 @@ export function readDeal(price: unknown, usdRate: unknown): Deal | null {
     share: formatSharePercent(percent),
     rate: NUMBER.format(r),
   }
-}
-
-/** The one offer the first screen names, from the same numbers as the 活动 page */
-export function heroOffer(offers: Offer[]): string | null {
-  const starter = offers.find((o) => o.kind === 'starter')
-  if (starter?.kind === 'starter') {
-    return `新人礼包 ¥${NUMBER.format(starter.pay)} 得 $${NUMBER.format(starter.credit + starter.bonus)}`
-  }
-  const rate = offers.find((o) => o.kind === 'rate')
-  return rate?.kind === 'rate'
-    ? `充值 ¥1 得 $${NUMBER.format(rate.credit)} 额度`
-    : null
 }
 
 export type Point = { title: string; body: string }

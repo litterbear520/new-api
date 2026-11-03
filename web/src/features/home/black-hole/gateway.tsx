@@ -33,6 +33,8 @@ import {
 } from '../night-sea/sections-content'
 import { runGateway } from './gateway-strands'
 import { STACKED_QUERY, layoutNow, subscribeLayout } from './support'
+import hub740 from './tex/gateway-hole-740.webp'
+import hub1000 from './tex/gateway-hole-1000.webp'
 import hubUrl from './tex/gateway-hole.webp'
 
 /** A model (its prices in the model square) or a tool (its guide) */
@@ -122,7 +124,14 @@ export function Gateway() {
           </ul>
           <div ref={coreRef} className='ns-gw-core' aria-hidden='true'>
             <div ref={hubRef} className='ns-gw-hub'>
-              <img src={hubUrl} alt='' decoding='async' />
+              <img
+                src={hubUrl}
+                srcSet={`${hub740} 740w, ${hub1000} 1000w, ${hubUrl} 1472w`}
+                sizes='(max-width: 640px) 100vw, 39vw'
+                alt=''
+                loading='lazy'
+                decoding='async'
+              />
             </div>
           </div>
           <ul className='ns-gw-side ns-gw-out' aria-label='工具'>

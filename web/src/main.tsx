@@ -111,6 +111,13 @@ router.subscribe('onResolved', ({ toLocation }) => {
   if (toLocation.pathname !== '/' || failed) dropHeroShell()
 })
 
+declare global {
+  interface Window {
+    /** Settles when the app's stylesheet is in, where it loads beside the page */
+    __appCss?: Promise<unknown>
+  }
+}
+
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
   interface Register {
@@ -173,8 +180,10 @@ if (!rootElement) {
 })()
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
-  // Wait for the interface language's chunk, so the first paint is never English.
-  void i18nReady.then(() =>
+  // Wait for the interface language's chunk, so the first paint is never English,
+  // and on the home page for the stylesheet, which there doesn't hold the HTML's
+  // first screen back (features/home/night-sea/hero-shell-html.ts).
+  void Promise.all([i18nReady, window.__appCss]).then(() =>
     root.render(
       <StrictMode>
         <QueryClientProvider client={queryClient}>

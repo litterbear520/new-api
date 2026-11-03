@@ -65,7 +65,7 @@ vi.mock('../engine', () => ({
     async (_canvas: HTMLCanvasElement, opts: BlackHoleOptions) => {
       engine.starts.push(opts)
       if (engine.fail) {
-        opts.onFail?.('lost')
+        opts.onFail?.()
         return null
       }
       return { stop: () => {} }
@@ -117,6 +117,10 @@ beforeEach(() => {
   support.layout = '00'
   screenMatching()
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+  // a reload: what lies under the first screen is there at once (below-fold.test.ts has its timing)
+  vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+    { type: 'reload' } as unknown as PerformanceEntry,
+  ])
   // the strands and the glass find no 2D canvas in jsdom
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
     () => null
@@ -236,7 +240,12 @@ function shape(el: Element) {
 it('takes over the first screen sent with the HTML: the same words in the same order', async () => {
   document.body.insertAdjacentHTML(
     'beforeend',
-    heroShellMarkup({ poster: '/p.webp', phonePoster: '/q.webp' })
+    heroShellMarkup({
+      poster: '/p.webp',
+      phonePoster: '/q.webp',
+      posterAvif: '/p.avif',
+      phonePosterAvif: '/q.avif',
+    })
   )
   const shellFirst = document.querySelector(`#${HERO_SHELL_ID} .ns-first`)
   if (!shellFirst) throw new Error('no first screen in the HTML')
@@ -264,7 +273,12 @@ it("lets clicks through to its own page at once, and takes over once the HTML's 
   try {
     document.body.insertAdjacentHTML(
       'beforeend',
-      heroShellMarkup({ poster: '/p.webp', phonePoster: '/q.webp' })
+      heroShellMarkup({
+        poster: '/p.webp',
+        phonePoster: '/q.webp',
+        posterAvif: '/p.avif',
+        phonePosterAvif: '/q.avif',
+      })
     )
     const shell = document.querySelector<HTMLElement>(`#${HERO_SHELL_ID}`)
     const shellPoster = shell?.querySelector<HTMLElement>('picture img')

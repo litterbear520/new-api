@@ -16,17 +16,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-// Builds the lens tables off the main thread (see lens.ts)
-import { buildLens } from './lens'
+import { expect, it, vi } from 'vitest'
 
-self.addEventListener('message', () => {
-  try {
-    const out = buildLens()
-    ;(self as unknown as Worker).postMessage(out, [
-      out.sweep.buffer,
-      out.path.buffer,
-    ])
-  } catch (err) {
-    ;(self as unknown as Worker).postMessage({ error: String(err) })
-  }
+import { startBlackHole } from '../engine'
+
+it('starts nothing when the page has already been left: its chunk came too late', () => {
+  const canvas = document.createElement('canvas')
+  const getContext = vi.spyOn(canvas, 'getContext')
+  const raf = vi.spyOn(window, 'requestAnimationFrame')
+  const left = new AbortController()
+  left.abort()
+
+  const hole = startBlackHole(canvas, { signal: left.signal })
+
+  expect(getContext).not.toHaveBeenCalled()
+  expect(raf).not.toHaveBeenCalled()
+  expect(() => hole.stop()).not.toThrow()
 })

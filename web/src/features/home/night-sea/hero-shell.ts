@@ -20,12 +20,16 @@ For commercial licensing, please contact support@quantumnous.com
 // builds it, rsbuild.config.ts puts it in index.html), so its words and its
 // poster show while the app's scripts still load. NightSeaHome draws the same
 // screen, then takes that one away.
-import { HERO_SHELL_ID } from './hero-copy'
+import { FIRST_NIGHT_ID, HERO_SHELL_ID, HERO_SHELL_STYLE_ID } from './hero-copy'
 
 /**
  * Takes the HTML's first screen away: the app shows its own, or another page.
- * Its style stays (the same rules as the app's; the title font came in with it)
+ * Its CSS goes too: later in the page than the app's, its rules would outrank
+ * theirs. The title's font stays in a style of its own, for the app's title.
  */
 export function dropHeroShell() {
   document.querySelector(`#${HERO_SHELL_ID}`)?.remove()
+  document.querySelector(`#${HERO_SHELL_STYLE_ID}`)?.remove()
+  document.querySelector(`#${FIRST_NIGHT_ID}`)?.remove()
+  document.documentElement.classList.remove(FIRST_NIGHT_ID)
 }

@@ -42,7 +42,10 @@ For commercial licensing, please contact support@quantumnous.com
   --ns-step-hover: rgba(233, 236, 243, 0.12);
   --ns-button: #e8eaef;
   --ns-button-ink: #0a0d14;
-  --ns-serif: 'Night Sea Serif', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  /* Night Sea Hero: the title's glyphs alone, inside the HTML (hero-shell-html.ts) */
+  --ns-serif:
+    'Night Sea Hero', 'Night Sea Serif', 'Noto Serif SC', 'Songti SC', 'STSong',
+    serif;
   --ns-sans:
     -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
@@ -176,8 +179,7 @@ html:has(.night-sea) {
   pointer-events: none;
 }
 .ns-hero a,
-.ns-hero button,
-.ns-endpoint {
+.ns-hero button {
   pointer-events: auto;
 }
 .ns-hero p,
@@ -185,33 +187,6 @@ html:has(.night-sea) {
   max-width: 60ch;
   margin-left: auto;
   margin-right: auto;
-}
-/* the offer running now, above the title */
-.ns-offer-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 26px;
-  padding: 4px 12px 4px 4px;
-  border-radius: 999px;
-  background: var(--ns-step);
-  font-size: 13px;
-  color: var(--ns-ink-soft);
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
-  animation: ns-rise 1.4s 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-.ns-offer-pill:hover {
-  background: var(--ns-step-hover);
-  color: var(--ns-ink);
-}
-.ns-offer-tag {
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: rgba(233, 236, 243, 0.1);
-  color: var(--ns-ink);
-  font-size: 12px;
 }
 /* Phrases are spaced apart instead of punctuated. */
 .ns-phrase {
@@ -227,21 +202,13 @@ html:has(.night-sea) {
   line-height: 1.15;
   letter-spacing: 0.08em;
   text-wrap: balance;
-  animation: ns-rise 1.8s 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-.ns-poem {
-  margin-top: 18px;
-  font-family: var(--ns-serif);
-  font-size: clamp(16px, 1.45vw, 20px);
-  letter-spacing: 0.1em;
-  color: var(--ns-ink-soft);
-  animation: ns-rise 1.8s 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: ns-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .ns-what {
   margin-top: 36px;
   font-size: 17px;
   letter-spacing: 0.04em;
-  animation: ns-rise 1.4s 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: ns-rise 0.9s 0.12s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .ns-what .ns-phrase + .ns-phrase {
   margin-left: 0.6em;
@@ -252,41 +219,7 @@ html:has(.night-sea) {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
-  animation: ns-rise 1.4s 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-.ns-endpoint {
-  margin-top: 22px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 4px 4px 16px;
-  border-radius: 999px;
-  background: var(--ns-step);
-  font-size: 14px;
-  color: var(--ns-ink-soft);
-  animation: ns-rise 1.4s 1.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-.ns-endpoint code {
-  font-size: 13px;
-  color: var(--ns-ink);
-}
-.ns-endpoint button {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  color: var(--ns-ink-soft);
-  background: transparent;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-.ns-endpoint button:hover {
-  background: var(--ns-step);
-  color: var(--ns-ink);
+  animation: ns-rise 0.9s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 .ns-shore {
@@ -299,13 +232,7 @@ html:has(.night-sea) {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  animation: ns-rise 1.4s 2.2s ease-out both;
-}
-.ns-prayer {
-  font-family: var(--ns-serif);
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  color: var(--ns-ink-faint);
+  animation: ns-rise 0.9s 0.4s ease-out both;
 }
 /* there is more below: a small mark on the sea that drifts like a buoy */
 .ns-more {
@@ -346,6 +273,36 @@ html:has(.night-sea) {
 }
 
 /* -------------------------------------------------- the rest of the page */
+/* the browser's own colours go with the night while this page shows (night-sea-home.tsx) */
+.ns-night-page body {
+  background: #04060d;
+}
+/* the sign-in dialog's code still on its way, on a slow line */
+.ns-auth-wait {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+}
+.ns-auth-wait::after {
+  content: '';
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--ns-line);
+  border-top-color: var(--ns-ink);
+  border-radius: 50%;
+  animation: ns-auth-wait 0.8s linear infinite;
+}
+@keyframes ns-auth-wait {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* room to scroll into before the rest of the page is in (below-fold.ts) */
+.ns-below-wait {
+  min-height: 100vh;
+}
 .ns-sections {
   /* the sections fall in under the bar, not behind it */
   scroll-margin-top: 24px;
@@ -1122,18 +1079,9 @@ html:has(.night-sea) {
   .ns-hero h1 .ns-phrase + .ns-phrase {
     margin-left: 0;
   }
-  .ns-poem {
-    margin-top: 14px;
-  }
-  .ns-offer-pill {
-    margin-bottom: 18px;
-  }
   .ns-what {
     margin-top: 28px;
     font-size: 16px;
-  }
-  .ns-endpoint code {
-    font-size: 12px;
   }
   .ns-shore {
     padding: 0 16px max(10px, env(safe-area-inset-bottom));
@@ -1202,24 +1150,10 @@ html:has(.night-sea) {
     flex-basis: 100%;
   }
 }
-@media (max-height: 560px) {
-  .ns-endpoint {
-    display: none;
-  }
-}
-/* Shorter screens: the offer stays in the bar above, the words close up. */
-@media (max-height: 820px) and (min-width: 641px) {
-  .ns-offer-pill {
-    display: none;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .ns-offer-pill,
   .ns-hero h1,
-  .ns-poem,
   .ns-what,
   .ns-actions,
-  .ns-endpoint,
   .ns-shore,
   .ns-more svg {
     animation: none;

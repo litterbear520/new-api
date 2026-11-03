@@ -703,7 +703,7 @@ export function HomeSections(props: HomeSectionsProps) {
   const { status } = useStatus()
   const deal = readDeal(status?.price, status?.usd_exchange_rate)
   const priceRate = Number(status?.price) || 0
-  // the same offers as the first screen's pill and the 活动 page
+  // the same offers as the 活动 page
   const offers = useHomeOffers()
   const starter = offerOf(offers, 'starter')
 

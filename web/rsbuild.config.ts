@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,26 +8,13 @@ import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss'
 import { tanstackRouter } from '@tanstack/router-plugin/rspack'
 
 import { englishOverrides } from './scripts/en-overrides'
-import { heroShellTags } from './src/features/home/night-sea/hero-shell-html'
+import {
+  appStylesheetScript,
+  firstNightScript,
+  heroShellTags,
+} from './src/features/home/night-sea/hero-shell-html'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// Preloads the home page's title font on the home page only: first in the
-// head, alongside the stylesheet, as the first screen in the HTML shows its
-// words in it (src/features/home/night-sea/hero-shell-html.ts). HOME_FONT is
-// filled in at build time.
-const HOME_FONT_FIRST = `(function (homeFont) {
-  try {
-    if (location.pathname !== '/') return
-    var font = document.createElement('link')
-    font.rel = 'preload'
-    font.as = 'font'
-    font.type = 'font/woff2'
-    font.crossOrigin = ''
-    font.href = homeFont
-    document.head.appendChild(font)
-  } catch (e) {}
-})(HOME_FONT)`
 
 // Preloads the interface language's chunk, picked the way src/i18n/config.ts
 // does (saved choice, then the browser's languages). After the stylesheet (a
@@ -54,6 +42,8 @@ const EARLY_LOADS = `(function (files) {
         link.rel = 'preload'
         link.as = 'script'
         link.href = files[code]
+        // the home page's words and poster, in the HTML, go first
+        if (location.pathname === '/') link.fetchPriority = 'low'
         document.head.appendChild(link)
         return
       }
@@ -63,9 +53,7 @@ const EARLY_LOADS = `(function (files) {
 
 /**
  * The interface language's chunk (locale-<code>, see src/i18n/config.ts)
- * downloads together with the app's own scripts instead of after them; the
- * home page title font (an async chunk's asset) first of all, but only on the
- * home page.
+ * downloads together with the app's own scripts instead of after them.
  */
 function pluginEarlyLoads(): RsbuildPlugin {
   return {
@@ -73,24 +61,11 @@ function pluginEarlyLoads(): RsbuildPlugin {
     setup(api) {
       api.modifyHTMLTags((tags, { compilation, assetPrefix }) => {
         const files: Record<string, string> = {}
-        let homeFont = ''
         const url = (name: string) =>
           `${assetPrefix.replace(/\/$/, '')}/${name}`
         for (const name of Object.keys(compilation.assets)) {
-          if (/^static\/font\/night-sea-serif\.\w+\.woff2$/.test(name)) {
-            homeFont = url(name)
-          }
           const m = /^static\/js\/async\/locale-(\w+)\.\w+\.js$/.exec(name)
           if (m) files[m[1]] = url(name)
-        }
-        if (homeFont) {
-          tags.headTags.unshift({
-            tag: 'script',
-            children: HOME_FONT_FIRST.replace(
-              'HOME_FONT',
-              JSON.stringify(homeFont)
-            ),
-          })
         }
         if (Object.keys(files).length) {
           tags.headTags.push({
@@ -120,18 +95,53 @@ function pluginHeroShell(): RsbuildPlugin {
         let css = ''
         let poster = ''
         let phonePoster = ''
+        let posterAvif = ''
+        let phonePosterAvif = ''
         for (const name of Object.keys(compilation.assets)) {
           if (/^static\/image\/hole-desktop\.\w+\.webp$/.test(name)) {
             poster = url(name)
           } else if (/^static\/image\/hole-phone\.\w+\.webp$/.test(name)) {
             phonePoster = url(name)
+          } else if (/^static\/image\/hole-desktop\.\w+\.avif$/.test(name)) {
+            posterAvif = url(name)
+          } else if (/^static\/image\/hole-phone\.\w+\.avif$/.test(name)) {
+            phonePosterAvif = url(name)
           } else if (/^static\/css\/async\/.+\.css$/.test(name)) {
             const source = compilation.assets[name].source().toString()
             if (source.includes('.ns-hero')) css += source
           }
         }
-        if (css && poster && phonePoster) {
-          tags.bodyTags.push(...heroShellTags({ css, poster, phonePoster }))
+        if (css && poster && phonePoster && posterAvif && phonePosterAvif) {
+          const heroFont = fs
+            .readFileSync(
+              path.resolve(__dirname, 'src/assets/fonts/night-sea-hero.woff2')
+            )
+            .toString('base64')
+          tags.bodyTags.push(
+            ...heroShellTags({
+              css,
+              poster,
+              phonePoster,
+              posterAvif,
+              phonePosterAvif,
+              heroFont,
+            })
+          )
+          // on the home page the app's stylesheet loads beside the first screen
+          tags.headTags = tags.headTags.map((tag) =>
+            tag.tag === 'link' &&
+            tag.attrs?.rel === 'stylesheet' &&
+            typeof tag.attrs.href === 'string'
+              ? {
+                  tag: 'script',
+                  children: appStylesheetScript(tag.attrs.href),
+                }
+              : tag
+          )
+          tags.headTags.unshift({
+            tag: 'script',
+            children: firstNightScript(),
+          })
         }
         return tags
       })

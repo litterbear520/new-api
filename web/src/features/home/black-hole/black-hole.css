@@ -48,8 +48,8 @@ For commercial licensing, please contact support@quantumnous.com
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* phones: the hole stays in view however the screen crops it; the Earth under it */
-  object-position: 62% 100%;
+  /* phones: the hole in the middle however the screen crops it; the Earth under it */
+  object-position: 50% 50%;
 }
 /* Until the poster is in, a soft one of the same picture: a few hundred bytes
    inside this CSS, so inside the page's HTML (night-sea/hero-shell-html.ts). */
@@ -60,36 +60,81 @@ For commercial licensing, please contact support@quantumnous.com
   content: '';
   position: absolute;
   inset: 0;
-  background: url('./tex/hole-phone-soft.webp') 62% 100% / cover no-repeat;
+  background: url('./tex/hole-phone-soft.webp') 50% 50% / cover no-repeat;
   filter: blur(24px);
   /* a little larger, so the blur's edges stay outside; round where the picture is held */
   transform: scale(1.08);
-  transform-origin: 62% 100%;
+  transform-origin: 50% 50%;
 }
-/* Computers: cropped round the hole as the engine crops its frame
-   (knobs.ts lookFrame: FRAME, hx, hy), so poster and live sky meet exactly. */
-@media (min-width: 641px) {
+/* Computers: the frame the engine draws (scene.ts frameScale): the whole height, or
+   16:9 of the width on narrow windows; the poster is wider than 16:9 (2.4:1), so
+   any window sees it where the engine draws it, and the two meet exactly. */
+.ns-first {
+  container-type: inline-size;
+}
+/* its frame is 2.4 times as wide as it is tall: scene.ts frameScale, the window's whole
+   height or 16:9 of its width, whichever is less. Tall windows (a tablet upright) have the phones' picture. */
+@media (min-width: 641px) and (min-aspect-ratio: 801/1000) {
   .ns-sky-poster img {
-    object-position: 67% 47%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(240vh, 135cqw);
+    width: min(240svh, 135cqw);
+    height: auto;
+    max-width: none;
+    aspect-ratio: 2.4;
+    object-fit: fill;
+    transform: translate(-50%, -50%);
   }
   .ns-sky-poster::before {
     background-image: url('./tex/hole-desktop-soft.webp');
-    background-position: 67% 47%;
-    transform-origin: 67% 47%;
+    background-position: 50% 50%;
+    background-size: min(240vh, 135cqw) auto;
+    background-size: min(240svh, 135cqw) auto;
+    transform-origin: 50% 50%;
   }
 }
-/* Windows near square or upright (a tablet held so, half a screen): the
-   engine keeps their own frame there, which the poster would not meet, so the
-   night shows until it draws (the HTML's first screen too: hero-shell-html.ts) */
-@media (min-width: 641px) and (max-aspect-ratio: 6/5) {
-  .ns-first:has(> .ns-sky-hole) .ns-sky-poster {
-    display: none;
+/* Windows narrower than the frame, or wider than the poster: it ends before the window does.
+   Its edges fade into the night, where the live sky has more stars to show. */
+@media (min-width: 641px) and (min-aspect-ratio: 801/1000) and (max-aspect-ratio: 16/9) {
+  .ns-sky-poster img {
+    -webkit-mask-image: linear-gradient(
+      transparent,
+      #000 7%,
+      #000 93%,
+      transparent
+    );
+    mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent);
+  }
+}
+@media (min-aspect-ratio: 12/5) {
+  .ns-sky-poster img {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 7%,
+      #000 93%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 7%,
+      #000 93%,
+      transparent
+    );
   }
 }
 /* once the live sky is all the way up, the poster under it goes: nothing more to put together each frame */
 .ns-first:has(> .ns-sky-hole[data-ready]) .ns-sky-poster {
   visibility: hidden;
   transition: visibility 0s 1s;
+}
+/* the sign-in dialog sits over the hole: the sky steps back, so its fields can be read */
+.ns-hole.ns-auth-open .ns-sky {
+  opacity: 0.26;
+  transition: opacity 0.25s ease-out;
 }
 /* the bottom of the first screen goes into the night the page carries on in
    (a smoothstep, as the engine's grade once did; phones' picture has its own) */
@@ -116,65 +161,40 @@ For commercial licensing, please contact support@quantumnous.com
 }
 
 /* ------------------------------------------------------ the first screen */
-/* The words on the left, the hole rising over the Earth on the right. */
+/* The words centred at the top, the hole under them, a small Earth low on the left. */
 .ns-hole .ns-hero {
-  right: auto;
-  left: clamp(24px, 8.3vw, 140px);
-  top: 22vh;
-  top: 22svh;
+  left: 0;
+  right: 0;
+  top: clamp(84px, min(5cqw, 10vh), 140px);
+  top: clamp(84px, min(5cqw, 10svh), 140px);
   height: auto;
-  max-width: 600px;
-  padding: 0;
-  align-items: flex-start;
+  padding: 0 5cqw;
+  align-items: center;
   justify-content: flex-start;
-  text-align: left;
+  text-align: center;
   text-shadow: var(--ns-halo);
 }
-.ns-hole .ns-hero p {
-  margin-left: 0;
-  margin-right: 0;
-}
 .ns-hole .ns-hero h1 {
-  font-size: clamp(36px, 4.4vw, 60px);
-  line-height: 1.18;
+  font-size: clamp(30px, min(3.4cqw, 7vh), 72px);
+  font-size: clamp(30px, min(3.4cqw, 7svh), 72px);
+  line-height: 1.2;
   letter-spacing: 0.04em;
 }
-/* left-aligned, each phrase starts its own line (no gap carried over a break) */
-.ns-hole .ns-hero h1 .ns-phrase {
-  display: block;
-  white-space: nowrap;
-}
-.ns-hole .ns-hero h1 .ns-phrase + .ns-phrase {
-  margin-left: 0;
+.ns-hole .ns-hero .ns-what {
+  margin: max(0.55cqw, 8px) 0 max(0.95cqw, 14px);
+  font-size: clamp(14px, min(1.35cqw, 2.8vh), 28px);
+  font-size: clamp(14px, min(1.35cqw, 2.8svh), 28px);
 }
 .ns-hole .ns-actions {
-  justify-content: flex-start;
-}
-.ns-hole .ns-offer-pill,
-.ns-hole .ns-endpoint,
-.ns-hole .ns-actions {
+  margin-top: 0;
+  justify-content: center;
   text-shadow: none;
 }
-/* The offer comes once pay-bridge's rules are in, after the words: its place
-   is kept (the pill's own height, so it comes the same on every system) and
-   the words never move when it does. */
-.ns-hole .ns-offer-slot {
-  min-height: 31px;
-  margin-bottom: 26px;
-}
-.ns-hole .ns-offer-slot .ns-offer-pill {
-  height: 31px;
-  margin-bottom: 0;
-}
-/* shorter screens leave the offer to the bar above (night-sea.css), and its place too */
-@media (max-height: 820px) and (min-width: 641px) {
-  .ns-hole .ns-offer-slot {
-    display: none;
+/* a window too low to keep the words off the disk: the quiet button keeps its own night */
+@media (max-height: 560px) {
+  .ns-hole .ns-pill-quiet {
+    background: rgba(4, 6, 13, 0.66);
   }
-}
-/* the prayer belongs to the sea */
-.ns-hole .ns-prayer {
-  display: none;
 }
 
 /* ------------------------------------------------------ the gateway */
@@ -453,15 +473,9 @@ For commercial licensing, please contact support@quantumnous.com
   .ns-hole .ns-hero {
     top: 13vh;
     top: 13svh;
-    left: 22px;
-    right: 22px;
-  }
-  .ns-hole .ns-offer-slot {
-    margin-bottom: 18px;
   }
   .ns-hole .ns-hero h1 {
     font-size: min(34px, (100vw - 44px) / 7.6);
-    line-height: 1.22;
   }
   .night-sea .ns-gw-chip {
     height: 32px;

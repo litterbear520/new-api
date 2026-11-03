@@ -16,21 +16,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-// Builds the star lists off the main thread (see stars.ts). The page fetches
-// the pack (so the HTML's preload of it is used) and hands it over.
-import { type StarLook, buildStars, gunzipped, unpackStars } from './stars'
+// Everything under the first screen, its own chunk: NightSeaHome brings it in
+// when it is wanted (below-fold.ts).
+import type { ComponentProps } from 'react'
 
-type Job = { pack: ArrayBuffer; look: StarLook }
+import { Gateway } from '../black-hole/gateway'
+import { HomeEnd, HomeSections } from './sections'
 
-self.addEventListener('message', async (e: MessageEvent<Job>) => {
-  const { pack, look } = e.data
-  try {
-    const out = buildStars(unpackStars(await gunzipped(pack)), look)
-    ;(self as unknown as Worker).postMessage(out, [
-      out.index.buffer,
-      out.list.buffer,
-    ])
-  } catch (err) {
-    ;(self as unknown as Worker).postMessage({ error: String(err) })
-  }
-})
+export function BelowSections(props: ComponentProps<typeof HomeSections>) {
+  return <HomeSections {...props} gateway={<Gateway />} />
+}
+
+export { HomeEnd }

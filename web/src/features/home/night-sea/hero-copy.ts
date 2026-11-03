@@ -22,18 +22,20 @@ For commercial licensing, please contact support@quantumnous.com
 
 /** The first screen's words */
 export const HERO = {
-  title: ['你的海如此辽阔', '我的船如此渺小'],
-  poem: ['今晚仰望星空', '格外心怀敬畏'],
-  what: ['一个接口', '探索星辰大海'],
+  title: ['万千模型', '汇于一点'],
+  what: ['所有模型', '一个接口'],
   start: '开始使用',
   docs: '阅读文档',
   more: '往下看看',
-  prayer: 'Thy sea is so great and my boat is so small',
 } as const
 
 /** The first screen in the HTML, and its style */
 export const HERO_SHELL_ID = 'ns-shell'
 export const HERO_SHELL_STYLE_ID = 'ns-shell-css'
+/** Where the upright poster shows: phones, and any window taller than wide (a tablet upright) */
+export const PHONE_POSTER_QUERY = '(max-width: 640px), (max-aspect-ratio: 4/5)'
+/** The night the page stands on until the first screen is in */
+export const FIRST_NIGHT_ID = 'ns-first-night'
 /** How long the HTML's poster and words take to come up; the app takes over no sooner after they do */
 export const POSTER_FADE_MS = 600
 export const WORDS_FADE_MS = 300

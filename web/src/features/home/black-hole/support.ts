@@ -32,6 +32,8 @@ export const CONTEXT: WebGLContextAttributes = {
 export const PHONE_QUERY = '(max-width: 640px)'
 export const STACKED_QUERY = '(max-width: 999px)'
 const QUERIES = [PHONE_QUERY, STACKED_QUERY]
+/** Touch first: a tablet, a phone on its side. Past the phone's width, but the still picture all the same */
+const TOUCH_QUERY = '(hover: none) and (pointer: coarse)'
 
 /** Which of the page's layouts is on now (a phone turned, a window resized): phones get the still picture, the gateway stacks */
 export function layoutNow(): string {
@@ -47,10 +49,35 @@ export function subscribeLayout(onChange: () => void): () => void {
 
 let drawable: boolean | undefined
 
-/** WebGL2 on a GPU, with float render targets. Asked once a page load. */
+/** Little memory or few cores: the still picture keeps the page quick */
+function lowEnd(): boolean {
+  const n = navigator as Navigator & { deviceMemory?: number }
+  return (
+    (n.deviceMemory !== undefined && n.deviceMemory < 4) ||
+    (n.hardwareConcurrency > 0 && n.hardwareConcurrency < 4)
+  )
+}
+
+/**
+ * The visitor asked for less data, or the line is very slow. Not "3g": that only
+ * means a long way to the server, which is every visitor far from it.
+ */
+export function savesData(): boolean {
+  const { connection } = navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string }
+  }
+  return (
+    connection?.saveData === true || /2g/.test(connection?.effectiveType ?? '')
+  )
+}
+
+/** WebGL2 on a GPU, with float render targets, on a computer with room. Asked once a page load. */
 export function canDrawBlackHole(): boolean {
   if (drawable !== undefined) return drawable
   drawable = false
+  if (lowEnd() || savesData() || window.matchMedia(TOUCH_QUERY).matches) {
+    return false
+  }
   try {
     const gl = document.createElement('canvas').getContext('webgl2', CONTEXT)
     if (gl) {

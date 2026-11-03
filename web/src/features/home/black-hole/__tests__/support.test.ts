@@ -53,6 +53,104 @@ describe('whether the black hole can be drawn', () => {
   })
 })
 
+describe('a machine with little room', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      () =>
+        ({
+          getExtension: () => ({ loseContext: () => {} }),
+        }) as unknown as WebGL2RenderingContext
+    )
+  })
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'deviceMemory')
+  })
+
+  it('gets the still picture with few cores', async () => {
+    vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(2)
+    const { canDrawBlackHole } = await import('../support')
+    expect(canDrawBlackHole()).toBe(false)
+  })
+
+  it('gets the still picture with little memory', async () => {
+    vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(8)
+    Object.defineProperty(navigator, 'deviceMemory', {
+      configurable: true,
+      value: 2,
+    })
+    const { canDrawBlackHole } = await import('../support')
+    expect(canDrawBlackHole()).toBe(false)
+  })
+
+  it('draws the hole with room to spare', async () => {
+    vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(8)
+    Object.defineProperty(navigator, 'deviceMemory', {
+      configurable: true,
+      value: 8,
+    })
+    const { canDrawBlackHole } = await import('../support')
+    expect(canDrawBlackHole()).toBe(true)
+  })
+})
+
+describe('a screen you touch', () => {
+  it('gets the still picture: nothing to follow a pointer, and a battery to spare', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      () =>
+        ({
+          getExtension: () => ({ loseContext: () => {} }),
+        }) as unknown as WebGL2RenderingContext
+    )
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === '(hover: none) and (pointer: coarse)',
+          media: query,
+        }) as unknown as MediaQueryList
+    )
+    const { canDrawBlackHole } = await import('../support')
+    expect(canDrawBlackHole()).toBe(false)
+  })
+})
+
+describe('a visitor on a thin line', () => {
+  const gl = { getExtension: () => ({ loseContext: () => {} }) }
+  const line = (value: object) =>
+    Object.defineProperty(navigator, 'connection', {
+      configurable: true,
+      value,
+    })
+
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      () => gl as unknown as WebGL2RenderingContext
+    )
+  })
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'connection')
+  })
+
+  it('gets the still picture when saving data or on 2G', async () => {
+    for (const value of [
+      { saveData: true },
+      { effectiveType: '2g' },
+      { effectiveType: 'slow-2g' },
+    ]) {
+      vi.resetModules()
+      line(value)
+      const { canDrawBlackHole } = await import('../support')
+      expect(canDrawBlackHole()).toBe(false)
+    }
+  })
+
+  it('keeps the hole on a long line: 3G here only means a far server', async () => {
+    vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(8)
+    line({ effectiveType: '3g', saveData: false })
+    const { canDrawBlackHole } = await import('../support')
+    expect(canDrawBlackHole()).toBe(true)
+  })
+})
+
 describe('after the first paint', () => {
   it('runs the frame after, once the page has painted', async () => {
     vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'setTimeout'] })
