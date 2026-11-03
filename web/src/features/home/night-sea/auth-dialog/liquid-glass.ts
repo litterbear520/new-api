@@ -41,7 +41,8 @@ float box(vec2 p) {
   vec2 q = abs(p) - size * .5 + radius;
   return length(max(q, 0.)) + min(max(q.x, q.y), 0.) - radius;
 }
-vec3 at(vec2 px) { return texture2D(sky, (px * scale + margin) / texSize).rgb; }
+// the sky has stepped back behind the dialog (black-hole.css .ns-auth-open): the glass sees it so too
+vec3 at(vec2 px) { return texture2D(sky, (px * scale + margin) / texSize).rgb * 0.26; }
 vec3 soft(vec2 px) {
   vec3 c = at(px) * .2;
   c += (at(px + vec2(blur, 0.)) + at(px - vec2(blur, 0.)) + at(px + vec2(0., blur)) + at(px - vec2(0., blur))) * .12;
@@ -71,8 +72,9 @@ void main() {
   // Glass gathers light: a little brighter and more saturated than the sky around it.
   float l = dot(col, vec3(.299, .587, .114));
   col = max(mix(vec3(l), col, 1.45) * 1.25, 0.) + vec3(.020, .026, .042);
-  // Body: a cool tint, deeper towards the middle, so the form stays legible.
-  col = mix(col, vec3(.035, .045, .08), .16 + .12 * s);
+  // Body: a cool tint, much deeper away from the rim: the words in the middle sit
+  // over a bright disk, and have to read whatever passes behind them.
+  col = mix(col, vec3(.035, .045, .08), .16 + .52 * s);
 
   // Thickness: the bezel catches a soft glow, then a faint shadow where it meets the flat.
   col += vec3(.62, .68, .82) * pow(edge, 2.6) * .16;
