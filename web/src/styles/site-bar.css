@@ -117,11 +117,12 @@ For commercial licensing, please contact support@quantumnous.com
 [data-site-bar] :is(a, button)[data-ink]:not([aria-current]):hover {
   background-color: color-mix(in srgb, currentColor 13%, transparent);
 }
-[data-site-bar] [data-plate] {
+[data-site-bar] [data-ink]:not([data-site-lens], [data-bar-word='line']) {
   position: relative;
   isolation: isolate;
 }
-[data-site-bar] [data-plate]::after {
+[data-site-bar]
+  [data-ink]:not([data-site-lens], [data-bar-word='line'])::after {
   content: '';
   position: absolute;
   inset: 3px 0;
@@ -129,16 +130,23 @@ For commercial licensing, please contact support@quantumnous.com
   border-radius: 999px;
   filter: blur(6px);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s;
 }
-[data-site-bar] [data-plate][data-ink='light']::after {
+[data-site-bar] [data-plate]::after {
+  opacity: 1 !important;
+}
+[data-site-bar] [data-ink='light']::after {
   background: rgb(0 0 0 / 0.55);
 }
-[data-site-bar] [data-plate][data-ink='dark']::after {
+[data-site-bar] [data-ink='dark']::after {
   background: rgb(255 255 255 / 0.7);
 }
 @media (prefers-reduced-motion: reduce) {
   .dock-glass,
-  [data-site-bar] [data-ink] {
+  [data-site-bar] [data-ink],
+  [data-site-bar] [data-site-lens][data-ink],
+  [data-site-bar] [data-ink]::after {
     transition: none;
   }
 }

@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { describeAccount, writeAccountNote } from './account-note'
-import { BarInk } from './backdrop'
+import { BarInk } from './bar-ink'
 import { leaveHandoff, takeHandoff } from './handoff'
 import { BarMorph } from './morph'
 import { useSignInPrompt } from './sign-in-prompt'

@@ -30,6 +30,7 @@ import {
   dockRim,
   refractionMap,
   type RefractionMap,
+  type Rim,
 } from '@/lib/liquid-glass'
 import { cn } from '@/lib/utils'
 
@@ -59,9 +60,21 @@ const FROST = cn(
   '[@media(prefers-reduced-transparency:reduce)]:bg-background [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none [@media(prefers-reduced-transparency:reduce)]:after:hidden'
 )
 
-/** The Dock's look: a little blur, and colours as rich as it shows them. */
-const DOCK_BACKDROP = 'blur(1px) saturate(1.35)'
-const FROST_BACKDROP = 'blur(3px) saturate(1.7)'
+const MATERIALS: Record<
+  GlassMaterial,
+  { className: string; backdrop: string; rim: (height: number) => Rim }
+> = {
+  dock: {
+    className: 'dock-glass relative',
+    backdrop: 'blur(1px) saturate(1.35)',
+    rim: dockRim,
+  },
+  frost: {
+    className: FROST,
+    backdrop: 'blur(3px) saturate(1.7)',
+    rim: () => FROST_RIM,
+  },
+}
 
 /** Only Chromium filters the backdrop through SVG; other browsers frost. */
 function refracts() {
@@ -104,7 +117,7 @@ function paneMap(pane: HTMLElement, width: number, material: GlassMaterial) {
     width,
     height,
     radius: Number.parseFloat(getComputedStyle(pane).borderTopLeftRadius) || 0,
-    rim: material === 'dock' ? dockRim(height) : FROST_RIM,
+    rim: MATERIALS[material].rim(height),
   })
 }
 
@@ -231,8 +244,9 @@ export function LiquidGlass({
   const ref = useRef<HTMLDivElement>(null)
   const filterId = `liquid-glass${useId().replaceAll(/[^\w-]/g, '')}`
   const { lens, parts } = useLens(ref, material)
-  const look = material === 'dock' ? DOCK_BACKDROP : FROST_BACKDROP
-  const backdrop = lens ? `url(#${filterId}) ${look}` : undefined
+  const backdrop = lens
+    ? `url(#${filterId}) ${MATERIALS[material].backdrop}`
+    : undefined
 
   return (
     <div
@@ -243,10 +257,7 @@ export function LiquidGlass({
       }}
       data-slot='liquid-glass'
       data-refracts={lens ? '' : undefined}
-      className={cn(
-        material === 'dock' ? 'dock-glass relative' : FROST,
-        className
-      )}
+      className={cn(MATERIALS[material].className, className)}
       style={
         backdrop
           ? {
