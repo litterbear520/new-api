@@ -60,7 +60,7 @@ function picture(grey: number | 'other-site') {
   Object.defineProperties(img, {
     complete: { value: true },
     naturalWidth: { value: 100 },
-    currentSrc: { value: `/picture-${grey}.webp` },
+    currentSrc: { value: `/picture-${grey}.webp`, configurable: true },
   })
   img.getBoundingClientRect = () => rect(0, 2000, 0, 100)
   return img
@@ -119,6 +119,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   Reflect.deleteProperty(document, 'elementsFromPoint')
   document.body.replaceChildren()
   document.documentElement.classList.remove('dark')
@@ -260,6 +261,87 @@ test("after another site's picture, later pictures can still be read", () => {
   ink.dispose()
 
   expect(drawn).toContain(later)
+  expect(word).toHaveAttribute('data-ink', 'dark')
+})
+
+/** A browser that can decode a picture's bytes off the main thread. */
+function decodesOffThread(fail = false) {
+  const fetched: string[] = []
+  vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+    fetched.push(url)
+    expect(init?.cache).toBe('only-if-cached')
+    if (fail) throw new TypeError('not cached')
+    return { ok: true, blob: async () => url }
+  })
+  vi.stubGlobal('createImageBitmap', async (bytes: string) => ({
+    grey: Number(/picture-(\d+)/.exec(bytes)?.[1]),
+    close() {},
+  }))
+  return fetched
+}
+
+test("a picture from this site is decoded off the main thread and read when that's done", async () => {
+  const drawn = fakeCanvases()
+  decodesOffThread()
+  const img = picture(250)
+  stackAt = () => [img]
+  const ink = new BarInk({ bar, glass })
+
+  ink.ask()
+  await vi.advanceTimersByTimeAsync(1000)
+  ink.dispose()
+
+  expect(drawn).not.toContain(img)
+  expect(word).toHaveAttribute('data-ink', 'dark')
+})
+
+test('a picture off the main thread is decoded once, however many readers see it', async () => {
+  fakeCanvases()
+  const fetched = decodesOffThread()
+  const img = picture(250)
+  stackAt = () => [img]
+  const ink = new BarInk({ bar, glass })
+  const other = new BarInk({ bar, glass })
+
+  ink.ask()
+  other.ask()
+  await vi.advanceTimersByTimeAsync(1000)
+  ink.dispose()
+  other.dispose()
+
+  expect(fetched).toHaveLength(1)
+})
+
+test('a picture not in the cache is drawn as before, with no download', async () => {
+  const drawn = fakeCanvases()
+  decodesOffThread(true)
+  const img = picture(250)
+  stackAt = () => [img]
+  const ink = new BarInk({ bar, glass })
+
+  ink.ask()
+  await vi.advanceTimersByTimeAsync(1000)
+  ink.dispose()
+
+  expect(drawn).toContain(img)
+  expect(word).toHaveAttribute('data-ink', 'dark')
+})
+
+test("another site's picture is not asked for: the cache can't give it", async () => {
+  fakeCanvases()
+  const fetched = decodesOffThread()
+  const img = picture(250)
+  Object.defineProperty(img, 'currentSrc', {
+    value: 'https://elsewhere.example/picture-250.webp',
+  })
+  stackAt = () => [img]
+  const ink = new BarInk({ bar, glass })
+
+  ink.ask()
+  await vi.advanceTimersByTimeAsync(1000)
+  ink.dispose()
+
+  expect(fetched).toHaveLength(0)
   expect(word).toHaveAttribute('data-ink', 'dark')
 })
 

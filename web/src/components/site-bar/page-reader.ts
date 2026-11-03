@@ -28,6 +28,18 @@ export const MARKED: Record<string, Rgb> = {
   light: [245, 245, 245],
 }
 
+/**
+ * Decoding is what a thumbnail costs. A picture from this site can be decoded
+ * off the main thread from the bytes in the browser's cache, with no download;
+ * another site's can't be asked for that way.
+ */
+function decodesOffThread(src: string): boolean {
+  return (
+    typeof createImageBitmap === 'function' &&
+    new URL(src, location.href).origin === location.origin
+  )
+}
+
 function newContext(size: number): CanvasRenderingContext2D | null {
   const canvas = document.createElement('canvas')
   canvas.width = size
@@ -35,14 +47,18 @@ function newContext(size: number): CanvasRenderingContext2D | null {
   return canvas.getContext('2d', { willReadFrequently: true })
 }
 
+type Thumb = {
+  src: string
+  data: Uint8ClampedArray | null
+  /** Still being decoded: `data` follows. */
+  decoding: boolean
+}
+
 /**
  * Pictures read so far, for every reader on the page: the bar and the strips
  * under it see the same pictures, and reading one back is the dear part.
  */
-const thumbs = new WeakMap<
-  HTMLImageElement,
-  { src: string; data: Uint8ClampedArray | null }
->()
+const thumbs = new WeakMap<HTMLImageElement, Thumb>()
 
 const SOLID = /^rgba?\(([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)(?:[,/ ]+([\d.]+))?\)$/
 
@@ -162,18 +178,52 @@ export class PageReader {
 
   private thumbnail(img: HTMLImageElement): Uint8ClampedArray | null {
     const known = thumbs.get(img)
-    if (known?.src === img.currentSrc) return known.data
+    if (known?.src === img.currentSrc) {
+      if (known.decoding) this.waiting = true
+      return known.data
+    }
     if (this.newThumbs >= THUMBS_PER_READ) {
       this.waiting = true
       return null
     }
     this.newThumbs++
-    const thumb = { src: img.currentSrc, data: this.drawThumb(img) }
+    const thumb: Thumb = { src: img.currentSrc, data: null, decoding: false }
     thumbs.set(img, thumb)
+    if (decodesOffThread(thumb.src)) {
+      thumb.decoding = true
+      this.waiting = true
+      void this.decodeOffThread(img, thumb)
+    } else {
+      thumb.data = this.drawThumb(img)
+    }
     return thumb.data
   }
 
-  private drawThumb(img: HTMLImageElement): Uint8ClampedArray | null {
+  private async decodeOffThread(
+    img: HTMLImageElement,
+    thumb: Thumb
+  ): Promise<void> {
+    try {
+      const response = await fetch(thumb.src, {
+        cache: 'only-if-cached',
+        mode: 'same-origin',
+      })
+      if (!response.ok) throw new Error(String(response.status))
+      const small = await createImageBitmap(await response.blob(), {
+        resizeWidth: THUMB,
+        resizeHeight: THUMB,
+      })
+      thumb.data = this.drawThumb(small)
+      small.close()
+    } catch {
+      // not in the cache, or an SVG with no bitmap to decode into: the canvas
+      // can still draw it
+      thumb.data = this.drawThumb(img)
+    }
+    thumb.decoding = false
+  }
+
+  private drawThumb(img: CanvasImageSource): Uint8ClampedArray | null {
     this.thumbContext ??= newContext(THUMB)
     const g = this.thumbContext
     if (!g) return null
