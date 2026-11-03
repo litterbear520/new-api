@@ -228,8 +228,10 @@ const SHOW = `(function () {
 /**
  * The app's stylesheet, in place of its tag in the head. On the home page it
  * doesn't hold the first screen back, which brings its own CSS: it loads beside
- * it, and the app waits for it (window.__appCss, main.tsx). Every other page
- * has nothing to show without it: it holds them as a tag in the head does.
+ * it, and the app waits for it (window.__appCss, main.tsx). It is for another
+ * medium until it is in: Safari holds the first paint for any other way of
+ * loading it (tried on 27.2: inserted by script, and rel=preload). Every other
+ * page has nothing to show without it: it holds them as a tag in the head does.
  */
 export function appStylesheetScript(href: string): string {
   return `(function (href) {
@@ -237,9 +239,14 @@ export function appStylesheetScript(href: string): string {
     var link = document.createElement('link')
     link.rel = 'stylesheet'
     link.href = href
+    link.media = 'print'
     link.fetchPriority = 'low'
     window.__appCss = new Promise(function (done) {
-      link.onload = link.onerror = done
+      link.onload = function () {
+        link.media = 'all'
+        done()
+      }
+      link.onerror = done
     })
     document.head.appendChild(link)
   } else {

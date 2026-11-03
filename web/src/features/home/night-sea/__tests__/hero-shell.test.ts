@@ -223,9 +223,12 @@ describe('the app\u2019s stylesheet', () => {
     void window.__appCss?.then(() => (done = true))
     await Promise.resolve()
     expect(done).toBe(false)
+    // for another medium until it is in: no browser holds the page for it, Safari included
+    expect(link).toHaveAttribute('media', 'print')
     link?.dispatchEvent(new Event('load'))
     await window.__appCss
     expect(done).toBe(true)
+    expect(link).toHaveAttribute('media', 'all')
   })
 
   it('tells the app when it failed too: the app goes on', async () => {
