@@ -145,28 +145,12 @@ test('over a black page the words turn white', () => {
   expect(word).toHaveAttribute('data-ink', 'light')
 })
 
-test('over a black page the glass takes the tint measured on the dark Dock', () => {
-  onlyPage(BLACK_PAGE)
-
-  readOnce()
-
-  expect(glass.style.getPropertyValue('--glass-tint')).toContain('52 61 62')
-})
-
 test('over a white page the words turn black', () => {
   onlyPage(WHITE_PAGE)
 
   readOnce()
 
   expect(word).toHaveAttribute('data-ink', 'dark')
-})
-
-test('over a white page the glass takes the light tint', () => {
-  onlyPage(WHITE_PAGE)
-
-  readOnce()
-
-  expect(glass.style.getPropertyValue('--glass-tint')).toContain('246 248 251')
 })
 
 test('a marked element says how dark it is, as a sky drawn on a canvas must', () => {
@@ -354,11 +338,12 @@ test('after a fast scroll stops, every picture under the bar has been read', () 
   expect(new Set(drawn).size).toBe(wall.length)
 })
 
-test('after a jump from white to black the tint at rest is fully dark', () => {
+test('the glass stays as it is, whatever passes under it', () => {
   const white = page({ backgroundColor: WHITE_PAGE })
   const black = page({ backgroundColor: BLACK_PAGE })
   let current = white
   stackAt = () => [current]
+  const before = glass.getAttribute('style')
   const ink = new BarInk({ bar, glass })
   ink.ask()
   settled()
@@ -368,7 +353,18 @@ test('after a jump from white to black the tint at rest is fully dark', () => {
   settled()
   ink.dispose()
 
-  expect(glass.style.getPropertyValue('--glass-tint')).toContain('52 61 62')
+  expect(glass.getAttribute('style')).toBe(before)
+})
+
+test("a word reads the page through its theme's glass", () => {
+  onlyPage('rgb(97, 97, 97)')
+  readOnce()
+  expect(word).toHaveAttribute('data-ink', 'dark')
+
+  word.removeAttribute('data-ink')
+  document.documentElement.classList.add('dark')
+  readOnce()
+  expect(word).toHaveAttribute('data-ink', 'light')
 })
 
 test('asked all through a scroll it reads about ten times a second', () => {
@@ -399,7 +395,6 @@ test('held still it clears what it set', () => {
   ink.dispose()
 
   expect(word).not.toHaveAttribute('data-ink')
-  expect(glass.style.getPropertyValue('--glass-tint')).toBe('')
 })
 
 test('held still it reads nothing', () => {

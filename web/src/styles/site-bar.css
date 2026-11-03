@@ -24,8 +24,9 @@ For commercial licensing, please contact support@quantumnous.com
  * thin tint, a faint glow inside, white lines along the top and bottom that
  * fade towards the ends and dark lines at the ends. The Dark values are
  * measured. The Dock's own light tint reads too grey on our white pages, so
- * bright pages get a lighter one with a faint outline and soft shadow instead.
- * These defaults are for a bright page; backdrop.ts follows the real one.
+ * the light theme gets a lighter one with a faint outline and soft shadow
+ * instead. It stays the same whatever passes under it, so the page shows through
+ * as it is (backdrop.ts holds the same values, to read the words through it).
  */
 .dock-glass {
   --glass-radius: 20px;
@@ -89,20 +90,19 @@ For commercial licensing, please contact support@quantumnous.com
 
 /*
  * The words on the bar take the colour that reads over what is under them
- * (components/site-bar/backdrop.ts). A word across light and dark gets a soft
- * plate of the opposite colour. Without data-ink they keep the theme's colour.
+ * (components/site-bar/backdrop.ts). Without data-ink they keep the theme's colour.
  */
 [data-site-bar].dark [data-site-link]:not([data-ink]) {
   color: #fff;
 }
 [data-site-bar] [data-ink] {
   transition:
-    color 0.18s,
-    text-shadow 0.18s;
+    color 0.3s,
+    text-shadow 0.3s;
 }
 [data-site-bar] [data-site-lens][data-ink] {
   transition:
-    color 0.18s,
+    color 0.3s,
     opacity 0.3s,
     background-color 0.3s,
     box-shadow 0.3s;
@@ -121,36 +121,10 @@ For commercial licensing, please contact support@quantumnous.com
 [data-site-bar] :is(a, button)[data-ink]:not([aria-current]):hover {
   background-color: color-mix(in srgb, currentColor 13%, transparent);
 }
-[data-site-bar] [data-ink]:not([data-site-lens], [data-bar-word='line']) {
-  position: relative;
-  isolation: isolate;
-}
-[data-site-bar]
-  [data-ink]:not([data-site-lens], [data-bar-word='line'])::after {
-  content: '';
-  position: absolute;
-  inset: 3px 0;
-  z-index: -1;
-  border-radius: 999px;
-  filter: blur(6px);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.18s;
-}
-[data-site-bar] [data-plate]::after {
-  opacity: 1 !important;
-}
-[data-site-bar] [data-ink='light']::after {
-  background: rgb(0 0 0 / 0.55);
-}
-[data-site-bar] [data-ink='dark']::after {
-  background: rgb(255 255 255 / 0.7);
-}
 @media (prefers-reduced-motion: reduce) {
   .dock-glass,
   [data-site-bar] [data-ink],
-  [data-site-bar] [data-site-lens][data-ink],
-  [data-site-bar] [data-ink]::after {
+  [data-site-bar] [data-site-lens][data-ink] {
     transition: none;
   }
 }

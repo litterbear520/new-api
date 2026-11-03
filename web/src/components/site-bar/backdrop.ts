@@ -54,65 +54,28 @@ export function mix(under: Rgb, over: Rgb, alpha: number): Rgb {
 }
 
 /**
- * Dark: measured on the Dock. Light: lighter than the Dock's own, which
- * measures [153, 153, 153] at .25 and reads too grey on our white pages.
+ * The glass, one for each theme and the same whatever passes under it, so the
+ * page shows through as it is: bright where it is bright, dark where it is dark.
+ * Dark: measured on the Dock. Light: lighter than the Dock's own, which measures
+ * [153, 153, 153] at .25 and reads too grey on our white pages. These are the
+ * values in styles/site-bar.css.
  */
-const DARK_TINT: Rgb = [52, 61, 62]
-const LIGHT_TINT: Rgb = [246, 248, 251]
-/** Below this luminance the tint is all dark, above the other all light. */
-const TINT_FROM = 0.12
-const TINT_TO = 0.46
-
-export type Tint = {
-  color: Rgb
-  alpha: number
-  /** Dark lines down the sides; on bright pages an outline and a soft shadow. */
-  side: number
-  outline: number
-  shadow: number
+export const GLASS: Record<'light' | 'dark', Layer> = {
+  light: { color: [246, 248, 251], alpha: 0.16 },
+  dark: { color: [52, 61, 62], alpha: 0.29 },
 }
 
-/** The glass over a page this bright, dark or light whatever the theme. */
-export function tintFor(lum: number): Tint {
-  const linear = Math.min(
-    1,
-    Math.max(0, (lum - TINT_FROM) / (TINT_TO - TINT_FROM))
-  )
-  const t = linear * linear * (3 - 2 * linear)
-  return {
-    color: mix(DARK_TINT, LIGHT_TINT, t).map(Math.round) as unknown as Rgb,
-    alpha: 0.29 - 0.13 * t,
-    side: 0.45 - 0.35 * t,
-    outline: 0.1 * t,
-    shadow: 0.2 * t,
-  }
-}
-
-/** The other colour must read this much better before a word changes. */
-const STICK = 1.2
-/** A word over a wider spread of luminance than this needs a plate… */
-const PLATE_ON = 0.12
-/** …and keeps it until the spread is this small, so it does not flicker. */
-const PLATE_OFF = 0.08
-
-export type WordInk = { ink: Ink; plate: boolean }
+/** A word keeps its colour for as long as it reads at least this well. */
+const STILL_READS = 3
 
 /** The colour for a word over these luminances (glass included). */
-export function chooseInk(
-  lums: readonly number[],
-  was?: Partial<WordInk>
-): WordInk {
+export function chooseInk(lums: readonly number[], was?: Ink): Ink {
   const mean = lums.reduce((a, b) => a + b, 0) / lums.length
   const white = contrast(1, mean)
   const black = contrast(0, mean)
-  let ink: Ink = white >= black ? 'light' : 'dark'
-  if (was?.ink && was.ink !== ink) {
-    const now = was.ink === 'light' ? white : black
-    const next = ink === 'light' ? white : black
-    if (next < now * STICK) ink = was.ink
-  }
-  const spread = Math.max(...lums) - Math.min(...lums)
-  return { ink, plate: spread > (was?.plate ? PLATE_OFF : PLATE_ON) }
+  if (was === 'light' && white >= STILL_READS) return 'light'
+  if (was === 'dark' && black >= STILL_READS) return 'dark'
+  return white >= black ? 'light' : 'dark'
 }
 
 /** What shows through `layers`, listed from the top down. */

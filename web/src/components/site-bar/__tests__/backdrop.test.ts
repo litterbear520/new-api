@@ -24,86 +24,37 @@ import {
   contrast,
   luminance,
   mix,
-  tintFor,
   type Layer,
 } from '../backdrop'
 
 const WHITE = [255, 255, 255] as const
 const BLACK = [0, 0, 0] as const
 
-describe('tintFor', () => {
-  test('over a dark page it is the tint measured on the Dock', () => {
-    const tint = tintFor(0.02)
-
-    expect(tint.color).toEqual([52, 61, 62])
-    expect(tint.alpha).toBeCloseTo(0.29)
-    expect(tint.side).toBeCloseTo(0.45)
-    expect(tint.outline).toBe(0)
-  })
-
-  test('over a light page it turns light, whatever the theme', () => {
-    const tint = tintFor(0.9)
-
-    expect(tint.color).toEqual([246, 248, 251])
-    expect(tint.alpha).toBeCloseTo(0.16)
-    expect(tint.side).toBeCloseTo(0.1)
-    expect(tint.outline).toBeCloseTo(0.1)
-  })
-
-  test('between the two it moves smoothly', () => {
-    const steps = [0.1, 0.2, 0.3, 0.4, 0.5].map((lum) => tintFor(lum).alpha)
-
-    for (let i = 1; i < steps.length; i++) {
-      expect(steps[i]).toBeLessThanOrEqual(steps[i - 1])
-    }
-    expect(steps[2]).toBeGreaterThan(0.16)
-    expect(steps[2]).toBeLessThan(0.29)
-  })
-})
-
 describe('chooseInk', () => {
   test('white words on a dark page, black words on a light one', () => {
-    expect(chooseInk([0.02, 0.03]).ink).toBe('light')
-    expect(chooseInk([0.8, 0.9]).ink).toBe('dark')
+    expect(chooseInk([0.02, 0.03])).toBe('light')
+    expect(chooseInk([0.8, 0.9])).toBe('dark')
   })
 
-  test('around the point where both read alike, a word keeps its colour', () => {
-    // white and black read equally at a luminance of about 0.18
-    const onEdge = [0.2]
-    expect(chooseInk(onEdge).ink).toBe('dark')
-
-    expect(chooseInk(onEdge, { ink: 'light' }).ink).toBe('light')
-    expect(chooseInk([0.16], { ink: 'dark' }).ink).toBe('dark')
+  test('over a middling picture a word keeps the colour it has', () => {
+    expect(chooseInk([0.2], 'light')).toBe('light')
+    expect(chooseInk([0.2], 'dark')).toBe('dark')
   })
 
-  test('scrolling back and forth over the edge does not make it flicker', () => {
-    let ink = chooseInk([0.05]).ink
+  test('pictures of middling brightness passing under never change it', () => {
+    let ink = chooseInk([0.05])
     const seen = new Set([ink])
     for (let i = 0; i < 40; i++) {
-      const lum = 0.18 + Math.sin(i) * 0.02
-      ink = chooseInk([lum], { ink }).ink
+      ink = chooseInk([0.2 + Math.sin(i) * 0.09], ink)
       seen.add(ink)
     }
 
     expect(seen.size).toBe(1)
   })
 
-  test('it does change once the other colour reads clearly better', () => {
-    expect(chooseInk([0.7], { ink: 'light' }).ink).toBe('dark')
-    expect(chooseInk([0.02], { ink: 'dark' }).ink).toBe('light')
-  })
-
-  test('a word across light and dark gets a plate under it', () => {
-    expect(chooseInk([0.02, 0.5]).plate).toBe(true)
-  })
-
-  test('a word over one even colour gets no plate', () => {
-    expect(chooseInk([0.02, 0.05]).plate).toBe(false)
-  })
-
-  test('a spread hovering at the threshold does not flicker the plate', () => {
-    expect(chooseInk([0.1, 0.2], { plate: true }).plate).toBe(true)
-    expect(chooseInk([0.1, 0.2], { plate: false }).plate).toBe(false)
+  test('it changes once the word can no longer be read', () => {
+    expect(chooseInk([0.4], 'light')).toBe('dark')
+    expect(chooseInk([0.05], 'dark')).toBe('light')
   })
 })
 

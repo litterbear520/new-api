@@ -18,12 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import {
   chooseInk,
+  GLASS,
   luminance,
   mix,
-  tintFor,
   type Ink,
   type Rgb,
-  type Tint,
 } from './backdrop'
 import { MARKED, PageReader } from './page-reader'
 
@@ -37,27 +36,12 @@ const AFTER_PAGE_MS = [450, 1500]
 const STEP = 24
 /** Px above and below the bar's middle that those points alternate. */
 const ZIGZAG = 6
-/** While moving, how much of the tint's brightness is the newest reading. */
-const INERTIA = 0.4
-
-const GLASS_VARS = [
-  '--glass-tint',
-  '--glass-side',
-  '--glass-outline',
-  '--glass-shadow',
-] as const
 
 /** Everything on the bar that takes the colour; `data-bar-skip` keeps its own. */
 const WORDS = '[data-bar-word],[data-site-link],button:not([data-bar-skip])'
 const LENS = '[data-site-lens]'
 
 type Point = { x: number; color: Rgb }
-
-function setVar(el: HTMLElement, name: string, value: string): void {
-  if (el.style.getPropertyValue(name) !== value) {
-    el.style.setProperty(name, value)
-  }
-}
 
 function setAttr(el: Element, name: string, value: string | null): void {
   if (el.getAttribute(name) === value) return
@@ -72,7 +56,8 @@ function nearest(points: readonly Point[], x: number): Point {
 }
 
 /**
- * Keeps the bar's glass and words right for what is under them. Ask whenever
+ * Keeps the bar's words readable over what is under them; the glass itself stays
+ * as it is, so the page shows through. Ask whenever
  * the page may have moved under the bar; it reads about ten times a second at
  * most, and once more when things come to rest.
  */
@@ -83,13 +68,10 @@ export class BarInk {
   private readonly theme: MutationObserver
   private held = false
   private last = -Infinity
-  private lum: number | null = null
   private gap: ReturnType<typeof setTimeout> | undefined
   private rest: ReturnType<typeof setTimeout> | undefined
   private later: ReturnType<typeof setTimeout>[] = []
   private frame = 0
-  /** The next read is the one at rest: the tint goes straight to the page. */
-  private atRest = false
 
   constructor(parts: { bar: HTMLElement; glass: HTMLElement }) {
     this.bar = parts.bar
@@ -105,10 +87,7 @@ export class BarInk {
   ask(): void {
     if (this.held || typeof document.elementsFromPoint !== 'function') return
     clearTimeout(this.rest)
-    this.rest = setTimeout(() => {
-      this.atRest = true
-      this.readNextFrame()
-    }, REST_MS)
+    this.rest = setTimeout(() => this.readNextFrame(), REST_MS)
     if (this.gap !== undefined) return
     const wait = Math.max(0, READ_GAP_MS - (performance.now() - this.last))
     this.gap = setTimeout(() => {
@@ -119,7 +98,6 @@ export class BarInk {
 
   /** A new page is up: forget the last one and watch this one settle in. */
   newPage(): void {
-    this.lum = null
     this.ask()
     for (const id of this.later) clearTimeout(id)
     this.later = AFTER_PAGE_MS.map((ms) => setTimeout(() => this.ask(), ms))
@@ -150,12 +128,9 @@ export class BarInk {
   }
 
   private clear(): void {
-    for (const name of GLASS_VARS) this.glass.style.removeProperty(name)
     for (const el of this.bar.querySelectorAll(`${WORDS},${LENS}`)) {
       el.removeAttribute('data-ink')
-      el.removeAttribute('data-plate')
     }
-    this.lum = null
   }
 
   private readNextFrame(): void {
@@ -177,7 +152,7 @@ export class BarInk {
 
     const row = this.readRow(box, y)
     if (!row.length) return
-    const tint = this.tintGlass(row)
+    const tint = dark ? GLASS.dark : GLASS.light
 
     const lumsUnder = (r: DOMRect): number[] => {
       const middle = r.left + r.width / 2
@@ -192,19 +167,14 @@ export class BarInk {
     for (const word of this.bar.querySelectorAll<HTMLElement>(WORDS)) {
       const r = word.getBoundingClientRect()
       if (!r.width) continue
-      const chosen = chooseInk(lumsUnder(r), {
-        ink: word.dataset.ink as Ink | undefined,
-        plate: word.hasAttribute('data-plate'),
-      })
-      setAttr(word, 'data-ink', chosen.ink)
-      const plated = chosen.plate && word.dataset.barWord !== 'line'
-      setAttr(word, 'data-plate', plated ? '' : null)
+      const was = word.dataset.ink as Ink | undefined
+      setAttr(word, 'data-ink', chooseInk(lumsUnder(r), was))
     }
     const lens = this.bar.querySelector<HTMLElement>(LENS)
     const lensBox = lens?.getBoundingClientRect()
     if (lens && lensBox?.width) {
-      const was = { ink: lens.dataset.ink as Ink | undefined }
-      setAttr(lens, 'data-ink', chooseInk(lumsUnder(lensBox), was).ink)
+      const was = lens.dataset.ink as Ink | undefined
+      setAttr(lens, 'data-ink', chooseInk(lumsUnder(lensBox), was))
     }
   }
 
@@ -221,25 +191,6 @@ export class BarInk {
       row.push({ x, color })
     }
     return row
-  }
-
-  private tintGlass(row: readonly Point[]): Tint {
-    const mean =
-      row.reduce((sum, p) => sum + luminance(p.color), 0) / row.length
-    // a little inertia while moving, so one bright picture passing does not
-    // jerk the tint; at rest it goes to what is really there
-    this.lum =
-      this.lum === null || this.atRest
-        ? mean
-        : this.lum + (mean - this.lum) * INERTIA
-    this.atRest = false
-    const tint = tintFor(this.lum)
-    const color = `rgb(${tint.color.join(' ')} / ${tint.alpha.toFixed(3)})`
-    setVar(this.glass, '--glass-tint', color)
-    setVar(this.glass, '--glass-side', tint.side.toFixed(3))
-    setVar(this.glass, '--glass-outline', tint.outline.toFixed(3))
-    setVar(this.glass, '--glass-shadow', tint.shadow.toFixed(3))
-    return tint
   }
 
   /** Beside the glass (the brand while the bar is split): the page itself. */
