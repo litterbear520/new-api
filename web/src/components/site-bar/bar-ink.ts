@@ -43,8 +43,8 @@ const INERTIA = 0.4
 const GLASS_VARS = [
   '--glass-tint',
   '--glass-side',
-  '--glass-edge',
-  '--glass-glow',
+  '--glass-outline',
+  '--glass-shadow',
 ] as const
 
 /** Everything on the bar that takes the colour; `data-bar-skip` keeps its own. */
@@ -237,8 +237,8 @@ export class BarInk {
     const color = `rgb(${tint.color.join(' ')} / ${tint.alpha.toFixed(3)})`
     setVar(this.glass, '--glass-tint', color)
     setVar(this.glass, '--glass-side', tint.side.toFixed(3))
-    setVar(this.glass, '--glass-edge', tint.edge.toFixed(3))
-    setVar(this.glass, '--glass-glow', tint.glow.toFixed(3))
+    setVar(this.glass, '--glass-outline', tint.outline.toFixed(3))
+    setVar(this.glass, '--glass-shadow', tint.shadow.toFixed(3))
     return tint
   }
 

@@ -32,7 +32,7 @@ test('frosts instead of refracting where the browser cannot filter the backdrop 
 
 test('the Dock material frosts the same way where the browser cannot refract', () => {
   render(
-    <LiquidGlass material='dock' className='rounded-[12px]'>
+    <LiquidGlass material='dock' className='rounded-full'>
       Links
     </LiquidGlass>
   )

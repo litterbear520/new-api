@@ -160,12 +160,12 @@ test('over a white page the words turn black', () => {
   expect(word).toHaveAttribute('data-ink', 'dark')
 })
 
-test('over a white page the glass takes the tint measured on the light Dock', () => {
+test('over a white page the glass takes the light tint', () => {
   onlyPage(WHITE_PAGE)
 
   readOnce()
 
-  expect(glass.style.getPropertyValue('--glass-tint')).toContain('153 153 153')
+  expect(glass.style.getPropertyValue('--glass-tint')).toContain('246 248 251')
 })
 
 test('a marked element says how dark it is, as a sky drawn on a canvas must', () => {

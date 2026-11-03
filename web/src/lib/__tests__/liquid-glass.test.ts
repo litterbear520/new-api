@@ -98,25 +98,25 @@ describe('dockRim', () => {
 })
 
 describe('refractionMap with the Dock rim', () => {
-  const bar = { width: 161, height: 40, radius: 12, rim: dockRim(40) }
+  const bar = { width: 161, height: 40, radius: 20, rim: dockRim(40) }
   const map = refractionMap(bar)
 
   it('moves nothing past the 6.4px band along its edges', () => {
-    for (let x = 12; x < 149; x++) {
+    for (let x = 20; x < 141; x++) {
       for (let y = 7; y < 33; y++) {
         expect(shiftAt(map, x, y)).toEqual({ x: 0, y: 0 })
       }
     }
   })
 
-  it('moves nothing past the band inside a corner', () => {
-    // 5px from the corner's centre on the diagonal, 7px in from its arc
-    expect(shiftAt(map, 8, 8)).toEqual({ x: 0, y: 0 })
+  it('moves nothing past the band inside a round end', () => {
+    // about 9px from the end's centre on the diagonal, 11px in from its arc
+    expect(shiftAt(map, 13, 13)).toEqual({ x: 0, y: 0 })
   })
 
   it('bends the corner itself towards the middle', () => {
-    expect(shiftAt(map, 5, 5).x).toBeGreaterThan(0)
-    expect(shiftAt(map, 5, 5).y).toBeGreaterThan(0)
+    expect(shiftAt(map, 8, 8).x).toBeGreaterThan(0)
+    expect(shiftAt(map, 8, 8).y).toBeGreaterThan(0)
   })
 
   it('bends the top and the bottom alike', () => {

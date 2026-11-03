@@ -53,9 +53,12 @@ export function mix(under: Rgb, over: Rgb, alpha: number): Rgb {
   ]
 }
 
-/** Measured on the Dock: dark over a dark page, light over a bright one. */
+/**
+ * Dark: measured on the Dock. Light: lighter than the Dock's own, which
+ * measures [153, 153, 153] at .25 and reads too grey on our white pages.
+ */
 const DARK_TINT: Rgb = [52, 61, 62]
-const LIGHT_TINT: Rgb = [153, 153, 153]
+const LIGHT_TINT: Rgb = [246, 248, 251]
 /** Below this luminance the tint is all dark, above the other all light. */
 const TINT_FROM = 0.12
 const TINT_TO = 0.46
@@ -63,10 +66,10 @@ const TINT_TO = 0.46
 export type Tint = {
   color: Rgb
   alpha: number
-  /** Dark lines down the sides, white lines along the edges, glow inside. */
+  /** Dark lines down the sides; on bright pages an outline and a soft shadow. */
   side: number
-  edge: number
-  glow: number
+  outline: number
+  shadow: number
 }
 
 /** The glass over a page this bright, dark or light whatever the theme. */
@@ -78,10 +81,10 @@ export function tintFor(lum: number): Tint {
   const t = linear * linear * (3 - 2 * linear)
   return {
     color: mix(DARK_TINT, LIGHT_TINT, t).map(Math.round) as unknown as Rgb,
-    alpha: 0.29 - 0.04 * t,
-    side: 0.45 - 0.27 * t,
-    edge: 0.24 + 0.49 * t,
-    glow: 0.14 + 0.08 * t,
+    alpha: 0.29 - 0.13 * t,
+    side: 0.45 - 0.35 * t,
+    outline: 0.1 * t,
+    shadow: 0.2 * t,
   }
 }
 

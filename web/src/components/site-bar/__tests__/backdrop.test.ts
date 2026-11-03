@@ -38,16 +38,16 @@ describe('tintFor', () => {
     expect(tint.color).toEqual([52, 61, 62])
     expect(tint.alpha).toBeCloseTo(0.29)
     expect(tint.side).toBeCloseTo(0.45)
-    expect(tint.edge).toBeCloseTo(0.24)
+    expect(tint.outline).toBe(0)
   })
 
   test('over a light page it turns light, whatever the theme', () => {
     const tint = tintFor(0.9)
 
-    expect(tint.color).toEqual([153, 153, 153])
-    expect(tint.alpha).toBeCloseTo(0.25)
-    expect(tint.side).toBeCloseTo(0.18)
-    expect(tint.edge).toBeCloseTo(0.73)
+    expect(tint.color).toEqual([246, 248, 251])
+    expect(tint.alpha).toBeCloseTo(0.16)
+    expect(tint.side).toBeCloseTo(0.1)
+    expect(tint.outline).toBeCloseTo(0.1)
   })
 
   test('between the two it moves smoothly', () => {
@@ -56,7 +56,7 @@ describe('tintFor', () => {
     for (let i = 1; i < steps.length; i++) {
       expect(steps[i]).toBeLessThanOrEqual(steps[i - 1])
     }
-    expect(steps[2]).toBeGreaterThan(0.25)
+    expect(steps[2]).toBeGreaterThan(0.16)
     expect(steps[2]).toBeLessThan(0.29)
   })
 })
