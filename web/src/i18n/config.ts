@@ -20,7 +20,7 @@ import i18n, { type BackendModule } from 'i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 
-import { convertDetectedLanguage } from './languages'
+import { convertDetectedLanguage, toIntlLocale } from './languages'
 import type en from './locales/en.json'
 
 // The keys are the English text, so English is the keys themselves plus the
@@ -50,6 +50,12 @@ const localeBackend: BackendModule = {
     return load().then((module) => module.default[namespace as keyof typeof en])
   },
 }
+
+// Screen readers, the browser's translation offer and its choice of Han glyphs read this
+i18n.on('languageChanged', (code) => {
+  const tag = toIntlLocale(code)
+  if (tag) document.documentElement.lang = tag
+})
 
 /** Resolves once the detected language is loaded (or failed to load). */
 export const i18nReady = i18n
