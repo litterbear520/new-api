@@ -18,24 +18,22 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 /*
- * The bar's glass, measured on the real macOS Dock (11-03 design doc). There is
- * no milky core and no band of blur: the page shows through, a little richer,
- * and only the rim bends it (components/liquid-glass.tsx). What sets it off is
- * a thin tint, a faint glow inside, white lines along the top and bottom that
- * fade at the corners and dark lines down the sides. On light pages it has a
- * lighter tint, fainter sides and a faint outline with a soft shadow.
+ * The bar's glass, measured on the real macOS Dock in both appearances, over
+ * its wallpaper and over a black-to-white ramp (11-03 design doc). There is no
+ * milky core, no band of blur and no shadow: the page shows through, a little
+ * richer, and only the rim bends it (components/liquid-glass.tsx). What sets
+ * it off is a thin tint, a faint glow inside, white lines along the top and
+ * bottom that fade at the corners and dark lines down the sides.
+ * These defaults are for a bright page; backdrop.ts follows the real one.
  */
 .dock-glass {
   --glass-radius: 12px;
-  --glass-tint: rgb(246 248 251 / 0.16);
-  --glass-side: 0.1;
-  --glass-outline: 0.1;
-  --glass-shadow: 0.2;
+  --glass-tint: rgb(153 153 153 / 0.25);
+  --glass-side: 0.18;
+  --glass-edge: 0.73;
+  --glass-glow: 0.22;
   background-color: var(--glass-tint);
-  box-shadow:
-    inset 0 0 4px rgb(255 255 255 / 0.14),
-    0 0 0 0.5px rgb(0 0 0 / var(--glass-outline)),
-    0 4px 14px -6px rgb(0 0 0 / var(--glass-shadow));
+  box-shadow: inset 0 0 4px rgb(255 255 255 / var(--glass-glow));
   backdrop-filter: blur(1px) saturate(1.35);
   transition:
     background-color 0.28s,
@@ -45,8 +43,8 @@ For commercial licensing, please contact support@quantumnous.com
 .dock-glass:where(.dark *) {
   --glass-tint: rgb(52 61 62 / 0.29);
   --glass-side: 0.45;
-  --glass-outline: 0;
-  --glass-shadow: 0;
+  --glass-edge: 0.24;
+  --glass-glow: 0.14;
 }
 .dock-glass::before {
   content: '';
@@ -66,18 +64,82 @@ For commercial licensing, please contact support@quantumnous.com
     linear-gradient(
       90deg,
       transparent calc(var(--glass-radius) * 0.25),
-      rgb(255 255 255 / 0.24) var(--glass-radius),
-      rgb(255 255 255 / 0.24) calc(100% - var(--glass-radius)),
+      rgb(255 255 255 / var(--glass-edge)) var(--glass-radius),
+      rgb(255 255 255 / var(--glass-edge)) calc(100% - var(--glass-radius)),
       transparent calc(100% - var(--glass-radius) * 0.25)
     );
   mask:
     linear-gradient(#000 0 0) content-box exclude,
     linear-gradient(#000 0 0);
 }
+/* the night-sea pages: always white words, so a deeper tint over the black hole */
+.dock-glass[data-solid] {
+  --glass-tint: rgb(52 61 62 / 0.4);
+}
 @media (prefers-reduced-transparency: reduce) {
   .dock-glass {
     background-color: var(--background);
     backdrop-filter: none;
+  }
+}
+
+/*
+ * The words on the bar take the colour that reads over what is under them
+ * (components/site-bar/backdrop.ts). A word across light and dark gets a soft
+ * plate of the opposite colour. Without data-ink they keep the theme's colour.
+ */
+[data-site-bar].dark [data-site-link]:not([data-ink]) {
+  color: #fff;
+}
+[data-site-bar] [data-ink] {
+  transition:
+    color 0.18s,
+    text-shadow 0.18s;
+}
+[data-site-bar] [data-site-lens][data-ink] {
+  transition:
+    color 0.18s,
+    opacity 0.3s,
+    background-color 0.3s,
+    box-shadow 0.3s;
+}
+[data-site-bar] [data-ink='light'] {
+  color: #fff;
+  text-shadow: 0 0 4px rgb(0 0 0 / 0.35);
+}
+[data-site-bar] [data-ink='dark'] {
+  color: #0c0c0f;
+  text-shadow: 0 0 4px rgb(255 255 255 / 0.35);
+}
+[data-site-bar] [data-site-lens][data-ink] {
+  text-shadow: none;
+}
+[data-site-bar] :is(a, button)[data-ink]:not([aria-current]):hover {
+  background-color: color-mix(in srgb, currentColor 13%, transparent);
+}
+[data-site-bar] [data-plate] {
+  position: relative;
+  isolation: isolate;
+}
+[data-site-bar] [data-plate]::after {
+  content: '';
+  position: absolute;
+  inset: 3px 0;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(6px);
+  pointer-events: none;
+}
+[data-site-bar] [data-plate][data-ink='light']::after {
+  background: rgb(0 0 0 / 0.55);
+}
+[data-site-bar] [data-plate][data-ink='dark']::after {
+  background: rgb(255 255 255 / 0.7);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock-glass,
+  [data-site-bar] [data-ink] {
+    transition: none;
   }
 }
 

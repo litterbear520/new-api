@@ -22,6 +22,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SignOutDialog } from '@/components/sign-out-dialog'
+import { describeAccount } from '@/components/site-bar/account-note'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,7 +34,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import useDialogState from '@/hooks/use-dialog'
 import { useUserDisplay } from '@/hooks/use-user-display'
-import { describeAccount } from '@/components/site-bar/account-note'
 import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -61,6 +61,7 @@ export function AccountMenu() {
               size='icon'
               aria-label={t('Account menu')}
               title={displayName}
+              data-bar-skip=''
               className='size-9 rounded-full'
             />
           }

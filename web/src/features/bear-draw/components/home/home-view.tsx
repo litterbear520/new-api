@@ -191,6 +191,7 @@ export function HomeView() {
   return (
     <div
       ref={homeRef}
+      data-bar-backdrop={night ? 'dark' : undefined}
       className={cn('bd-home', night && 'bd-night', dawn && 'bd-dawn')}
     >
       {night && <HomeSky />}

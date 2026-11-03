@@ -448,7 +448,8 @@ export function DockDivider(props: { className?: string }) {
   return (
     <span
       aria-hidden='true'
-      className={cn('bg-foreground/28 mx-1 h-4 w-px shrink-0', props.className)}
+      data-bar-word='line'
+      className={cn('mx-1 h-4 w-px shrink-0 bg-current/28', props.className)}
     />
   )
 }
