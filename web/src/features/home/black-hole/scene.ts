@@ -146,3 +146,13 @@ export function paceFrame(
   if (quality > QUALITY_MIN) return 'lower'
   return late >= 40 && pace.elapsed >= WARM_MS ? 'freeze' : 'keep'
 }
+
+/**
+ * Off the hole, about 60 frames a second are enough. A screen only offers whole
+ * refreshes, so the frame goes on the refresh nearest 1/60 s after the last one:
+ * a fixed wait would halve 75 Hz to 37 fps, and paceFrame would read those gaps as
+ * a slow machine. A shade under half a refresh keeps 90 Hz from sitting on the
+ * fence between every refresh and every other one.
+ */
+export const frameDue = (sinceLastFrame: number, refresh: number): boolean =>
+  sinceLastFrame >= 1000 / 60 - refresh * 0.55

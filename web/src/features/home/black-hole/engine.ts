@@ -39,6 +39,7 @@ import {
   QUALITY_STEP,
   canvasSize,
   earthBox,
+  frameDue,
   gravityAt,
   newPace,
   paceFrame,
@@ -665,6 +666,9 @@ export function startBlackHole(
       }
       return
     }
+    // measured every time: the window can move to a screen with another rate
+    const refresh = now - tickAt
+    tickAt = now
     try {
       if (booting) {
         if (booting.next().done) {
@@ -703,9 +707,9 @@ export function startBlackHole(
     const near = ptr.inside
       ? gravityAt(ptr.x - box.left, ptr.y - box.top, box.width, box.height)
       : 0
-    // at most 60 a second, unless the pointer is on the hole
+    // about 60 a second, unless the pointer is on the hole
     const onHole = near > 0.01
-    if (!onHole && last && now - last < pace.budget - 1.5) return
+    if (!onHole && last && !frameDue(now - last, refresh)) return
     const dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016
     const gap = last ? now - last : 0
     last = now

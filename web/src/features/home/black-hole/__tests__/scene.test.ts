@@ -29,6 +29,7 @@ import {
   canvasSize,
   earthBox,
   FRAME_ASPECT,
+  frameDue,
   frameScale,
   gravityAt,
   newPace,
@@ -107,6 +108,67 @@ describe('the poster', () => {
     )
     expect(css).toContain('width: min(240svh, 135cqw)')
     expect(css).not.toContain('max(240svh')
+  })
+})
+
+describe('frameDue', () => {
+  /** the gaps between frames with the pointer off the hole, over ten seconds */
+  const gapsOn = (hz: number, jitter = 0) => {
+    const gaps: number[] = []
+    let last = 0
+    let tickAt = 0
+    for (let i = 1; i <= hz * 10; i++) {
+      const now = (i * 1000) / hz + (i % 2 ? jitter : -jitter)
+      const refresh = now - tickAt
+      tickAt = now
+      if (last && !frameDue(now - last, refresh)) continue
+      if (last) gaps.push(now - last)
+      last = now
+    }
+    return gaps
+  }
+  const fps = (gaps: number[]) =>
+    (1000 * gaps.length) / gaps.reduce((sum, gap) => sum + gap, 0)
+
+  it.each([
+    [50, 50],
+    [60, 60],
+    [72, 72],
+    [75, 75],
+    [80, 80],
+    [85, 85],
+    [90, 90],
+    [100, 50],
+    [120, 60],
+    [144, 72],
+    [160, 53.3],
+    [165, 55],
+    [240, 60],
+  ])('a %i Hz screen draws about %d times a second, evenly', (hz, expected) => {
+    const gaps = gapsOn(hz)
+    expect(fps(gaps)).toBeCloseTo(expected, 0)
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThan(0.01)
+  })
+
+  it('takes no refresh it skips itself for a slow machine', () => {
+    for (let hz = 30; hz <= 360; hz++) {
+      const pace = newPace(1000 / hz)
+      for (const gap of gapsOn(hz)) expect(paceFrame(pace, gap, 1)).toBe('keep')
+    }
+  })
+
+  it.each([
+    [75, 75],
+    [120, 60],
+  ])('holds %i Hz through a little timer jitter', (hz, expected) => {
+    expect(fps(gapsOn(hz, 0.2))).toBeCloseTo(expected, 0)
+  })
+
+  it('follows a window dragged to a faster screen', () => {
+    // 8.33 ms refreshes, 8.33 ms after a frame: not yet
+    expect(frameDue(8.33, 8.33)).toBe(false)
+    // 13.33 ms refreshes, 13.33 ms after a frame: it is the next one or nothing
+    expect(frameDue(13.33, 13.33)).toBe(true)
   })
 })
 
