@@ -161,7 +161,7 @@ export function SiteNavLinks(props: SiteNavLinksProps) {
         ref={lensRef}
         aria-hidden='true'
         data-site-lens=''
-        className='pointer-events-none absolute inset-y-0 left-0 w-0 overflow-hidden rounded-full bg-white/70 opacity-0 shadow-[inset_0_1px_0_rgb(255_255_255/0.95),0_0_0_0.5px_rgb(0_0_0/0.06),0_1px_4px_-1px_rgb(0_0_0/0.16)] transition-[opacity,background-color,box-shadow] duration-300 data-swollen:z-10 data-swollen:bg-white/92 data-swollen:shadow-[inset_0_1px_0_rgb(255_255_255),0_0_0_0.5px_rgb(0_0_0/0.08),0_8px_20px_-8px_rgb(0_0_0/0.35)] data-swollen:backdrop-blur-[3px] dark:bg-white/13 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_0_0_0.5px_rgb(0_0_0/0.4),0_2px_6px_-2px_rgb(0_0_0/0.5)] dark:data-swollen:bg-[rgb(64_64_70/0.92)] dark:data-swollen:shadow-[inset_0_1px_0_rgb(255_255_255/0.28),0_0_0_0.5px_rgb(0_0_0/0.5),0_8px_20px_-8px_rgb(0_0_0/0.7)]'
+        className='pointer-events-none absolute inset-y-0 left-0 w-0 overflow-hidden rounded-[8px] bg-[color-mix(in_srgb,currentColor_13%,transparent)] opacity-0 transition-[opacity,background-color,box-shadow] duration-300 data-swollen:z-10 data-swollen:bg-white/92 data-swollen:shadow-[inset_0_1px_0_rgb(255_255_255),0_0_0_0.5px_rgb(0_0_0/0.08),0_8px_20px_-8px_rgb(0_0_0/0.35)] data-swollen:backdrop-blur-[3px] dark:data-swollen:bg-[rgb(64_64_70/0.92)] dark:data-swollen:shadow-[inset_0_1px_0_rgb(255_255_255/0.28),0_0_0_0.5px_rgb(0_0_0/0.5),0_8px_20px_-8px_rgb(0_0_0/0.7)]'
       >
         {/* the words again, enlarged by the lens's swell (see lens.ts) */}
         <span
@@ -195,7 +195,7 @@ export function SiteNavLinks(props: SiteNavLinksProps) {
           }}
           // one weight for every link, so lighting one doesn't shift the rest
           className={cn(
-            'focus-visible:ring-ring relative inline-flex h-9 items-center rounded-full px-3 text-sm font-medium whitespace-nowrap outline-none transition-colors duration-300 focus-visible:ring-2',
+            'focus-visible:ring-ring relative inline-flex h-9 items-center rounded-[8px] px-3 text-sm font-medium whitespace-nowrap outline-none transition-colors duration-300 focus-visible:ring-2',
             index === shown
               ? 'text-foreground'
               : 'text-muted-foreground hover:text-foreground',
@@ -448,7 +448,7 @@ export function DockDivider(props: { className?: string }) {
   return (
     <span
       aria-hidden='true'
-      className={cn('bg-foreground/12 mx-1 h-4 w-px shrink-0', props.className)}
+      className={cn('bg-foreground/28 mx-1 h-4 w-px shrink-0', props.className)}
     />
   )
 }

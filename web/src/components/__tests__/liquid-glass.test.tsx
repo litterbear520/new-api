@@ -29,3 +29,22 @@ test('frosts instead of refracting where the browser cannot filter the backdrop 
   expect(pane.style.backdropFilter).toBe('')
   expect(pane.querySelector('filter')).toBeNull()
 })
+
+test('the Dock material frosts the same way where the browser cannot refract', () => {
+  render(
+    <LiquidGlass material='dock' className='rounded-[12px]'>
+      Links
+    </LiquidGlass>
+  )
+
+  const pane = screen.getByText('Links')
+  expect(pane).toHaveClass('dock-glass')
+  expect(pane).not.toHaveAttribute('data-refracts')
+  expect(pane.querySelector('filter')).toBeNull()
+})
+
+test('a panel of text keeps its frost', () => {
+  render(<LiquidGlass className='rounded-[22px]'>Menu</LiquidGlass>)
+
+  expect(screen.getByText('Menu')).not.toHaveClass('dock-glass')
+})

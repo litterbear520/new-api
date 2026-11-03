@@ -25,19 +25,30 @@ import {
   type RefObject,
 } from 'react'
 
-import { refractionMap, type RefractionMap } from '@/lib/liquid-glass'
+import {
+  convexRim,
+  dockRim,
+  refractionMap,
+  type RefractionMap,
+} from '@/lib/liquid-glass'
 import { cn } from '@/lib/utils'
 
-/** Rim width and glass thickness in px, tuned on the 40px top-bar pane. */
-const BEVEL = 14
-const THICKNESS = 22
+/**
+ * dock: thin, clear glass like the macOS Dock (.dock-glass in
+ * styles/site-bar.css), for a bar of a few words over the page.
+ * frost: milky in the middle, for a panel full of text.
+ */
+export type GlassMaterial = 'dock' | 'frost'
+
+/** The frost's rim, in px: width and glass thickness. */
+const FROST_RIM = convexRim(14, 22)
 
 // Clear at the rim, where the refraction shows, and milky in the middle so
-// the icons stay readable over a busy page: the ::after core is a blurred
+// the text stays readable over a busy page: the ::after core is a blurred
 // tint under the content. A hairline and a soft shadow make the pane read on
 // a plain page. The ::before ring is the specular edge: brightest at the top
 // left, where the light comes from, and again at the bottom right.
-const GLASS = cn(
+const FROST = cn(
   'relative bg-white/12 backdrop-blur-[12px] backdrop-saturate-180',
   'shadow-[inset_0_1px_0_rgb(255_255_255/0.85),0_0_0_0.5px_rgb(0_0_0/0.09),0_6px_20px_-6px_rgb(0_0_0/0.2),0_2px_5px_-2px_rgb(0_0_0/0.08)]',
   'dark:bg-white/4 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_0_0_0.5px_rgb(0_0_0/0.6),0_8px_26px_-6px_rgb(0_0_0/0.65)]',
@@ -47,6 +58,10 @@ const GLASS = cn(
   'dark:before:bg-[linear-gradient(135deg,rgb(255_255_255/0.45),rgb(255_255_255/0.12)_28%,rgb(255_255_255/0.03)_50%,rgb(255_255_255/0.12)_72%,rgb(255_255_255/0.32))]',
   '[@media(prefers-reduced-transparency:reduce)]:bg-background [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none [@media(prefers-reduced-transparency:reduce)]:after:hidden'
 )
+
+/** The Dock's look: a little blur, and colours as rich as it shows them. */
+const DOCK_BACKDROP = 'blur(1px) saturate(1.35)'
+const FROST_BACKDROP = 'blur(3px) saturate(1.7)'
 
 /** Only Chromium filters the backdrop through SVG; other browsers frost. */
 function refracts() {
@@ -64,7 +79,13 @@ function refracts() {
  * map of their whole size, redrawn when it changes.
  */
 type Lens =
-  | { kind: 'whole'; width: number; height: number; href: string; scale: number }
+  | {
+      kind: 'whole'
+      width: number
+      height: number
+      href: string
+      scale: number
+    }
   | {
       kind: 'stretch'
       /** The width when drawn; later widths only move the parts. */
@@ -77,13 +98,13 @@ type Lens =
       scale: number
     }
 
-function paneMap(pane: HTMLElement, width: number) {
+function paneMap(pane: HTMLElement, width: number, material: GlassMaterial) {
+  const height = pane.offsetHeight
   return refractionMap({
     width,
-    height: pane.offsetHeight,
+    height,
     radius: Number.parseFloat(getComputedStyle(pane).borderTopLeftRadius) || 0,
-    bevel: BEVEL,
-    thickness: THICKNESS,
+    rim: material === 'dock' ? dockRim(height) : FROST_RIM,
   })
 }
 
@@ -106,11 +127,11 @@ function endWidth(height: number) {
   return Math.ceil(height / 2) + 1
 }
 
-function grind(pane: HTMLElement): Lens {
+function grind(pane: HTMLElement, material: GlassMaterial): Lens {
   const height = pane.offsetHeight
   const end = endWidth(height)
   if (pane.offsetWidth >= 2 * end + 2) {
-    const map = paneMap(pane, 2 * end + 1)
+    const map = paneMap(pane, 2 * end + 1, material)
     return {
       kind: 'stretch',
       width: pane.offsetWidth,
@@ -121,7 +142,7 @@ function grind(pane: HTMLElement): Lens {
       scale: map.scale,
     }
   }
-  const map = paneMap(pane, pane.offsetWidth)
+  const map = paneMap(pane, pane.offsetWidth, material)
   return {
     kind: 'whole',
     width: pane.offsetWidth,
@@ -159,7 +180,10 @@ function stretch(parts: LensParts, width: number) {
  * The pane's displacement map, redrawn when its shape changes; a stretching
  * pane only moves its parts when it changes width.
  */
-function useLens(ref: RefObject<HTMLDivElement | null>) {
+function useLens(
+  ref: RefObject<HTMLDivElement | null>,
+  material: GlassMaterial
+) {
   const [lens, setLens] = useState<Lens | null>(null)
   const parts = useRef<LensParts>({ filter: null, middle: null, right: null })
 
@@ -173,14 +197,14 @@ function useLens(ref: RefObject<HTMLDivElement | null>) {
       const next = lensKey(pane)
       if (next !== key) {
         key = next
-        setLens(grind(pane))
+        setLens(grind(pane, material))
         return
       }
       stretch(parts.current, pane.offsetWidth)
     })
     observer.observe(pane)
     return () => observer.disconnect()
-  }, [ref])
+  }, [ref, material])
 
   // The pane may have changed width again while the new map was rendering.
   useLayoutEffect(() => {
@@ -200,15 +224,15 @@ export function LiquidGlass({
   className,
   style,
   children,
+  material = 'frost',
   ref: outerRef,
   ...props
-}: ComponentProps<'div'>) {
+}: ComponentProps<'div'> & { material?: GlassMaterial }) {
   const ref = useRef<HTMLDivElement>(null)
   const filterId = `liquid-glass${useId().replaceAll(/[^\w-]/g, '')}`
-  const { lens, parts } = useLens(ref)
-  const backdrop = lens
-    ? `url(#${filterId}) blur(3px) saturate(1.7)`
-    : undefined
+  const { lens, parts } = useLens(ref, material)
+  const look = material === 'dock' ? DOCK_BACKDROP : FROST_BACKDROP
+  const backdrop = lens ? `url(#${filterId}) ${look}` : undefined
 
   return (
     <div
@@ -219,7 +243,10 @@ export function LiquidGlass({
       }}
       data-slot='liquid-glass'
       data-refracts={lens ? '' : undefined}
-      className={cn(GLASS, className)}
+      className={cn(
+        material === 'dock' ? 'dock-glass relative' : FROST,
+        className
+      )}
       style={
         backdrop
           ? {

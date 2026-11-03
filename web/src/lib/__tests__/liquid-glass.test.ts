@@ -18,9 +18,15 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { describe, expect, it } from 'vitest'
 
-import { bend, refractionMap, type RefractionMap } from '../liquid-glass'
+import {
+  bend,
+  convexRim,
+  dockRim,
+  refractionMap,
+  type RefractionMap,
+} from '../liquid-glass'
 
-const pill = { width: 160, height: 40, radius: 20, bevel: 14, thickness: 22 }
+const pill = { width: 160, height: 40, radius: 20, rim: convexRim(14, 22) }
 
 /** The x and y shift a map gives one pixel, from -127 to 127. */
 function shiftAt(map: RefractionMap, x: number, y: number) {
@@ -64,5 +70,65 @@ describe('refractionMap', () => {
     )
     expect(Math.max(...shifts)).toBe(127)
     expect(map.scale).toBeGreaterThan(0)
+  })
+})
+
+describe('dockRim', () => {
+  it('is the curve measured on the 75px Dock: 20px at the edge, gone 12px in', () => {
+    const rim = dockRim(75)
+
+    expect(rim(0.001)).toBeCloseTo(20, 1)
+    expect(rim(6)).toBeCloseTo(20 * 0.5 ** 1.9)
+    expect(rim(12)).toBe(0)
+    expect(rim(30)).toBe(0)
+  })
+
+  it('scales with the pane: 6.4px wide and 10.7px at most on the 40px bar', () => {
+    const rim = dockRim(40)
+
+    expect(rim(0.001)).toBeCloseTo(10.67, 1)
+    expect(rim(6.3)).toBeGreaterThan(0)
+    expect(rim(6.4)).toBe(0)
+  })
+
+  it('leaves the outside of the pane alone', () => {
+    expect(dockRim(40)(0)).toBe(0)
+    expect(dockRim(40)(-3)).toBe(0)
+  })
+})
+
+describe('refractionMap with the Dock rim', () => {
+  const bar = { width: 161, height: 40, radius: 12, rim: dockRim(40) }
+  const map = refractionMap(bar)
+
+  it('moves nothing past the 6.4px band, around the corners too', () => {
+    for (let y = 0; y < bar.height; y++) {
+      for (let x = 0; x < bar.width; x++) {
+        const cornerX = Math.abs(x + 0.5 - bar.width / 2) - (bar.width / 2 - 12)
+        const cornerY =
+          Math.abs(y + 0.5 - bar.height / 2) - (bar.height / 2 - 12)
+        const depth =
+          cornerX > 0 && cornerY > 0
+            ? 12 - Math.hypot(cornerX, cornerY)
+            : Math.min(12 - cornerX, 12 - cornerY)
+        if (depth >= 6.4) expect(shiftAt(map, x, y)).toEqual({ x: 0, y: 0 })
+      }
+    }
+  })
+
+  it('bends the top and the bottom alike', () => {
+    for (let y = 0; y < 20; y++) {
+      const top = shiftAt(map, 80, y)
+      const bottom = shiftAt(map, 80, 39 - y)
+      expect(top.x).toBe(0)
+      expect(bottom.x).toBe(0)
+      expect(Math.abs(top.y + bottom.y)).toBeLessThanOrEqual(1)
+    }
+    expect(shiftAt(map, 80, 0).y).toBeGreaterThan(0)
+  })
+
+  it('tells the filter how far the largest shift goes', () => {
+    expect(map.scale).toBeGreaterThan(18)
+    expect(map.scale).toBeLessThan(21.4)
   })
 })

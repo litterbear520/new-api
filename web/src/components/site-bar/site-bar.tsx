@@ -294,12 +294,13 @@ function Bar(props: { pathname: string }) {
         <LiquidGlass
           ref={glassRef}
           aria-hidden='true'
-          className='pointer-events-auto absolute top-1/2 left-0 h-10 -translate-y-1/2 rounded-full transition-[background-color,box-shadow] duration-500'
+          material='dock'
+          className='pointer-events-auto absolute top-1/2 left-0 h-10 -translate-y-1/2 rounded-[12px]'
         />
         <span
           ref={seamRef}
           aria-hidden='true'
-          className='bg-foreground/12 absolute top-1/2 left-0 h-4 w-px -translate-y-1/2 opacity-0'
+          className='bg-foreground/28 absolute top-1/2 left-0 h-4 w-px -translate-y-1/2 opacity-0'
         />
         <div
           ref={brandRef}
@@ -307,7 +308,7 @@ function Bar(props: { pathname: string }) {
         >
           <Link
             to='/'
-            className='focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-full py-1 outline-none focus-visible:ring-2'
+            className='focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-[8px] py-1 outline-none focus-visible:ring-2'
           >
             <img
               src={logo}
@@ -322,7 +323,7 @@ function Bar(props: { pathname: string }) {
         </div>
         <div
           ref={dockRef}
-          className='pointer-events-auto relative flex h-10 shrink-0 items-center gap-0.5 p-0.5 will-change-transform [&_.lucide]:stroke-[1.6] [&_button]:rounded-full'
+          className='pointer-events-auto relative flex h-10 shrink-0 items-center gap-0.5 p-0.5 will-change-transform [&_.lucide]:stroke-[1.6] [&_button]:rounded-[8px]'
         >
           {links.length > 0 && (
             <>
@@ -354,7 +355,7 @@ function Bar(props: { pathname: string }) {
           ) : (
             <Button
               size='sm'
-              className='mx-0.5 h-8 rounded-full px-3.5 text-xs font-medium'
+              className='mx-0.5 h-8 rounded-[8px] px-3.5 text-xs font-medium'
               render={<Link to='/sign-in' />}
               onClick={(event) => signIn?.(event)}
             >
