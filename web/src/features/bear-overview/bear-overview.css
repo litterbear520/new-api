@@ -816,8 +816,6 @@ For commercial licensing, please contact support@quantumnous.com
   height: auto;
   max-width: none;
   user-select: none;
-  /* the site bar reads the page by hit-testing: let it find the picture */
-  pointer-events: auto;
 }
 /* Film look: a soft vignette and a little grain */
 .bo-film {

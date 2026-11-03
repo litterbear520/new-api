@@ -516,6 +516,18 @@ test('a site link the admin turned off is not shown', async () => {
   ).toEqual(['Home', 'Console', 'Offers'])
 })
 
+test('content passing under the bar never makes it read the page', async () => {
+  const reads = vi.fn(() => [])
+  document.elementsFromPoint = reads
+  await renderAt('/pricing')
+
+  scrollPageTo(400)
+  settle()
+  Reflect.deleteProperty(document, 'elementsFromPoint')
+
+  expect(reads).not.toHaveBeenCalled()
+})
+
 test('the brand on the left links home', async () => {
   const { bar } = await renderAt('/pricing')
 

@@ -51,7 +51,6 @@ export function WalletCard(props: {
       <div className='bo-scene' aria-hidden='true'>
         <img
           className='bo-earth'
-          data-bar-backdrop='dark'
           src={low ? earthDusk : earthNight}
           alt=''
           decoding='async'

@@ -26,7 +26,7 @@ For commercial licensing, please contact support@quantumnous.com
  * measured. The Dock's own light tint reads too grey on our white pages, so
  * the light theme gets a lighter one with a faint outline and soft shadow
  * instead. It stays the same whatever passes under it, so the page shows through
- * as it is (backdrop.ts holds the same values, to read the words through it).
+ * as it is.
  */
 .dock-glass {
   --glass-radius: 20px;
@@ -89,42 +89,31 @@ For commercial licensing, please contact support@quantumnous.com
 }
 
 /*
- * The words on the bar take the colour that reads over what is under them
- * (components/site-bar/backdrop.ts). Without data-ink they keep the theme's colour.
+ * The words stay one colour for each theme, whatever passes under them, like
+ * anything behind glass: black here, white in the dark theme and on the night-sea
+ * pages. A faint halo helps them over a picture of the same brightness.
+ * `data-bar-skip` keeps its own colours (the avatar, the sign-in button).
  */
-[data-site-bar].dark [data-site-link]:not([data-ink]) {
-  color: #fff;
+[data-site-bar] {
+  --bar-word: #0c0c0f;
+  --bar-halo: rgb(255 255 255 / 0.35);
 }
-[data-site-bar] [data-ink] {
-  transition:
-    color 0.3s,
-    text-shadow 0.3s;
+.dark [data-site-bar],
+[data-site-bar].dark {
+  --bar-word: #fff;
+  --bar-halo: rgb(0 0 0 / 0.35);
 }
-[data-site-bar] [data-site-lens][data-ink] {
-  transition:
-    color 0.3s,
-    opacity 0.3s,
-    background-color 0.3s,
-    box-shadow 0.3s;
+[data-site-bar],
+[data-site-bar] :is([data-site-link], button:not([data-bar-skip])) {
+  color: var(--bar-word);
+  text-shadow: 0 0 4px var(--bar-halo);
 }
-[data-site-bar] [data-ink='light'] {
-  color: #fff;
-  text-shadow: 0 0 4px rgb(0 0 0 / 0.35);
-}
-[data-site-bar] [data-ink='dark'] {
-  color: #0c0c0f;
-  text-shadow: 0 0 4px rgb(255 255 255 / 0.35);
-}
-[data-site-bar] [data-site-lens][data-ink] {
-  text-shadow: none;
-}
-[data-site-bar] :is(a, button)[data-ink]:not([aria-current]):hover {
+[data-site-bar]
+  :is([data-site-link], button:not([data-bar-skip])):not([aria-current]):hover {
   background-color: color-mix(in srgb, currentColor 13%, transparent);
 }
 @media (prefers-reduced-motion: reduce) {
-  .dock-glass,
-  [data-site-bar] [data-ink],
-  [data-site-bar] [data-site-lens][data-ink] {
+  .dock-glass {
     transition: none;
   }
 }

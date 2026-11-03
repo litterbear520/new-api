@@ -42,7 +42,6 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { describeAccount, writeAccountNote } from './account-note'
-import { BarInk } from './bar-ink'
 import { leaveHandoff, takeHandoff } from './handoff'
 import { BarMorph } from './morph'
 import { useSignInPrompt } from './sign-in-prompt'
@@ -131,7 +130,6 @@ function Bar(props: { pathname: string }) {
   const dockRef = useRef<HTMLDivElement>(null)
   const seamRef = useRef<HTMLSpanElement>(null)
   const morphRef = useRef<BarMorph | null>(null)
-  const inkRef = useRef<BarInk | null>(null)
   const tracked = useRef<WeakMap<EventTarget, number> | null>(null)
 
   useLayoutEffect(() => {
@@ -159,13 +157,10 @@ function Bar(props: { pathname: string }) {
         pillRight: pillLeft + pillWidth,
       }
     }
-    const ink = new BarInk({ bar, glass })
-    inkRef.current = ink
     const paint = (q: number) => {
       let state = 'moving'
       if (q <= 0) state = 'split'
       if (q >= 1) state = 'assembled'
-      if (bar.dataset.state !== state) ink.ask()
       bar.dataset.state = state
       if (!geometry) return
       const g = geometry
@@ -205,7 +200,6 @@ function Bar(props: { pathname: string }) {
       const target = event.target ?? document
       const top = readTop(target)
       if (top === null) return
-      ink.ask()
       const from = tops.get(target)
       tops.set(target, top)
       // first seen part-way down: where it came from is unknown
@@ -225,7 +219,6 @@ function Bar(props: { pathname: string }) {
     const observer = new ResizeObserver(() => {
       measure()
       paint(morph.value)
-      ink.ask()
     })
     observer.observe(bar)
     observer.observe(brand)
@@ -237,8 +230,6 @@ function Bar(props: { pathname: string }) {
       observer.disconnect()
       morph.dispose()
       morphRef.current = null
-      ink.dispose()
-      inkRef.current = null
       tracked.current = null
     }
     // the morph is built once; a new page goes through follow() below
@@ -256,20 +247,9 @@ function Bar(props: { pathname: string }) {
     const frame = requestAnimationFrame(() => {
       tracked.current?.set(pageScroller() ?? document, pageTop())
       morphRef.current?.follow(held, pageTop())
-      inkRef.current?.newPage()
     })
     return () => cancelAnimationFrame(frame)
   }, [loaded, held])
-
-  // The night-sea pages dress the bar in their own dark glass with white
-  // words, and so does anyone who asks for less transparency: nothing to read.
-  useLayoutEffect(() => {
-    const solid = window.matchMedia('(prefers-reduced-transparency: reduce)')
-    const update = () => inkRef.current?.hold(dark || solid.matches)
-    update()
-    solid.addEventListener('change', update)
-    return () => solid.removeEventListener('change', update)
-  }, [dark])
 
   // The docs' copy of this bar shows the same avatar (see account-note.ts).
   // Forget it only once the session check has found nobody: while it runs
@@ -323,7 +303,6 @@ function Bar(props: { pathname: string }) {
         <span
           ref={seamRef}
           aria-hidden='true'
-          data-bar-word='line'
           className='absolute top-1/2 left-0 h-4 w-px -translate-y-1/2 bg-current/28 opacity-0'
         />
         <div
@@ -339,10 +318,7 @@ function Bar(props: { pathname: string }) {
               alt=''
               className='size-6 shrink-0 rounded-md object-cover'
             />
-            <span
-              data-bar-word=''
-              className='max-w-40 truncate text-[15px] font-semibold tracking-tight transition-colors duration-500'
-            >
+            <span className='max-w-40 truncate text-[15px] font-semibold tracking-tight transition-colors duration-500'>
               {name}
             </span>
           </Link>
