@@ -26,8 +26,9 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { TopNavLink } from '@/components/layout/types'
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { AccountMenu } from '@/components/layout/components/account-menu'
+import type { TopNavLink } from '@/components/layout/types'
 import { LiquidGlass } from '@/components/liquid-glass'
 import { NotificationPopover } from '@/components/notification-popover'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -40,7 +41,6 @@ import { useUserDisplay } from '@/hooks/use-user-display'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { AccountMenu } from '@/components/layout/components/account-menu'
 import { describeAccount, writeAccountNote } from './account-note'
 import { leaveHandoff, takeHandoff } from './handoff'
 import { BarMorph } from './morph'
@@ -53,10 +53,6 @@ import { useSiteBarStore } from './store'
 const BRAND_INSET = 14
 /** Room for the hairline between the brand and the dock: 4 + 1 + 4 px. */
 const SEAM = 9
-
-/** Scrollers inside these never move the bar. */
-const OVERLAYS =
-  '[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-sidebar],[data-site-bar]'
 
 /** The page's own scroller: the console's, or else the window. */
 function pageScroller(): HTMLElement | null {
@@ -192,23 +188,13 @@ function Bar(props: { pathname: string }) {
     measure()
     paint(morph.value)
 
-    // Where each followed scroller stood at its last event. The page leads;
-    // another scroller as tall as half the screen (a console page that
-    // scrolls inside itself) leads only while the page sits at its top.
+    // Where each followed scroller stood at its last event. Only the page's
+    // own scroller moves the bar: content passes under the bar only there,
+    // never in a table or a thread scrolling inside its page.
     const tops = new WeakMap<EventTarget, number>([[document, window.scrollY]])
-    const inOverlay = new WeakMap<HTMLElement, boolean>()
     const readTop = (target: EventTarget): number | null => {
       if (target === document) return window.scrollY
-      if (!(target instanceof HTMLElement)) return null
-      if (target === pageScroller()) return target.scrollTop
-      if (pageTop() > 0) return null
-      if (target.clientHeight < window.innerHeight / 2) return null
-      let hidden = inOverlay.get(target)
-      if (hidden === undefined) {
-        hidden = target.closest(OVERLAYS) !== null
-        inOverlay.set(target, hidden)
-      }
-      return hidden ? null : target.scrollTop
+      return target === pageScroller() ? pageTop() : null
     }
     const onScroll = (event: Event) => {
       const target = event.target ?? document
@@ -269,11 +255,15 @@ function Bar(props: { pathname: string }) {
   // Forget it only once the session check has found nobody: while it runs
   // (or if it is rate limited) the reader may well still be signed in.
   useEffect(() => {
-    if (user) writeAccountNote(describeAccount(user, { displayName, roleLabel }))
+    if (user)
+      writeAccountNote(describeAccount(user, { displayName, roleLabel }))
     else if (bootstrapState === 'complete') writeAccountNote(null)
   }, [user, bootstrapState, displayName, roleLabel])
 
-  const onLinkClick = (event: MouseEvent<HTMLAnchorElement>, link: TopNavLink) => {
+  const onLinkClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    link: TopNavLink
+  ) => {
     if (link.disabled) {
       event.preventDefault()
       return

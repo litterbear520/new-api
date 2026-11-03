@@ -27,7 +27,7 @@ import {
 } from '@tanstack/react-router'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useRef, type MouseEvent } from 'react'
+import type { MouseEvent } from 'react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { ThemeProvider } from '@/context/theme-provider'
@@ -118,6 +118,13 @@ function scrollElementTo(el: HTMLElement, top: number, step = 10) {
   }
 }
 
+/** A box as tall as the screen, like a table page's list. */
+function tallBox() {
+  const box = document.createElement('div')
+  Object.defineProperty(box, 'clientHeight', { value: window.innerHeight })
+  return box
+}
+
 /** Lets the scroll come to rest and any spring settle. */
 function settle() {
   act(() => {
@@ -138,17 +145,7 @@ function ChatStub() {
   useSplitSiteBar()
   return (
     <main>
-      <div
-        data-testid='thread'
-        ref={(el) => {
-          if (el) {
-            Object.defineProperty(el, 'clientHeight', {
-              value: 900,
-              configurable: true,
-            })
-          }
-        }}
-      />
+      <div data-testid='thread' />
     </main>
   )
 }
@@ -157,17 +154,9 @@ function ChatStub() {
 let consoleLoading: Promise<void> = Promise.resolve()
 
 function ConsoleStub() {
-  const ref = useRef<HTMLDivElement>(null)
   useSiteBarMenu(menuSpy)
   return (
-    <div
-      ref={(el) => {
-        ref.current = el
-        if (el) Object.defineProperty(el, 'clientHeight', { value: 900 })
-      }}
-      data-testid='console-scroller'
-      data-slot='console-scroller'
-    >
+    <div data-testid='console-scroller' data-slot='console-scroller'>
       <Outlet />
     </div>
   )
@@ -376,7 +365,6 @@ test('a list scrolled back to its top inside a scrolled page keeps the bar toget
   scrollPageTo(400)
   settle()
   const list = document.createElement('div')
-  Object.defineProperty(list, 'clientHeight', { value: 900 })
   document.body.append(list)
 
   scrollElementTo(list, 30)
@@ -387,17 +375,25 @@ test('a list scrolled back to its top inside a scrolled page keeps the bar toget
   list.remove()
 })
 
-test('a scroller first seen part-way down is not read as one big jump from the top', async () => {
+test('a table scrolling inside its page leaves the bar split: nothing passes under it', async () => {
   const { bar } = await renderAt('/keys', { signedIn: true })
-  const list = document.createElement('div')
-  Object.defineProperty(list, 'clientHeight', { value: 900 })
-  document.body.append(list)
-  list.scrollTop = 30
+  const table = tallBox()
+  screen.getByTestId('console-scroller').append(table)
 
-  scrollElementTo(list, 35, 5)
+  scrollElementTo(table, 400)
+  settle()
 
   expect(bar).toHaveAttribute('data-state', 'split')
-  list.remove()
+})
+
+test('a console scroller first seen part-way down is not read as one big jump from the top', async () => {
+  const { bar } = await renderAt('/dashboard/overview', { signedIn: true })
+  const scroller = screen.getByTestId('console-scroller')
+  scroller.scrollTop = 30
+
+  scrollElementTo(scroller, 35, 5)
+
+  expect(bar).toHaveAttribute('data-state', 'split')
 })
 
 test('scrolling inside a dialog leaves the bar alone', async () => {
@@ -405,7 +401,6 @@ test('scrolling inside a dialog leaves the bar alone', async () => {
   const dialog = document.createElement('div')
   dialog.setAttribute('role', 'dialog')
   const list = document.createElement('div')
-  Object.defineProperty(list, 'clientHeight', { value: 900 })
   dialog.append(list)
   document.body.append(dialog)
 
@@ -439,17 +434,15 @@ test('opening chat from a scrolled page splits the bar', async () => {
   expect(bar).toHaveAttribute('data-state', 'split')
 })
 
-test('the drawing page moves the bar with its feed, like any page', async () => {
+test('the drawing feed scrolling inside its own box leaves the bar split', async () => {
   const { bar } = await renderAt('/draw', { signedIn: true })
-  const feed = document.createElement('div')
-  Object.defineProperty(feed, 'clientHeight', { value: 900 })
-  document.body.append(feed)
+  const feed = tallBox()
+  screen.getByTestId('console-scroller').append(feed)
 
   scrollElementTo(feed, 150)
   settle()
 
-  expect(bar).toHaveAttribute('data-state', 'assembled')
-  feed.remove()
+  expect(bar).toHaveAttribute('data-state', 'split')
 })
 
 test('the night-sea pages dress the bar in dark glass, other pages follow the theme', async () => {
