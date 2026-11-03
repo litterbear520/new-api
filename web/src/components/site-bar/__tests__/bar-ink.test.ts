@@ -295,19 +295,18 @@ test("a picture from this site is decoded off the main thread and read when that
   expect(word).toHaveAttribute('data-ink', 'dark')
 })
 
-test("a picture off the main thread is decoded once, however many readers see it", async () => {
+test('a picture off the main thread is decoded once, however often it is read', async () => {
   fakeCanvases()
   const fetched = browserDecodesOffThread()
   const img = picture(250)
   stackAt = () => [img]
   const ink = new BarInk({ bar, glass })
-  const other = new BarInk({ bar, glass })
 
   ink.ask()
-  other.ask()
+  await vi.advanceTimersByTimeAsync(1000)
+  ink.ask()
   await vi.advanceTimersByTimeAsync(1000)
   ink.dispose()
-  other.dispose()
 
   expect(fetched).toHaveLength(1)
 })
@@ -434,73 +433,4 @@ test('where the browser cannot hit-test it leaves the theme colours alone', () =
   readOnce()
 
   expect(word).not.toHaveAttribute('data-ink')
-})
-
-test('reading at the words, a short word between the bar points still counts', () => {
-  const black = page({ backgroundColor: BLACK_PAGE })
-  const white = page({ backgroundColor: WHITE_PAGE })
-  stackAt = (x) => (x >= 210 && x <= 220 ? [black] : [white])
-  word.getBoundingClientRect = () => rect(210, 10)
-
-  const ink = new BarInk({ bar, glass, atWords: true })
-  ink.ask()
-  settled()
-  ink.dispose()
-
-  expect(word).toHaveAttribute('data-ink', 'light')
-})
-
-test('a word scrolled out past the glass does not count towards its tint', () => {
-  const black = page({ backgroundColor: BLACK_PAGE })
-  const white = page({ backgroundColor: WHITE_PAGE })
-  stackAt = (x) => (x < 500 ? [black] : [white])
-  word.getBoundingClientRect = () => rect(200, 60)
-  const hidden = document.createElement('button')
-  hidden.getBoundingClientRect = () => rect(600, 60)
-  bar.append(hidden)
-
-  const ink = new BarInk({ bar, glass, atWords: true })
-  ink.ask()
-  settled()
-  ink.dispose()
-
-  expect(glass.style.getPropertyValue('--glass-tint')).toContain('52 61 62')
-})
-
-test('a slower strip reads less often while moving', () => {
-  onlyPage(WHITE_PAGE)
-  const reads = vi.spyOn(document, 'elementsFromPoint')
-  const ink = new BarInk({ bar, glass, atWords: true, readGapMs: 200 })
-  ink.ask()
-  vi.advanceTimersByTime(50)
-  const first = reads.mock.calls.length
-  expect(first).toBe(2)
-
-  for (let t = 0; t < 15; t++) {
-    ink.ask()
-    vi.advanceTimersByTime(10)
-  }
-  expect(reads.mock.calls.length).toBe(first)
-
-  for (let t = 0; t < 5; t++) {
-    ink.ask()
-    vi.advanceTimersByTime(10)
-  }
-  expect(reads.mock.calls.length).toBe(first * 2)
-  ink.dispose()
-})
-
-test('the bar and a strip read each picture only once between them', () => {
-  const drawn = fakeCanvases()
-  const img = picture(40)
-  stackAt = () => [img]
-
-  readOnce()
-  const strip = new BarInk({ bar, glass, atWords: true })
-  strip.ask()
-  settled()
-  strip.dispose()
-
-  expect(drawn).toEqual([img])
-  expect(word).toHaveAttribute('data-ink', 'light')
 })

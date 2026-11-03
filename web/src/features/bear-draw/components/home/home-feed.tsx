@@ -28,7 +28,6 @@ import type { GalleryItem } from '../../data/gallery'
 import type { Skill } from '../../types'
 import { openDialog } from '../dialogs/dialog-bus'
 import { GalleryPanel } from '../gallery/gallery-section'
-import { FloatingStrip } from './floating-strip'
 import { SkillsPanel } from './skills-feed'
 import { barHeight, pageScroller } from './use-home'
 
@@ -43,7 +42,7 @@ type HomeFeedProps = {
   onAddSkill: (skill: Skill) => void
 }
 
-/** 创意 | 技能 under the hero; the tab bar stays on top while the wall scrolls. */
+/** 创意 | 技能 under the hero; the tab bar goes up with the wall. */
 export function HomeFeed(props: HomeFeedProps) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<FeedTab>(lastTab)
@@ -59,7 +58,7 @@ export function HomeFeed(props: HomeFeedProps) {
       feed.getBoundingClientRect().top -
       box.getBoundingClientRect().top -
       barHeight(box)
-    // switched from down in the wall: the other tab starts at its top
+    // the feed's top has gone up under the site bar: the other tab starts there
     if (top < 0) {
       box.scrollTo({ top: box.scrollTop + top, behavior: 'instant' })
     }
@@ -72,7 +71,7 @@ export function HomeFeed(props: HomeFeedProps) {
         onValueChange={(v) => pick(v === 'skills' ? 'skills' : 'ideas')}
         className='bd-tabs-root'
       >
-        <FloatingStrip className='bd-feed-bar'>
+        <div className='bd-feed-bar'>
           <TabsList className='bd-feed-tabs' aria-label={t('Ideas and skills')}>
             <TabsPrimitive.Indicator className='bd-feed-ind' />
             <TabsTrigger value='ideas' className='bd-feed-tab'>
@@ -84,7 +83,7 @@ export function HomeFeed(props: HomeFeedProps) {
               {t('Skills')}
             </TabsTrigger>
           </TabsList>
-        </FloatingStrip>
+        </div>
         <TabsContent value='ideas' className='bd-tabpanel'>
           <GalleryPanel onUse={props.onUse} />
         </TabsContent>

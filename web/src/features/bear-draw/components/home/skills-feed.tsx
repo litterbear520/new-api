@@ -26,7 +26,6 @@ import { useBearDrawStore } from '@/stores/bear-draw-store'
 import { SKILL_CATEGORIES, SKILLS } from '../../data/skills'
 import type { Skill } from '../../types'
 import { SkillCard } from '../library/skill-card'
-import { FloatingStrip } from './floating-strip'
 
 type FeedProps = {
   onOpen: (skill: Skill) => void
@@ -91,22 +90,20 @@ export function SkillsPanel(props: FeedProps) {
       onValueChange={(v) => setTab(String(v))}
       className='bd-tabs-root'
     >
-      <FloatingStrip className='bd-cats-slot'>
-        <TabsList
-          variant='line'
-          className='bd-tabs bd-cats'
-          aria-label={t('Skill categories')}
-        >
-          <TabsTrigger value='all' className='bd-tab'>
-            {t('For you')}
+      <TabsList
+        variant='line'
+        className='bd-tabs bd-cats'
+        aria-label={t('Skill categories')}
+      >
+        <TabsTrigger value='all' className='bd-tab'>
+          {t('For you')}
+        </TabsTrigger>
+        {SKILL_CATEGORIES.map((c) => (
+          <TabsTrigger key={c.id} value={c.id} className='bd-tab'>
+            {c.name}
           </TabsTrigger>
-          {SKILL_CATEGORIES.map((c) => (
-            <TabsTrigger key={c.id} value={c.id} className='bd-tab'>
-              {c.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </FloatingStrip>
+        ))}
+      </TabsList>
       <TabsContent value={tab} className='bd-tabpanel'>
         {tab === 'all' ? (
           <ForYou

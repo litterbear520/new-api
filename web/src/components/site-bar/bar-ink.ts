@@ -53,18 +53,6 @@ const LENS = '[data-site-lens]'
 
 type Point = { x: number; color: Rgb }
 
-export type BarInkParts = {
-  bar: HTMLElement
-  glass: HTMLElement
-  /**
-   * Read at each word instead of all along the glass: fewer points, and a short
-   * word never falls between two of them.
-   */
-  atWords?: boolean
-  /** The gap between reads while moving, in ms. */
-  readGapMs?: number
-}
-
 function setVar(el: HTMLElement, name: string, value: string): void {
   if (el.style.getPropertyValue(name) !== value) {
     el.style.setProperty(name, value)
@@ -91,8 +79,6 @@ function nearest(points: readonly Point[], x: number): Point {
 export class BarInk {
   private readonly bar: HTMLElement
   private readonly glass: HTMLElement
-  private readonly atWords: boolean
-  private readonly readGapMs: number
   private readonly reader = new PageReader()
   private readonly theme: MutationObserver
   private held = false
@@ -105,11 +91,9 @@ export class BarInk {
   /** The next read is the one at rest: the tint goes straight to the page. */
   private atRest = false
 
-  constructor(parts: BarInkParts) {
+  constructor(parts: { bar: HTMLElement; glass: HTMLElement }) {
     this.bar = parts.bar
     this.glass = parts.glass
-    this.atWords = parts.atWords ?? false
-    this.readGapMs = parts.readGapMs ?? READ_GAP_MS
     this.theme = new MutationObserver(() => this.newPage())
     this.theme.observe(document.documentElement, {
       attributes: true,
@@ -126,7 +110,7 @@ export class BarInk {
       this.readNextFrame()
     }, REST_MS)
     if (this.gap !== undefined) return
-    const wait = Math.max(0, this.readGapMs - (performance.now() - this.last))
+    const wait = Math.max(0, READ_GAP_MS - (performance.now() - this.last))
     this.gap = setTimeout(() => {
       this.gap = undefined
       this.readNextFrame()
@@ -191,7 +175,7 @@ export class BarInk {
     const box = this.glass.getBoundingClientRect()
     const y = box.top + box.height / 2
 
-    const row = this.atWords ? this.readWords(box, y) : this.readRow(box, y)
+    const row = this.readRow(box, y)
     if (!row.length) return
     const tint = this.tintGlass(row)
 
@@ -235,27 +219,6 @@ export class BarInk {
       const color = this.reader.at(x, y + (above ? -ZIGZAG : ZIGZAG))
       above = !above
       row.push({ x, color })
-    }
-    return row
-  }
-
-  /**
-   * Two points on each word, one above the middle and one below. A word scrolled
-   * out past the glass has none: what is out there does not tint it.
-   */
-  private readWords(box: DOMRect, y: number): Point[] {
-    const row: Point[] = []
-    for (const word of this.bar.querySelectorAll<HTMLElement>(WORDS)) {
-      const r = word.getBoundingClientRect()
-      if (!r.width) continue
-      for (const [part, off] of [
-        [0.25, -ZIGZAG],
-        [0.75, ZIGZAG],
-      ]) {
-        const x = r.left + r.width * part
-        if (x < box.left || x > box.right) continue
-        row.push({ x, color: this.reader.at(x, y + off) })
-      }
     }
     return row
   }

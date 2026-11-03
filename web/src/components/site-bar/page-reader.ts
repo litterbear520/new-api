@@ -54,12 +54,6 @@ type Thumb = {
   decoding: boolean
 }
 
-/**
- * Pictures read so far, for every reader on the page: the bar and the strips
- * under it see the same pictures, and reading one back is the dear part.
- */
-const thumbs = new WeakMap<HTMLImageElement, Thumb>()
-
 const SOLID = /^rgba?\(([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)(?:[,/ ]+([\d.]+))?\)$/
 
 /**
@@ -74,6 +68,8 @@ export class PageReader {
   private colorContext: CanvasRenderingContext2D | null | undefined
   /** Another site's picture spoils its canvas for good: a new one follows it. */
   private thumbContext: CanvasRenderingContext2D | null | undefined
+  /** Pictures read so far: reading one back is the dear part. */
+  private readonly thumbs = new WeakMap<HTMLImageElement, Thumb>()
   private bar: Element | null = null
   private fallback: Rgb = [255, 255, 255]
   /** Each element's own layer, for one reading: most points hit the same ones. */
@@ -177,7 +173,7 @@ export class PageReader {
   }
 
   private thumbnail(img: HTMLImageElement): Uint8ClampedArray | null {
-    const known = thumbs.get(img)
+    const known = this.thumbs.get(img)
     if (known?.src === img.currentSrc) {
       if (known.decoding) this.waiting = true
       return known.data
@@ -188,7 +184,7 @@ export class PageReader {
     }
     this.newThumbs++
     const thumb: Thumb = { src: img.currentSrc, data: null, decoding: false }
-    thumbs.set(img, thumb)
+    this.thumbs.set(img, thumb)
     if (canDecodeOffThread(thumb.src)) {
       thumb.decoding = true
       this.waiting = true
