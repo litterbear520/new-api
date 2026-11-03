@@ -16,11 +16,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { PublicLayout } from '@/components/layout'
-import { RichContent } from '@/components/rich-content'
+import { PublicLayout } from '@/components/layout/components/public-layout'
 import { useTheme } from '@/context/theme-provider'
 import { isLikelyHtml } from '@/lib/content-format'
 import { useAuthStore } from '@/stores/auth-store'
@@ -28,6 +34,11 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useHomePageContent } from './hooks'
 import { dropHeroShell } from './night-sea/hero-shell'
 import { NightSeaHome } from './night-sea/night-sea-home'
+
+// An admin's own home page only; the default one has no use for its renderers (KaTeX, marked)
+const RichContent = lazy(() =>
+  import('@/components/rich-content').then((m) => ({ default: m.RichContent }))
+)
 
 export function Home() {
   const { i18n, t } = useTranslation()
@@ -99,12 +110,14 @@ export function Home() {
     if (contentIsHtml) {
       return (
         <PublicLayout showMainContainer={false}>
-          <RichContent
-            mode='html'
-            htmlVariant='isolated'
-            content={content}
-            className='custom-home-content'
-          />
+          <Suspense fallback={null}>
+            <RichContent
+              mode='html'
+              htmlVariant='isolated'
+              content={content}
+              className='custom-home-content'
+            />
+          </Suspense>
         </PublicLayout>
       )
     }
@@ -112,11 +125,13 @@ export function Home() {
     return (
       <PublicLayout>
         <div className='mx-auto max-w-6xl px-4 py-8'>
-          <RichContent
-            mode='markdown'
-            content={content}
-            className='custom-home-content'
-          />
+          <Suspense fallback={null}>
+            <RichContent
+              mode='markdown'
+              content={content}
+              className='custom-home-content'
+            />
+          </Suspense>
         </div>
       </PublicLayout>
     )
