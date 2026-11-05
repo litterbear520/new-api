@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { expect, test } from 'vitest'
 
-import { keepInside, lensAt, nearestLink } from '../lens'
+import { keepInside, lensAt, magnifierOpacity, nearestLink } from '../lens'
 
 // three links: 60px, 100px and 60px wide, 10px apart
 const spans = [
@@ -105,4 +105,16 @@ test('kept inside, a span too wide is narrowed and one too far is moved', () => 
     left: 25,
     right: 75,
   })
+})
+
+test('going down, the magnifier stays whole until the lens stops covering the words', () => {
+  expect(magnifierOpacity(1.2, false)).toBe(1)
+  expect(magnifierOpacity(1.02, false)).toBe(1)
+  expect(magnifierOpacity(1.005, false)).toBe(0)
+})
+
+test('going up, the magnifier comes in as the lens swells', () => {
+  expect(magnifierOpacity(1, true)).toBe(0)
+  expect(magnifierOpacity(1.1, true)).toBeCloseTo(0.5)
+  expect(magnifierOpacity(1.2, true)).toBeCloseTo(1)
 })

@@ -57,6 +57,19 @@ const MAX_PULL = 8
 const RUBBER = 0.55
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
+
+/** Swollen past this, the lens is lifted over the words and covers them. */
+const LIFTED = 1.01
+
+/**
+ * How much of the magnifier shows. It comes in as the lens swells; on the way
+ * down it stays whole for as long as the lens covers the words, or they would
+ * wash out under it, for as long as a page load holds the frame.
+ */
+export function magnifierOpacity(swell: number, lifting: boolean) {
+  if (lifting) return clamp01((swell - 1) / (SWOLLEN - 1))
+  return swell > LIFTED ? 1 : 0
+}
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const centre = (span: Span) => (span.left + span.right) / 2
 
@@ -167,6 +180,7 @@ export class LensMotion {
   private chase: Chase | null = null
   private rest = 0
   private swell = 1
+  private lifting = false
   private stops: Array<() => void> = []
   private stopSwell: (() => void) | null = null
   private readonly lens: HTMLElement
@@ -362,6 +376,7 @@ export class LensMotion {
     this.stopSwell?.()
     this.stopSwell = null
     const target = held && !still ? SWOLLEN : 1
+    this.lifting = target > 1
     if (still) {
       this.swell = target
       this.draw()
@@ -402,11 +417,11 @@ export class LensMotion {
     this.lens.style.transform = `translate3d(${left}px,0,0) scale(${s},${s * (1 - squash)})`
     this.lens.style.width = `${width}px`
     // lifted: over the words, which then show through it magnified
-    if (s > 1.01) this.lens.dataset.swollen = ''
+    if (s > LIFTED) this.lens.dataset.swollen = ''
     else delete this.lens.dataset.swollen
     if (this.magnifier) {
       this.magnifier.style.transform = `translate3d(${-left}px,0,0)`
-      this.magnifier.style.opacity = String(clamp01((s - 1) / (SWOLLEN - 1)))
+      this.magnifier.style.opacity = String(magnifierOpacity(s, this.lifting))
     }
   }
 }

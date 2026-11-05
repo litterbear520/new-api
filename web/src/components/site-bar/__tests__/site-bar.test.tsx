@@ -1007,6 +1007,30 @@ test('a held lens swells and lights the link under it, and settles back when let
   expect(lens).not.toHaveAttribute('data-swollen')
 })
 
+test('letting go, the words never wash out while the lens still covers them', async () => {
+  layOutLinks()
+  const { bar } = await renderAt('/pricing')
+
+  press(bar, 'Model Square')
+  const lens = dragTo(bar, middleOf(bar, 'Offers'))
+  settle()
+  await act(async () => letGo(bar))
+
+  const magnifier = lens?.firstElementChild as HTMLElement
+  let covered = 0
+  for (let frame = 0; frame < 60; frame++) {
+    act(() => {
+      vi.advanceTimersByTime(16)
+    })
+    if (lens?.hasAttribute('data-swollen')) {
+      covered += 1
+      expect(magnifier.style.opacity).toBe('1')
+    }
+  }
+  expect(covered).toBeGreaterThan(0)
+  expect(lens).not.toHaveAttribute('data-swollen')
+})
+
 test('letting go back over the current link opens nothing and the lens goes home', async () => {
   layOutLinks()
   const { router, bar } = await renderAt('/pricing')
