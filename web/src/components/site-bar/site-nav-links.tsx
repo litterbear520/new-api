@@ -36,11 +36,14 @@ import type { TopNavLink } from '@/components/layout/types'
 import { cn } from '@/lib/utils'
 
 import { LENS_NOTE_MS, leaveLens, takeLens, type LensNote } from './handoff'
-import { LensMotion, lensAt, nearestLink, type Span } from './lens'
+import { LensMotion, SWOLLEN, lensAt, nearestLink, type Span } from './lens'
 import { SiteLink } from './site-link'
 
 /** How far, in px, a press moves sideways before it drags the lens. */
 const DRAG_SLOP = 6
+
+/** The least gap, in px, between a dragged lens and the end of the glass. */
+const GLASS_MARGIN = 1
 
 type SiteNavLinksProps = {
   links: TopNavLink[]
@@ -68,6 +71,19 @@ const reducedMotion = () =>
 
 function linkElements(nav: HTMLElement) {
   return [...nav.querySelectorAll<HTMLElement>('[data-site-link]')]
+}
+
+/** The bar's glass, in px from the links' left: the lens stays inside it. */
+function glassBounds(nav: HTMLElement, navLeft: number): Span {
+  const glass = nav
+    .closest('[data-site-bar]')
+    ?.querySelector('[data-site-glass]')
+    ?.getBoundingClientRect()
+  if (!glass?.width) return { left: -Infinity, right: Infinity }
+  return {
+    left: glass.left - navLeft + GLASS_MARGIN,
+    right: glass.right - navLeft - GLASS_MARGIN,
+  }
 }
 
 function linkSpans(nav: HTMLElement): Span[] {
@@ -297,9 +313,10 @@ type Press = {
   dragging: boolean
   /** The link under the lens, once dragging. */
   aimed: number
-  /** Measured once the drag starts: the links stay put while it lasts. */
+  /** Measured once the drag starts: the links stay put in the row while it lasts. */
   spans: Span[]
-  navLeft: number
+  /** The lens's middle less the finger's, kept when the press was on the lens. */
+  grip: number
 }
 
 /**
@@ -336,20 +353,26 @@ function useLensDrag(options: {
     else motion.slide(to)
   }
 
-  const finish = (pick: boolean) => {
+  const finish = (pick: boolean, stillDown = false) => {
     const p = press.current
     const nav = navRef.current
     const motion = motionRef.current
     press.current = null
     if (!p?.dragging || !nav || !motion) return
     swallowClick.current = true
-    setTimeout(() => {
-      swallowClick.current = false
-    }, 0)
+    const clear = () =>
+      setTimeout(() => {
+        swallowClick.current = false
+      }, 0)
+    // Escape comes before the release, and the release's click is the one to swallow
+    if (stillDown) window.addEventListener('pointerup', clear, { once: true })
+    else clear()
     if (nav.hasPointerCapture?.(p.pointerId)) {
       nav.releasePointerCapture(p.pointerId)
     }
     motion.held = false
+    // the frame loop ends here; where it stands, at its speed, starts the slide
+    motion.halt()
     motion.swellTo(false, reducedMotion())
     setDragging(false)
     onAim.current(null)
@@ -368,7 +391,7 @@ function useLensDrag(options: {
   useEffect(() => {
     if (!dragging) return
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') finish(false)
+      if (event.key === 'Escape') finish(false, true)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -378,6 +401,7 @@ function useLensDrag(options: {
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       if (!event.isPrimary) return
       if (event.pointerType === 'mouse' && event.button !== 0) return
+      swallowClick.current = false
       press.current = {
         pointerId: event.pointerId,
         x: event.clientX,
@@ -385,7 +409,7 @@ function useLensDrag(options: {
         dragging: false,
         aimed: litRef.current,
         spans: [],
-        navLeft: 0,
+        grip: 0,
       }
     },
     onPointerMove: (event: PointerEvent<HTMLElement>) => {
@@ -408,22 +432,39 @@ function useLensDrag(options: {
         }
         p.dragging = true
         p.spans = linkSpans(nav)
-        p.navLeft = nav.getBoundingClientRect().left
+        const navLeft = nav.getBoundingClientRect().left
+        const pressedAt = p.x - navLeft
+        const edges = motion.edges
+        const onLens =
+          edges !== null && pressedAt >= edges.left && pressedAt <= edges.right
+        p.grip = onLens ? (edges.left + edges.right) / 2 - pressedAt : 0
         nav.setPointerCapture?.(event.pointerId)
-        motion.held = true
+        motion.hold(glassBounds(nav, navLeft), !onLens)
         motion.swellTo(true, reducedMotion())
         setDragging(true)
         p.aimed = -1
       }
       if (!p.spans.length) return
-      const x = event.clientX - p.navLeft
-      const to = lensAt(p.spans, x)
-      if (reducedMotion()) motion.place(to)
+      // read each time: a scroll can move the bar under a still-held finger
+      const navLeft = nav.getBoundingClientRect().left
+      const bounds = glassBounds(nav, navLeft)
+      const still = reducedMotion()
+      motion.setBounds(bounds)
+      const x = event.clientX - navLeft + p.grip
+      const to = lensAt(p.spans, x, bounds, still ? 1 : SWOLLEN)
+      if (still) motion.place(to)
       else motion.follow(to)
-      const index = nearestLink(p.spans, x)
+      const index = nearestLink(p.spans, (to.left + to.right) / 2)
       if (index !== p.aimed) {
         p.aimed = index
         onAim.current(index)
+      }
+    },
+    // A quick flick can leave the links before it has counted as a drag.
+    onPointerLeave: (event: PointerEvent<HTMLElement>) => {
+      const p = press.current
+      if (p && !p.dragging && event.pointerId === p.pointerId) {
+        navRef.current?.setPointerCapture?.(event.pointerId)
       }
     },
     onPointerUp: (event: PointerEvent<HTMLElement>) => {

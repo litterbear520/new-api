@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { expect, test } from 'vitest'
 
-import { lensAt, nearestLink } from '../lens'
+import { keepInside, lensAt, nearestLink } from '../lens'
 
 // three links: 60px, 100px and 60px wide, 10px apart
 const spans = [
@@ -56,4 +56,53 @@ test('letting go picks the link whose middle is nearest', () => {
   expect(nearestLink(spans, 80)).toBe(1)
   expect(nearestLink(spans, 400)).toBe(2)
   expect(nearestLink(spans, -50)).toBe(0)
+})
+
+test('however far past the ends it is pulled, the lens moves only a little further', () => {
+  const near = (lensAt(spans, 215).left + lensAt(spans, 215).right) / 2
+  const far = lensAt(spans, 50_000)
+  const farMiddle = (far.left + far.right) / 2
+  expect(near).toBeGreaterThan(210)
+  expect(farMiddle).toBeGreaterThan(near)
+  expect(farMiddle).toBeLessThanOrEqual(222)
+  const left = lensAt(spans, -50_000)
+  expect((left.left + left.right) / 2).toBeGreaterThanOrEqual(18)
+})
+
+test('the pull grows with the finger and never jumps at the end', () => {
+  let before = (lensAt(spans, 210).left + lensAt(spans, 210).right) / 2
+  for (let x = 211; x < 1000; x++) {
+    const lens = lensAt(spans, x)
+    const middle = (lens.left + lens.right) / 2
+    expect(middle).toBeGreaterThan(before)
+    expect(middle - before).toBeLessThanOrEqual(0.56)
+    before = middle
+  }
+})
+
+test('swollen, the lens at the first and last links stays inside the bar', () => {
+  const bounds = { left: -2, right: 300 }
+  for (const x of [-50_000, -5, 0, 30, 120, 210, 300, 50_000]) {
+    const lens = lensAt(spans, x, bounds, 1.2)
+    const half = ((lens.right - lens.left) / 2) * 1.2
+    const middle = (lens.left + lens.right) / 2
+    expect(middle - half).toBeGreaterThanOrEqual(bounds.left - 1e-9)
+    expect(middle + half).toBeLessThanOrEqual(bounds.right + 1e-9)
+  }
+})
+
+test('kept inside, a span too wide is narrowed and one too far is moved', () => {
+  const bounds = { left: 0, right: 100 }
+  expect(keepInside({ left: 20, right: 40 }, bounds, 1)).toEqual({
+    left: 20,
+    right: 40,
+  })
+  expect(keepInside({ left: 90, right: 130 }, bounds, 1)).toEqual({
+    left: 60,
+    right: 100,
+  })
+  expect(keepInside({ left: -50, right: 200 }, bounds, 2)).toEqual({
+    left: 25,
+    right: 75,
+  })
 })

@@ -297,6 +297,7 @@ function Bar(props: { pathname: string }) {
           ref={glassRef}
           aria-hidden='true'
           material='dock'
+          data-site-glass=''
           data-solid={dark ? '' : undefined}
           className='pointer-events-auto absolute top-1/2 left-0 h-10 -translate-y-1/2 rounded-full'
         />
