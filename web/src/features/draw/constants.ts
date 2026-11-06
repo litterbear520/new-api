@@ -86,8 +86,9 @@ export const SUGGEST_MODELS = [
  * Typical token counts measured on 小熊API, used only for the estimate before
  * sending. The real cost comes from the usage in the reply. The outputs are
  * the 2026-10-19 low-quality counts × 1.75, the medium/low ratio measured on
- * 2026-10-31 (601 / 343 at 1536x1024); clear and edit are the 10-19 counts
- * under quality auto, not re-measured at medium.
+ * 2026-10-31 (601 / 343 at 1536x1024); clear is the 10-19 count under
+ * quality auto. edit is the median output of the 61 live pictures drawn
+ * from an input picture between 2026-10-31 and 11-06 (mean 1573).
  */
 /**
  * Sent with every picture request. Through CLIProxyAPI the Codex image tool
@@ -106,7 +107,7 @@ export const TYPICAL_TOKENS = {
     number
   >,
   clear: 2058,
-  edit: 915,
+  edit: 1372,
 }
 
 export const RATIO_HINT: Record<DrawRatio, string> = {

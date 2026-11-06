@@ -84,6 +84,17 @@ describe('estimateCost', () => {
     expect(withTwo?.total).toBeCloseTo((plain?.total ?? 0) + 2 * 0.012168, 6)
   })
 
+  test('an edit uses the edit output: 80 in, 1372 out = $0.04156', () => {
+    const edit = estimateCost(imageModel, 1, {
+      ratio: 'auto',
+      clear: false,
+      images: 1,
+      edit: true,
+    })
+    expect(edit?.out).toBeCloseTo(0.04156, 6)
+    expect(edit?.total).toBeCloseTo(0.04156 + 0.012168, 6)
+  })
+
   test('a transparent background costs more than any plain ratio', () => {
     const clear = estimateCost(imageModel, 1, {
       ratio: 'auto',

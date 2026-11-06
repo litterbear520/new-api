@@ -128,8 +128,16 @@ export function busyPictures(): number {
  * Tokens a picture usually takes on 小熊API (live logs 2026-10-25): the
  * output is 515 or 915 tokens whatever the ratio, an agent prompt is ~300
  * text tokens, each attached picture ~1521 image tokens, transparent ~2058.
+ * A picture drawn from an input picture outputs more: median 1372 over 61
+ * live pictures, 2026-10-31 to 11-06.
  */
-const EST_TOKENS = { text: 300, out: 700, clear: 2058, perImage: 1521 }
+const EST_TOKENS = {
+  text: 300,
+  out: 700,
+  edit: 1372,
+  clear: 2058,
+  perImage: 1521,
+}
 
 /** Rough USD for one picture before it is drawn. */
 export function estimatePicture(
@@ -138,13 +146,12 @@ export function estimatePicture(
 ): number | null {
   if (!env) return null
   const images = opts.edit ? Math.max(1, opts.refs) : opts.refs
+  let out = EST_TOKENS.out
+  if (opts.edit) out = EST_TOKENS.edit
+  if (opts.transparent) out = EST_TOKENS.clear
   return priceTokens(
     env.prices.get(model),
-    {
-      p: EST_TOKENS.text,
-      img: images * EST_TOKENS.perImage,
-      c: opts.transparent ? EST_TOKENS.clear : EST_TOKENS.out,
-    },
+    { p: EST_TOKENS.text, img: images * EST_TOKENS.perImage, c: out },
     env.groupRatio
   )
 }
