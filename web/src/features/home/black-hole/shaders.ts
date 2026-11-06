@@ -62,53 +62,13 @@ void shade(float r,float phi,float K,float lod,inout vec3 col,inout float T){
   T*=1.-al;
 }`
 
-export const GEOM = `#version 300 es
-precision highp float;precision highp int;precision highp sampler2D;
-#define STIR 0
-uniform vec2 uRes;uniform vec3 uView;
-layout(location=0) out vec4 o0;
-layout(location=1) out vec4 o1;
-layout(location=2) out vec4 o2;
-layout(location=3) out vec4 o3;
-${DISK}
-const float D=${CAM_D.toFixed(1)},FOC=${FOCAL.toFixed(2)};
-float hash13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
-vec3 hash33(vec3 p){p=fract(p*vec3(.1031,.103,.0973));p+=dot(p,p.yxz+33.33);return fract((p.xxy+p.yxx)*p.zyx);}
-uniform sampler2D uMW;
-vec3 gA,gB,gN;float gK=1.,gPa=1.,gDim=1.;
-/* stars are points: the lens moves and brightens them, never draws them into scratches */
-vec3 dots(vec3 d,vec3 cx,vec3 cy,float sc,float dens,float rPx,float base,float gain,float pw){
-  float a11=dot(cx,cx),a12=dot(cx,cy),a22=dot(cy,cy),det=a11*a22-a12*a12;
-  if(det<1e-22)return vec3(0.);
-  vec3 q=d*sc,id=floor(q);
-  if(hash13(id)>dens)return vec3(0.);
-  vec3 o=(hash33(id)-.5)*.6;
-  vec3 dd=normalize((id+.5+o)/sc)-d;
-  float b1=dot(cx,dd),b2=dot(cy,dd);
-  vec2 v=vec2(a22*b1-a12*b2,a11*b2-a12*b1)/det;
-  float l=length(v),b=pow(hash13(id+7.3),pw);
-  float R=rPx*max(gK,.55)*(.7+1.5*b);
-  float a=smoothstep(R+.75,max(R-.45,0.),l);
-  if(a<=0.)return vec3(0.);
-  float mag=min(gPa*gPa/sqrt(det),2.5);
-  vec3 tint=mix(vec3(.72,.82,1.),vec3(1.,.86,.72),hash13(id+3.1));
-  return tint*a*(base+gain*b)*mag*gDim*min(1.,gK*gK*1.4+.04);
-}
-/* NASA's Milky Way: rises from behind the Earth, passes left of the hole */
-vec3 sky(vec3 d,vec3 cx,vec3 cy){
-  const float cl=.8660254,sl=.5;
-  const vec3 GC=vec3(-.0548755604,-.8734370902,-.4838350155),L90=vec3(.4941094279,-.44482963,.7469822445),NGP=vec3(-.867666149,-.1980763734,.4559837762);
-  vec3 g0=cl*GC+sl*L90,g1=-sl*GC+cl*L90;
-  vec3 cel=dot(d,gA)*g0+dot(d,gB)*g1+dot(d,gN)*NGP;
-  vec3 m=textureLod(uMW,vec2(.5-atan(cel.y,cel.x)/TAU,.5-asin(clamp(cel.z,-1.,1.))/PI),2.6).rgb;
-  float L=dot(m,vec3(.2126,.7152,.0722));
-  float I=pow(clamp((L-.094)/(.885-.094),0.,1.),1.2);
-  vec3 band=mix(vec3(.705,.784,1.),vec3(1.,.95,.87),smoothstep(.35,1.,I))*mix(vec3(1.),m/max(L,1e-3),.14);
-  vec3 c=vec3(.0024,.003,.0056)+band*.085*pow(I,1.45);
-  float e=smoothstep(.12,.7,I);
-  return c+dots(d,cx,cy,120.,.07+.2*e,.72,.16,3.2,6.)+dots(d,cx,cy,280.,.025+.3*e,.6,.05+.05*e,.8,5.);
-}
-void walk(vec3 ro,vec3 rd,float pa,bool keep,out vec2 p0,out vec2 p1,out vec4 kl,out vec3 still,out vec3 vo,out float T,out float cap){
+/** The picture of the sky round the hole: half its width, as the tangent of the angle off the hole */
+const SKY_SPAN = 1.3
+
+const CAMERA = `const float D=${CAM_D.toFixed(1)},FOC=${FOCAL.toFixed(2)};
+const vec3 SKY_DARK=vec3(.0013,.002,.0042);`
+
+const WALK = `void walk(vec3 ro,vec3 rd,float pa,bool keep,out vec2 p0,out vec2 p1,out vec4 kl,out vec3 still,out vec3 vo,out float T,out float cap){
   p0=p1=vec2(0.);kl=vec4(0.);still=vec3(0.);vo=rd;T=1.;cap=0.;
   vec3 hv=cross(ro,rd),x=ro,v=rd;
   float h2=dot(hv,hv),bb=sqrt(h2);
@@ -149,7 +109,57 @@ void walk(vec3 ro,vec3 rd,float pa,bool keep,out vec2 p0,out vec2 p1,out vec4 kl
     x=x1;dist+=ds;
   }
   vo=normalize(v);
+}`
+
+export const GEOM = `#version 300 es
+precision highp float;precision highp int;precision highp sampler2D;
+#define STIR 0
+uniform vec2 uRes;uniform vec3 uView;
+layout(location=0) out vec4 o0;
+layout(location=1) out vec4 o1;
+layout(location=2) out vec4 o2;
+layout(location=3) out vec4 o3;
+${DISK}
+${CAMERA}
+float hash13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
+vec3 hash33(vec3 p){p=fract(p*vec3(.1031,.103,.0973));p+=dot(p,p.yxz+33.33);return fract((p.xxy+p.yxx)*p.zyx);}
+uniform sampler2D uSky;
+vec3 gF,gR,gU;float gK=1.,gPa=1.,gDim=1.,gFx=0.,gFy=0.,gEll=9.,gRad=9.,gLow=0.;
+/* stars are points: the lens moves and brightens them, never draws them into scratches.
+   Soft edges, and brightness after the real count N(>F) ~ F^-1.5: few bright, many faint */
+vec3 stars(vec3 d,vec3 cx,vec3 cy,float sc,float dens,float sig,float lo,float hi,vec3 c0,vec3 c1,float near){
+  float a11=dot(cx,cx),a12=dot(cx,cy),a22=dot(cy,cy),det=a11*a22-a12*a12;
+  if(det<1e-22)return vec3(0.);
+  vec3 id=floor(d*sc);
+  if(hash13(id)>dens)return vec3(0.);
+  vec3 dd=normalize((id+.5+(hash33(id)-.5)*.7)/sc)-d;
+  float b1=dot(cx,dd),b2=dot(cy,dd);
+  vec2 v=vec2(a22*b1-a12*b2,a11*b2-a12*b1)/det;
+  float F=min(hi,lo*pow(max(hash13(id+7.3),1e-4),-.667));
+  float s=max(.5,sig*max(gK,.55)*(1.+.3*log(F/lo)));
+  float l=length(v);
+  if(l>s*4.)return vec3(0.);
+  float mag=min(gPa*gPa/sqrt(det),2.5);
+  return mix(c0,c1,hash13(id+3.1))*exp(-.5*l*l/(s*s))*F*mag*gDim*near*min(1.,gK*gK*1.4+.1);
 }
+/* A cold cloud in the far corners and NASA's Milky Way low on the left around the Earth.
+   Cloud (r), Milky Way (g) and how stars clump (b) are one small picture, made ahead of time */
+vec3 sky(vec3 d,vec3 cx,vec3 cy){
+  const vec3 cool0=vec3(.74,.85,1.),cool1=vec3(.92,.96,1.),warm=vec3(1.,.9,.76),pale=vec3(.84,.89,1.);
+  /* a picture's rows run downward */
+  vec3 n=textureLod(uSky,vec2(dot(d,gR),-dot(d,gU))/max(dot(d,gF),.2)/${(SKY_SPAN * 2).toFixed(1)}+.5,0.).rgb;
+  float near=mix(.14,1.,smoothstep(.78,1.25,gEll)),low=gLow,v=n.r,I=n.g*low;
+  /* the cloud stays far from the hole: close in, the lens would wind it into a vortex */
+  float cloud=smoothstep(.98,1.75,gEll)*smoothstep(.92,1.55,gRad)*(1.-.8*low);
+  float words=mix(.42,1.,1.-smoothstep(.3,.14,gFx)*smoothstep(.62,.8,gFy));
+  vec3 c=SKY_DARK+mix(vec3(.012,.03,.07),vec3(.03,.072,.15),min(v*1.3,1.))*v*1.08*words*cloud
+    +mix(vec3(.46,.54,.78),vec3(.98,.86,.74),smoothstep(.25,.9,I))*.105*pow(I,1.5);
+  float e=smoothstep(.16,.62,I);
+  return c
+    +stars(d,cx,cy,54.,.05*smoothstep(.16,.62,n.b-.12)+.008+.03*e,.72,.055,1.7,mix(cool0,warm,low),mix(cool1,pale,low),near)
+    +stars(d,cx,cy,270.,.11*e,.54,.016+.024*e,.28,warm,pale,near);
+}
+${WALK}
 void main(){
   float den=min(uRes.y,uRes.x/uView.z);
   vec2 q=(gl_FragCoord.xy*2.-uRes)/den-uView.xy;
@@ -160,30 +170,57 @@ void main(){
   vec3 f=normalize(-ro),rt=normalize(cross(f,vec3(0.,1.,0.))),up=cross(rt,f);
   vec3 rd=normalize(q.x*rt+q.y*up+FOC*f);
   float b0=length(cross(ro,rd));
-  vec2 e1=vec2(-1.02,-.42),e2=vec2(-.2,1.05);
-  e1=vec2(ca*e1.x-sa*e1.y,sa*e1.x+ca*e1.y);e2=vec2(ca*e2.x-sa*e2.y,sa*e2.x+ca*e2.y);
-  vec3 p1=normalize(e1.x*rt+e1.y*up+FOC*f),p2=normalize(e2.x*rt+e2.y*up+FOC*f);
-  gN=normalize(cross(p1,p2));gA=normalize(p1+p2);gB=cross(gN,gA);
   gK=den/1080.;gPa=pa;
-  /* stars behind the words are dimmed */
-  float fy=gl_FragCoord.y/uRes.y,fx=abs(gl_FragCoord.x/uRes.x-.5);
-  gDim=mix(1.,.22,smoothstep(.27,.19,fx)*smoothstep(.7,.76,fy));
-  vec2 a0,a1;vec4 kl;vec3 st,vo0;float T0,cap0;
-  walk(ro,rd,pa,true,a0,a1,kl,st,vo0,T0,cap0);
+  /* the sky keeps out of the words and the disk; q is now along the disk (x) and across it (y) */
+  gFy=gl_FragCoord.y/uRes.y;gFx=abs(gl_FragCoord.x/uRes.x-.5);
+  gDim=mix(1.,.22,smoothstep(.27,.19,gFx)*smoothstep(.7,.76,gFy));
+  gEll=length(q/vec2(1.35,.62));
+  gRad=length(q);
+  gF=f;gR=rt;gU=up;
+  gLow=smoothstep(.02,-.42,q.y)*smoothstep(-.1,-.75,q.x);
+  vec2 a0=vec2(0.),a1=vec2(0.);vec4 kl=vec4(0.);vec3 st=vec3(0.),vo0=rd;float T0=1.,cap0=1.;
+  /* the photon ring is left to RING, which draws where this is under .055. Its edge (.054 to .056)
+     gets one whole still pixel here, right whether RING draws over it or not, so the two programs
+     never have to agree to the last bit */
+  float rb=abs(b0-2.61);
+  if(rb>=.054)walk(ro,rd,pa,rb>=.056,a0,a1,kl,st,vo0,T0,cap0);
   vec3 dx=dFdx(vo0),dy=dFdy(vo0);
-  if(abs(b0-2.61)<.055){
-    /* the photon ring is very thin: more rays */
-    vec3 sum=vec3(0.);
-    for(int i=0;i<12;i++){
-      float a=float(i)*2.39996+.4,rr=sqrt((float(i)+.5)/12.)*.62*px;
-      vec2 w=q+vec2(cos(a),sin(a))*rr;
-      vec2 d0,d1;vec4 dk;vec3 s,vv;float Tt,kk;
-      walk(ro,normalize(w.x*rt+w.y*up+FOC*f),pa,false,d0,d1,dk,s,vv,Tt,kk);
-      sum+=s+Tt*(1.-kk)*sky(vv,vec3(0.),vec3(0.));
-    }
-    a0=a1=vec2(0.);kl=vec4(0.);st=sum/12.;
-  }else st+=T0*(1.-cap0)*sky(vo0,dx,dy);
+  if(cap0<.5&&T0>.004)st+=T0*sky(vo0,dx,dy);
   o0=vec4(a0,0.,0.);o1=vec4(a1,0.,0.);o2=kl;o3=vec4(min(st,vec3(60.)),1.);
+}`
+
+/**
+ * The photon ring is very thin: more rays. Writes over the still light GEOM left at zero.
+ * GEOM has four outputs, and Direct3D compiles those on the GPU's main thread at the first draw
+ * (ANGLE only prepares one output at link). RING has one, so it compiles in the background: the
+ * twelve rays of the photon ring live here, which takes about a third off that stall.
+ */
+export const RING = `#version 300 es
+precision highp float;precision highp int;precision highp sampler2D;
+#define STIR 0
+uniform vec2 uRes;uniform vec3 uView;
+out vec4 outC;
+${DISK}
+${CAMERA}
+${WALK}
+void main(){
+  float den=min(uRes.y,uRes.x/uView.z);
+  vec2 q=(gl_FragCoord.xy*2.-uRes)/den-uView.xy;
+  float px=2./den,pa=px/FOC;
+  vec3 ro=D*vec3(0.,sin(radians(15.)),cos(radians(15.)));
+  float ca=cos(radians(9.)),sa=sin(radians(9.));
+  q=vec2(ca*q.x-sa*q.y,sa*q.x+ca*q.y);
+  vec3 f=normalize(-ro),rt=normalize(cross(f,vec3(0.,1.,0.))),up=cross(rt,f);
+  if(abs(length(cross(ro,normalize(q.x*rt+q.y*up+FOC*f)))-2.61)>=.055)discard;
+  vec3 sum=vec3(0.);
+  for(int i=0;i<12;i++){
+    float a=float(i)*2.39996+.4,rr=sqrt((float(i)+.5)/12.)*.62*px;
+    vec2 w=q+vec2(cos(a),sin(a))*rr;
+    vec2 d0,d1;vec4 dk;vec3 s,vv;float Tt,kk;
+    walk(ro,normalize(w.x*rt+w.y*up+FOC*f),pa,false,d0,d1,dk,s,vv,Tt,kk);
+    sum+=s+Tt*(1.-kk)*SKY_DARK;
+  }
+  outC=vec4(min(sum/12.,vec3(60.)),1.);
 }`
 
 export const EARTH = `#version 300 es

@@ -21,18 +21,18 @@ For commercial licensing, please contact support@quantumnous.com
 import { preload } from 'react-dom'
 
 import earthUrl from './tex/earth-city.webp'
-import milkyUrl from './tex/milkyway-2k.webp'
+import skyUrl from './tex/sky-round-hole.webp'
 
 export const BLACK_HOLE_ASSETS = {
   /** NASA Earth Observatory, Black Marble 2016: the night Earth's lights, the whole globe */
   earth: earthUrl,
-  /** NASA/Goddard SVS Deep Star Maps 2020 (Gaia DR2: ESA/Gaia/DPAC), the whole sky in J2000 */
-  milky: milkyUrl,
+  /** The sky round the hole, made ahead of time (tools/kits/home-qa/bake-sky.mjs). The Milky Way: NASA/Goddard SVS Deep Star Maps 2020 (Gaia DR2: ESA/Gaia/DPAC) */
+  sky: skyUrl,
 }
 export type BlackHoleAssets = typeof BLACK_HOLE_ASSETS
 
 export function preloadSky() {
-  for (const href of [BLACK_HOLE_ASSETS.earth, BLACK_HOLE_ASSETS.milky]) {
+  for (const href of [BLACK_HOLE_ASSETS.earth, BLACK_HOLE_ASSETS.sky]) {
     preload(href, { as: 'image', fetchPriority: 'low' })
   }
 }

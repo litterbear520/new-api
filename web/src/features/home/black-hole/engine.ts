@@ -51,6 +51,7 @@ import {
   FINAL,
   FLOW,
   GEOM,
+  RING,
   UP,
   VERTEX,
   WAKE,
@@ -248,6 +249,7 @@ export function startBlackHole(
   }
 
   let geom!: Program
+  let ring!: Program
   let earthPr!: Program
   let flow!: Program
   let wakePr!: Program
@@ -256,7 +258,7 @@ export function startBlackHole(
   let fin!: Program
   let noiseTex!: WebGLTexture
   let earthTex!: WebGLTexture
-  let milkyTex!: WebGLTexture
+  let skyTex!: WebGLTexture
 
   // ------------------------------------------------------- targets, by size
   let bloom: {
@@ -296,6 +298,7 @@ export function startBlackHole(
       texture(w, h, gl.RGBA16F, gl.NEAREST),
     ]
     const fb = framebuffer()
+    const ringFb = framebuffer()
     for (let i = 0; i < BAKE_ROWS; i++) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
       g.forEach((t, n) =>
@@ -311,7 +314,7 @@ export function startBlackHole(
       gl.viewport(0, 0, w, h)
       gl.useProgram(geom.p)
       bind(0, noiseTex, geom, 'uTex')
-      bind(1, milkyTex, geom, 'uMW')
+      bind(1, skyTex, geom, 'uSky')
       gl.uniform2f(geom.u('uRes'), w, h)
       gl.uniform3f(geom.u('uView'), HOLE.x, HOLE.y, FRAME_ASPECT)
       gl.uniform1f(geom.u('uT'), 40)
@@ -323,10 +326,26 @@ export function startBlackHole(
         Math.ceil(h / BAKE_ROWS)
       )
       triangle()
+      gl.bindFramebuffer(gl.FRAMEBUFFER, ringFb)
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        g[3],
+        0
+      )
+      gl.useProgram(ring.p)
+      bind(0, noiseTex, ring, 'uTex')
+      gl.uniform2f(ring.u('uRes'), w, h)
+      gl.uniform3f(ring.u('uView'), HOLE.x, HOLE.y, FRAME_ASPECT)
+      gl.uniform1f(ring.u('uT'), 40)
+      triangle()
       gl.disable(gl.SCISSOR_TEST)
       gl.flush()
       yield
     }
+    gl.deleteFramebuffer(ringFb)
+    framebuffers.delete(ringFb)
     // the Earth is a small part of the screen: its own small picture
     const box = earthBox(w, h)
     const ew = Math.max(1, box[2] - box[0])
@@ -528,6 +547,7 @@ export function startBlackHole(
   // --------------------------------------------------------- getting ready
   function* boot(): Generator<void, void> {
     geom = program(GEOM)
+    ring = program(RING)
     earthPr = program(EARTH_FS)
     flow = program(FLOW)
     wakePr = program(WAKE)
@@ -535,7 +555,7 @@ export function startBlackHole(
     up = program(UP)
     fin = program(FINAL)
     const noisePr = program(BAKE_DISK)
-    const all = [geom, earthPr, flow, wakePr, down, up, fin, noisePr]
+    const all = [geom, ring, earthPr, flow, wakePr, down, up, fin, noisePr]
     gl.flush()
     while (
       parallel &&
@@ -548,11 +568,11 @@ export function startBlackHole(
     if (!all.every(linked)) throw new Error('shaders')
 
     const earthImg = new Image()
-    const milkyImg = new Image()
+    const skyImg = new Image()
     earthImg.src = ASSETS.earth
-    milkyImg.src = ASSETS.milky
+    skyImg.src = ASSETS.sky
     let loaded: boolean | undefined
-    Promise.all([earthImg.decode(), milkyImg.decode()])
+    Promise.all([earthImg.decode(), skyImg.decode()])
       .then(() => (loaded = true))
       .catch(() => (loaded = false))
     while (loaded === undefined) yield
@@ -564,18 +584,21 @@ export function startBlackHole(
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, earthImg)
     mipmapped(gl.CLAMP_TO_EDGE)
     yield
-    milkyTex = gl.createTexture()
-    textures.add(milkyTex)
-    gl.bindTexture(gl.TEXTURE_2D, milkyTex)
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA8,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      milkyImg
+    // always drawn larger than it is: no mipmaps
+    skyTex = gl.createTexture()
+    textures.add(skyTex)
+    gl.bindTexture(gl.TEXTURE_2D, skyTex)
+    // r, g and b are data, not colour: no colour-profile conversion on the way in
+    gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, skyImg)
+    gl.pixelStorei(
+      gl.UNPACK_COLORSPACE_CONVERSION_WEBGL,
+      gl.BROWSER_DEFAULT_WEBGL
     )
-    mipmapped(gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     yield
 
     noiseTex = gl.createTexture()
