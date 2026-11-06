@@ -965,8 +965,8 @@ export const STATIC_I18N_KEYS = [
   'Most of it went to <m>{{model}}</m>.',
   'You used <m>{{model}}</m> the most.',
   // Drawing page (features/bear-draw): status lines and menu notes passed through variables.
-  'Best quality; keeps the most detail when editing',
   'Positioned by OpenAI for speed',
+  'Positioned by OpenAI for quality and consistent edits',
   'Previous generation',
   'Cheap and quick, fine for everyday sets',
   'Plans more carefully, writes finer prompts',

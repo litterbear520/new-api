@@ -44,20 +44,28 @@ export const CHAT_MIN_WIDTH = 320
 export const CHAT_MAX_WIDTH = 560
 export const NARROW_WIDTH = 820
 
-export const DEFAULT_MODEL = 'gpt-image-2.5-sunburst'
+export const DEFAULT_MODEL = 'gpt-image-2.6-sunburst'
 
 /** Names for the image models we know; other image models show their id. */
 export const MODEL_META: Record<
   string,
   { name: string; tag?: 'recommended'; desc: string }
 > = {
-  'gpt-image-2.5-sunburst': {
-    name: 'Sunburst',
+  'gpt-image-2.6-sunburst': {
+    name: 'Sunburst 2.6',
     tag: 'recommended',
-    desc: 'Best quality; keeps the most detail when editing',
+    desc: 'Positioned by OpenAI for quality and consistent edits',
+  },
+  'gpt-image-2.6-flare': {
+    name: 'Flare 2.6',
+    desc: 'Positioned by OpenAI for speed',
+  },
+  'gpt-image-2.5-sunburst': {
+    name: 'Sunburst 2.5',
+    desc: 'Previous generation',
   },
   'gpt-image-2.5-flare': {
-    name: 'Flare',
+    name: 'Flare 2.5',
     desc: 'Positioned by OpenAI for speed',
   },
   'gpt-image-2': { name: 'Image 2', desc: 'Previous generation' },

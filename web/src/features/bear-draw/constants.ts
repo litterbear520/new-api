@@ -39,7 +39,7 @@ export const CHAT_W = { min: 320, max: 560, initial: 400 }
 /** Below this card width the canvas opens over the chat. */
 export const NARROW_CARD = 900
 
-export const DEFAULT_IMAGE_MODEL = 'gpt-image-2.5-sunburst'
+export const DEFAULT_IMAGE_MODEL = 'gpt-image-2.6-sunburst'
 export const DEFAULT_BRAIN = 'gpt-6-luna'
 
 /** Image models we know: names and the menu note (i18n keys). */
@@ -47,15 +47,25 @@ export const IMAGE_MODEL_META: Record<
   string,
   { name: string; short: string; note: string; tag?: 'recommended' }
 > = {
+  'gpt-image-2.6-sunburst': {
+    name: 'GPT Image 2.6 Sunburst',
+    short: 'Sunburst 2.6',
+    note: 'Positioned by OpenAI for quality and consistent edits',
+    tag: 'recommended',
+  },
+  'gpt-image-2.6-flare': {
+    name: 'GPT Image 2.6 Flare',
+    short: 'Flare 2.6',
+    note: 'Positioned by OpenAI for speed',
+  },
   'gpt-image-2.5-sunburst': {
     name: 'GPT Image 2.5 Sunburst',
-    short: 'Sunburst',
-    note: 'Best quality; keeps the most detail when editing',
-    tag: 'recommended',
+    short: 'Sunburst 2.5',
+    note: 'Previous generation',
   },
   'gpt-image-2.5-flare': {
     name: 'GPT Image 2.5 Flare',
-    short: 'Flare',
+    short: 'Flare 2.5',
     note: 'Positioned by OpenAI for speed',
   },
   'gpt-image-2': {
