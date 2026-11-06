@@ -431,32 +431,34 @@ export function Composer(props: { room: DrawRoom }) {
               </button>
             </Tip>
             <span className='dw-sp' />
-            {estText && (
-              <Tip label={estTip}>
-                <span className='dw-est tabular-nums' tabIndex={0}>
-                  {estText}
-                </span>
+            <div className='dw-cr'>
+              {estText && (
+                <Tip label={estTip}>
+                  <span className='dw-est tabular-nums' tabIndex={0}>
+                    {estText}
+                  </span>
+                </Tip>
+              )}
+              <ModelMenu
+                models={ctx.models}
+                value={room.model}
+                samePrice={samePrice}
+                onChange={(model) => {
+                  updateRoom(room.id, (r) => ({ ...r, model }))
+                  focus()
+                }}
+              />
+              <Tip label={sendTip}>
+                <button
+                  type='submit'
+                  className={cn('dw-send', full && 'dw-wait')}
+                  aria-label={t('Start drawing')}
+                  disabled={!draft.text.trim() || full}
+                >
+                  <ArrowUp />
+                </button>
               </Tip>
-            )}
-            <ModelMenu
-              models={ctx.models}
-              value={room.model}
-              samePrice={samePrice}
-              onChange={(model) => {
-                updateRoom(room.id, (r) => ({ ...r, model }))
-                focus()
-              }}
-            />
-            <Tip label={sendTip}>
-              <button
-                type='submit'
-                className={cn('dw-send', full && 'dw-wait')}
-                aria-label={t('Start drawing')}
-                disabled={!draft.text.trim() || full}
-              >
-                <ArrowUp />
-              </button>
-            </Tip>
+            </div>
           </div>
           <input
             ref={fileRef}

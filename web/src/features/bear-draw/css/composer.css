@@ -404,11 +404,14 @@ For commercial licensing, please contact support@quantumnous.com
 }
 
 /* ---------- the bar under the text ---------- */
+/* When one row is too short (the chat pane, phones), the models and send
+   move to a second row on the right instead of being pushed out. */
 .bd-comp-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px 8px;
 }
 .bd-comp-l,
 .bd-comp-r {
@@ -416,6 +419,10 @@ For commercial licensing, please contact support@quantumnous.com
   align-items: center;
   gap: 4px;
   min-width: 0;
+}
+.bd-comp-r {
+  flex: none;
+  margin-left: auto;
 }
 .bd-comp-plus,
 .bd-ib {
@@ -555,9 +562,6 @@ For commercial licensing, please contact support@quantumnous.com
 }
 .bd-comp-dock .bd-chip {
   padding: 0 8px;
-}
-.bd-comp-dock .bd-model-chip > span:not(.bc-micon) {
-  max-width: 74px;
 }
 
 /* ---------- "/" and "@" pickers, above the box ---------- */
