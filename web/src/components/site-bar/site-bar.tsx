@@ -340,8 +340,8 @@ function Bar(props: { pathname: string }) {
               <DockDivider className='hidden lg:block' />
             </>
           )}
+          <ThemeToggle />
           <LanguageSwitcher />
-          <ThemeToggle className='size-9' />
           {signedIn ? (
             <>
               <NotificationPopover

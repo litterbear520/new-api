@@ -537,12 +537,12 @@ test('the brand on the left links home', async () => {
   )
 })
 
-test('signed out: language, theme, 登录 and the phone menu', async () => {
+test('signed out: theme, language, 登录 and the phone menu', async () => {
   const { bar } = await renderAt('/pricing')
 
   expect(within(bar).getAllByRole('button')).toEqual([
-    within(bar).getByRole('button', { name: 'Change language' }),
     within(bar).getByRole('button', { name: 'Switch to dark theme' }),
+    within(bar).getByRole('button', { name: 'Change language' }),
     // Base UI keeps role=button on a Button rendered as a Link
     within(bar).getByRole('button', { name: 'Sign in' }),
     within(bar).getByRole('button', { name: 'Toggle navigation menu' }),
@@ -553,12 +553,12 @@ test('signed out: language, theme, 登录 and the phone menu', async () => {
   )
 })
 
-test('signed in: language, theme, messages, the account menu and the phone menu', async () => {
+test('signed in: theme, language, messages, the account menu and the phone menu', async () => {
   const { bar } = await renderAt('/pricing', { signedIn: true })
 
   expect(within(bar).getAllByRole('button')).toEqual([
-    within(bar).getByRole('button', { name: 'Change language' }),
     within(bar).getByRole('button', { name: 'Switch to dark theme' }),
+    within(bar).getByRole('button', { name: 'Change language' }),
     within(bar).getByRole('button', { name: 'Notifications' }),
     within(bar).getByRole('button', { name: 'Account menu' }),
     within(bar).getByRole('button', { name: 'Toggle navigation menu' }),
