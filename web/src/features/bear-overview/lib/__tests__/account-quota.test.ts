@@ -121,7 +121,7 @@ describe('subscription and resetTime', () => {
     expect(claude('pro')).toMatchObject({ plan: 'Pro', tier: 'gold' })
     expect(codex('prolite')).toMatchObject({
       plan: 'Pro Lite',
-      tier: 'platinum',
+      tier: 'diamond',
     })
     expect(claude('max_5x')).toMatchObject({
       plan: 'Max 5x',

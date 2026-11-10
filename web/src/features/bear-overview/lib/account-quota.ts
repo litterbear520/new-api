@@ -183,7 +183,9 @@ const PLANS: Record<AccountProvider, Record<string, PlanName>> = {
     free: { name: 'Free', tier: 'plain' },
     edu: { name: 'Edu', tier: 'gold' },
     plus: { name: 'Plus', tier: 'gold' },
-    prolite: { name: 'Pro Lite', tier: 'platinum' },
+    // Temporary: the platinum plate reads like silver, so Pro Lite wears diamond
+    // until platinum is redesigned.
+    prolite: { name: 'Pro Lite', tier: 'diamond' },
     team: { name: 'Team', tier: 'platinum' },
     business: { name: 'Business', tier: 'platinum' },
     pro: { name: 'Pro', tier: 'diamond' },
