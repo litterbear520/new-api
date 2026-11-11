@@ -21,7 +21,7 @@ import { z } from 'zod'
 
 import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
 
-import { DEFAULT_GROUP } from '../constants'
+import { DEFAULT_GROUP, NEW_KEY_GROUP } from '../constants'
 import type { ApiKey, ApiKeyFormData } from '../types'
 
 // ============================================================================
@@ -115,7 +115,7 @@ export const API_KEY_FORM_DEFAULT_VALUES: ApiKeyFormValues = {
   model_limits: [],
   allow_ips: '',
   allow_user_quota_query: true,
-  group: DEFAULT_GROUP,
+  group: NEW_KEY_GROUP,
   auto_groups_mode: 'inherit',
   auto_groups: [],
   cross_group_retry: true,
@@ -127,7 +127,7 @@ export function getApiKeyFormDefaultValues(
 ): ApiKeyFormValues {
   return {
     ...API_KEY_FORM_DEFAULT_VALUES,
-    group: defaultUseAutoGroup ? 'auto' : DEFAULT_GROUP,
+    group: defaultUseAutoGroup ? 'auto' : NEW_KEY_GROUP,
     auto_groups_mode: 'inherit',
     auto_groups: [],
     cross_group_retry: defaultUseAutoGroup,

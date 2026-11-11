@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type StatusBadgeProps } from '@/components/status-badge'
+import type { StatusBadgeProps } from '@/components/status-badge'
 
 // ============================================================================
 // API Key Status Configuration
@@ -71,6 +71,13 @@ export const API_KEY_STATUS_OPTIONS = Object.values(API_KEY_STATUSES).map(
 // ============================================================================
 
 export const DEFAULT_GROUP = '' as const
+
+/**
+ * Group a new key starts in. An empty group follows the user's group, so a
+ * user whose group is a private account would put every new key there;
+ * new keys start in `default` and the user picks another group on purpose.
+ */
+export const NEW_KEY_GROUP = 'default' as const
 
 // ============================================================================
 // Error Messages (i18n keys: use t(ERROR_MESSAGES.xxx) when displaying)

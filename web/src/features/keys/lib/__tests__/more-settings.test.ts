@@ -31,6 +31,16 @@ function saved(over: Partial<ApiKeyFormValues>): ApiKeyFormValues {
   return { ...plainSite, ...over }
 }
 
+describe('a new key', () => {
+  test('starts in the default group, not the user group', () => {
+    expect(plainSite.group).toBe('default')
+  })
+
+  test('starts in Auto when the site defaults to it', () => {
+    expect(autoSite.group).toBe('auto')
+  })
+})
+
 describe('whether a saved key uses More settings', () => {
   test.each([
     ['the empty group', ''],

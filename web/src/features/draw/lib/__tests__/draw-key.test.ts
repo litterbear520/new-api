@@ -83,6 +83,7 @@ describe('getDrawKey', () => {
         unlimited_quota: true,
         expired_time: -1,
         model_limits: 'gpt-image-2',
+        group: 'default',
       })
     )
   })

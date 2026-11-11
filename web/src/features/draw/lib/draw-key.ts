@@ -22,7 +22,7 @@ import {
   searchApiKeys,
   updateApiKey,
 } from '@/features/keys/api'
-import { API_KEY_STATUS } from '@/features/keys/constants'
+import { API_KEY_STATUS, NEW_KEY_GROUP } from '@/features/keys/constants'
 import type { ApiKey } from '@/features/keys/types'
 import { createServerError } from '@/lib/server-error-message'
 
@@ -88,7 +88,7 @@ async function createToken(models: string[]) {
     model_limits: models.join(','),
     allow_ips: '',
     allow_user_quota_query: false,
-    group: '',
+    group: NEW_KEY_GROUP,
     auto_groups: [],
     cross_group_retry: false,
   })
