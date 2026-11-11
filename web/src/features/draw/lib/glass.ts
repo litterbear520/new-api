@@ -313,12 +313,10 @@ function filterFor(
   return id
 }
 
-/** Fits the lens to the element's current size. */
-export function applyGlass(el: HTMLElement, opts: GlassOptions) {
-  if (!glassSupported) return
+function measure(el: HTMLElement, opts: GlassOptions) {
   const w = Math.round(el.offsetWidth)
   const h = Math.round(el.offsetHeight)
-  if (!w || !h) return
+  if (!w || !h) return null
   const radius =
     Number.parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0
   const r = Math.round(Math.min(radius, w / 2, h / 2))
@@ -329,6 +327,15 @@ export function applyGlass(el: HTMLElement, opts: GlassOptions) {
     tint: opts.tint ?? [0.4, 0.6],
     tone: opts.tone,
   }
+  return { w, h, r, o }
+}
+
+/** Fits the lens to the element's current size. */
+export function applyGlass(el: HTMLElement, opts: GlassOptions) {
+  if (!glassSupported) return
+  const lens = measure(el, opts)
+  if (!lens) return
+  const { w, h, r, o } = lens
   const dark =
     opts.dark === true || document.documentElement.classList.contains('dark')
   try {
@@ -336,6 +343,22 @@ export function applyGlass(el: HTMLElement, opts: GlassOptions) {
     el.classList.add('lensed')
   } catch {
     el.classList.remove('lensed')
+  }
+}
+
+/**
+ * Bakes the lens for the theme the page is not showing. Baking is slow, and a
+ * theme change should find it ready instead of doing it mid-animation.
+ */
+export function warmGlass(el: HTMLElement, opts: GlassOptions) {
+  if (!glassSupported || opts.dark === true) return
+  const lens = measure(el, opts)
+  if (!lens) return
+  const { w, h, r, o } = lens
+  try {
+    filterFor(w, h, r, o, !document.documentElement.classList.contains('dark'))
+  } catch {
+    // applyGlass reports a failed bake when that theme is shown
   }
 }
 

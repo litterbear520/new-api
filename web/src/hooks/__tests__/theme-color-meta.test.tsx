@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { ThemeProvider, useTheme } from '@/context/theme-provider'
 
@@ -93,4 +93,39 @@ test('follows a colour preset set on the page root', async () => {
   })
 
   await waitFor(() => expect(themeColor()).toBe('#0a141e'))
+})
+
+test('reads other colour notations off the GPU, once per colour', async () => {
+  const getImageData = vi.fn(() => ({ data: [11, 12, 13, 255] }))
+  const getContext = vi
+    .spyOn(HTMLCanvasElement.prototype, 'getContext')
+    .mockImplementation(
+      () =>
+        ({
+          clearRect: () => undefined,
+          fillRect: () => undefined,
+          getImageData,
+        }) as unknown as RenderingContext
+    )
+  const computed = vi
+    .spyOn(window, 'getComputedStyle')
+    .mockImplementation(
+      () => ({ backgroundColor: 'lab(20 1 2)' }) as CSSStyleDeclaration
+    )
+  try {
+    renderTheme()
+    await waitFor(() => expect(themeColor()).toBe('#0b0c0d'))
+
+    act(() => {
+      document.documentElement.setAttribute('data-theme-preset', 'ocean')
+    })
+    await new Promise((resolve) => setTimeout(resolve, 60))
+
+    expect(getContext).toHaveBeenCalledTimes(1)
+    expect(getContext).toHaveBeenCalledWith('2d', { willReadFrequently: true })
+    expect(getImageData).toHaveBeenCalledTimes(1)
+  } finally {
+    getContext.mockRestore()
+    computed.mockRestore()
+  }
 })

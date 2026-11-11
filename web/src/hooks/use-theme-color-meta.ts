@@ -18,6 +18,20 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect } from 'react'
 
+let probe: CanvasRenderingContext2D | null | undefined
+const resolved = new Map<string, string>()
+
+/**
+ * willReadFrequently keeps the canvas in memory. Reading one on the GPU makes
+ * the page wait for everything queued there, and right after a theme change
+ * that is the repaint of the whole page.
+ */
+function makeProbe() {
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 1
+  return canvas.getContext('2d', { willReadFrequently: true })
+}
+
 /** The colour as #rrggbb, which every browser accepts in meta theme-color. */
 function toHex(color: string): string {
   const rgb = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color)
@@ -27,13 +41,18 @@ function toHex(color: string): string {
       .map((part) => Number(part).toString(16).padStart(2, '0'))
       .join('')}`
   }
-  // oklch() and other notations: let a canvas resolve them to sRGB.
-  const context = document.createElement('canvas').getContext('2d')
-  if (!context) return color
-  context.fillStyle = color
-  context.fillRect(0, 0, 1, 1)
-  const [red, green, blue] = context.getImageData(0, 0, 1, 1).data
-  return toHex(`rgb(${red}, ${green}, ${blue})`)
+  const known = resolved.get(color)
+  if (known) return known
+  // lab(), oklch() and other notations: let a canvas resolve them to sRGB.
+  probe ??= makeProbe()
+  if (!probe) return color
+  probe.clearRect(0, 0, 1, 1)
+  probe.fillStyle = color
+  probe.fillRect(0, 0, 1, 1)
+  const [red, green, blue] = probe.getImageData(0, 0, 1, 1).data
+  const hex = toHex(`rgb(${red}, ${green}, ${blue})`)
+  resolved.set(color, hex)
+  return hex
 }
 
 /**
@@ -59,6 +78,10 @@ export function useThemeColorMeta() {
     }
 
     sync()
+    // A canvas's first read is slow: have it done before the first theme change.
+    const warm = window.requestIdleCallback?.(() => toHex('#000'), {
+      timeout: 2000,
+    })
     // The theme switches the root class; presets set an attribute or variables.
     const observer = new MutationObserver(sync)
     observer.observe(document.documentElement, {
@@ -68,6 +91,7 @@ export function useThemeColorMeta() {
     return () => {
       observer.disconnect()
       cancelAnimationFrame(frame)
+      if (warm !== undefined) window.cancelIdleCallback(warm)
     }
   }, [])
 }

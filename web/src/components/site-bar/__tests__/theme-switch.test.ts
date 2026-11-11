@@ -382,19 +382,57 @@ test('with reduced motion a click lands at once, with no veil', () => {
   expect(view.veil()?.style.display ?? 'none').toBe('none')
 })
 
-test('the theme swap has CSS transitions off for its one frame', () => {
-  let during = 0
+test('CSS transitions go off before the swap and stay off until the move ends', () => {
+  const during: number[] = []
   const view = mount('dark', {
     onLook: () => {
-      during = document.head.querySelectorAll('style').length
+      during.push(document.head.querySelectorAll('style').length)
     },
   })
-  dragBy(view, 26)
+  view.host.click()
+  while (during.length === 0) frames(1)
+  expect(during).toEqual([1])
+  // taking the rule away restyles the whole page: not while anything moves
+  frames(2)
+  expect(document.head.querySelectorAll('style').length).toBe(1)
+  settle()
+  expect(document.head.querySelectorAll('style').length).toBe(0)
+})
 
-  expect(during).toBe(1)
+test('a press turns CSS transitions off, ahead of the frame of the swap', () => {
+  const view = mount('dark')
+  view.pointer('pointerdown', 100)
+  expect(document.head.querySelectorAll('style').length).toBe(1)
+  view.pointer('pointerup', 100)
+  settle()
+  expect(document.head.querySelectorAll('style').length).toBe(0)
+})
+
+test('a drag across the middle and back swaps under one rule', () => {
+  const view = mount('dark')
+  view.pointer('pointerdown', 100)
+  for (const x of [108, 116, 124, 118, 110, 102, 110, 118, 126]) {
+    view.pointer('pointermove', x)
+    frames(1)
+    expect(document.head.querySelectorAll('style').length).toBeLessThanOrEqual(
+      1
+    )
+  }
+  expect(view.seen.length).toBeGreaterThan(1)
+  view.pointer('pointerup', 126)
+  settle()
+  expect(document.head.querySelectorAll('style').length).toBe(0)
+})
+
+test('with reduced motion the rule still covers the frame of the swap', () => {
+  setReducedMotion(true)
+  const view = mount('dark')
+  view.host.click()
+  frames(1)
+  expect(view.seen).toEqual(['light'])
+  expect(document.head.querySelectorAll('style').length).toBe(1)
   frames(1)
   expect(document.head.querySelectorAll('style').length).toBe(0)
-  expect(view.host.dataset.held).toBe('')
 })
 
 test('dispose stops the frames and removes the veil', () => {

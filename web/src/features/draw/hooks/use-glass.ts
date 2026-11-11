@@ -18,7 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useRef, type RefObject } from 'react'
 
-import { applyGlass, glassSupported, type GlassOptions } from '../lib/glass'
+import {
+  applyGlass,
+  glassSupported,
+  warmGlass,
+  type GlassOptions,
+} from '../lib/glass'
 
 /**
  * Ref callback that keeps an element's liquid-glass lens fitted to its size
@@ -33,10 +38,28 @@ export function useGlass<T extends HTMLElement>(opts: GlassOptions) {
     cleanup.current?.()
     cleanup.current = null
     if (!el || !glassSupported) return
+    let frame = 0
+    let idle = 0
     const fit = () => applyGlass(el, optsRef.current)
-    const ro = new ResizeObserver(fit)
+    const ro = new ResizeObserver(() => {
+      fit()
+      if (!window.requestIdleCallback) return
+      if (idle) window.cancelIdleCallback(idle)
+      idle = window.requestIdleCallback(
+        () => {
+          idle = 0
+          warmGlass(el, optsRef.current)
+        },
+        { timeout: 3000 }
+      )
+    })
     ro.observe(el, { box: 'border-box' })
-    const mo = new MutationObserver(fit)
+    // Measuring now would force a restyle of the whole page inside the frame
+    // of the theme change: wait for the next one.
+    const mo = new MutationObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(fit)
+    })
     mo.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class'],
@@ -44,6 +67,8 @@ export function useGlass<T extends HTMLElement>(opts: GlassOptions) {
     cleanup.current = () => {
       ro.disconnect()
       mo.disconnect()
+      cancelAnimationFrame(frame)
+      if (idle) window.cancelIdleCallback(idle)
     }
   }, [])
 }
