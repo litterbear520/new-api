@@ -8425,7 +8425,7 @@
     "Top up, redeem a code and see your top-ups.": "チャージ、引き換えコード、チャージ履歴。",
     "Order number": "注文番号",
     "Credited amount": "入金額",
-    "Total topped up": "チャージ累計",
+    "Topped up, last 30 days": "過去30日のチャージ",
     "{{count}} paid top-ups": "{{count}} 件",
     "Includes {{amount}} with an expiry date": "うち期限付き {{amount}}",
     "{{amount}} expires on {{date}}": "{{amount}} は {{date}} に失効",

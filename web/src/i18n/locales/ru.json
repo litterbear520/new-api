@@ -8425,7 +8425,7 @@
     "Top up, redeem a code and see your top-ups.": "Пополнение, коды пополнения и история пополнений.",
     "Order number": "Номер заказа",
     "Credited amount": "Зачислено",
-    "Total topped up": "Всего пополнено",
+    "Topped up, last 30 days": "Пополнено за 30 дней",
     "{{count}} paid top-ups": "Оплачено: {{count}}",
     "Includes {{amount}} with an expiry date": "Из них {{amount}} со сроком действия",
     "{{amount}} expires on {{date}}": "{{amount}} сгорит {{date}}",

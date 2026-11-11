@@ -16,13 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ErrorState } from '@/components/error-state'
@@ -49,6 +45,15 @@ import { yuan } from '../lib/rules'
 import { PacksList } from './packs-list'
 
 const SKELETON_ROWS = ['w-24', 'w-32', 'w-20'] as const
+
+function uniqueById(records: TopupRecord[] = []): TopupRecord[] {
+  const seen = new Set<number>()
+  return records.filter((record) => {
+    if (seen.has(record.id)) return false
+    seen.add(record.id)
+    return true
+  })
+}
 
 function StatusCell(props: { status: TopupRecord['status'] }) {
   const { t } = useTranslation()
@@ -87,17 +92,23 @@ export function HistoryPanel(props: {
   const { t, i18n } = useTranslation()
   const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
   const queryClient = useQueryClient()
-  const [pages, setPages] = useState(1)
   const sectionRef = useRef<HTMLElement>(null)
-  const history = useQuery({
-    queryKey: [...walletKeys.history, pages],
-    queryFn: async () => {
+  // One fixed-size page per "Show more": New API caps page_size at 100, so
+  // growing one page instead would stop at the 100th order.
+  const history = useInfiniteQuery({
+    queryKey: [...walletKeys.history, 'list'],
+    queryFn: async ({ pageParam }) => {
       const res = requireServerSuccess(
-        await getUserBillingHistory(1, HISTORY_PAGE_SIZE * pages)
+        await getUserBillingHistory(pageParam, HISTORY_PAGE_SIZE)
       )
       return res.data ?? { items: [], total: 0 }
     },
-    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (last, all) =>
+      last.items.length === HISTORY_PAGE_SIZE &&
+      all.length * HISTORY_PAGE_SIZE < last.total
+        ? all.length + 1
+        : undefined,
     staleTime: 30 * 1000,
   })
   const methodName = (type: string) => {
@@ -108,8 +119,8 @@ export function HistoryPanel(props: {
     return type
   }
 
-  const items = history.data?.items ?? []
-  const total = history.data?.total ?? 0
+  // An order placed between two pages shifts the next one by a row.
+  const items = uniqueById(history.data?.pages.flatMap((page) => page.items))
 
   useEffect(() => {
     if (props.focus && !history.isPending) {
@@ -135,7 +146,7 @@ export function HistoryPanel(props: {
         <TableCell colSpan={6} className='p-0 whitespace-normal'>
           <ErrorState
             title={t('Failed to load')}
-            // 累计充值 reads the same orders; retry it too.
+            // 近 30 天充值 reads the same orders; retry it too.
             onRetry={() =>
               void queryClient.invalidateQueries({
                 queryKey: walletKeys.history,
@@ -226,13 +237,13 @@ export function HistoryPanel(props: {
         </TableHeader>
         <TableBody>{body}</TableBody>
       </Table>
-      {items.length < total && (
+      {history.hasNextPage && (
         <div className='border-t px-4 py-2.5 text-center sm:px-5'>
           <Button
             variant='ghost'
             size='sm'
             disabled={history.isFetching}
-            onClick={() => setPages((n) => n + 1)}
+            onClick={() => void history.fetchNextPage()}
           >
             {t('Show more')}
           </Button>

@@ -34,11 +34,15 @@ import { monthDay } from '../lib/format'
 import type { Pack } from '../lib/packs'
 import { yuan } from '../lib/rules'
 
-/** Orders read to add up 累计充值; nobody here has more */
+/**
+ * Orders read to add up 近 30 天充值; nobody here has more. New API returns
+ * only the last 30 days of a user's top-ups (topUpQueryWindowSeconds in
+ * model/topup.go), so the figure cannot be an all-time total.
+ */
 const SUM_PAGE_SIZE = 100
 const SUM_MAX_PAGES = 5
 
-/** Yuan paid and orders credited, over every top-up order */
+/** Yuan paid and orders credited, over the orders New API returns */
 function sumPaid(records: TopupRecord[]): {
   paid: number
   count: number
@@ -84,7 +88,7 @@ function Figure(props: {
   )
 }
 
-/** 可用额度 · 限时额度 · 累计充值 */
+/** 可用额度 · 限时额度 · 近 30 天充值 */
 export function WalletStats(props: {
   total: number | null
   low: boolean
@@ -167,7 +171,7 @@ export function WalletStats(props: {
         }
       />
       <Figure
-        label={t('Total topped up')}
+        label={t('Topped up, last 30 days')}
         value={paid.data ? yuan(paid.data.paid, locale) : '–'}
         loading={paid.isPending}
         sub={paidSub}

@@ -8425,7 +8425,7 @@
     "Top up, redeem a code and see your top-ups.": "充值、兌換碼和充值記錄。",
     "Order number": "訂單號",
     "Credited amount": "到帳金額",
-    "Total topped up": "累計充值",
+    "Topped up, last 30 days": "近 30 天充值",
     "{{count}} paid top-ups": "共 {{count}} 筆",
     "Includes {{amount}} with an expiry date": "含限時額度 {{amount}}",
     "{{amount}} expires on {{date}}": "{{amount}} 在 {{date}}過期",

@@ -175,7 +175,14 @@ beforeEach(() => {
     if (url === '/api/subscription/plans') return ok(plans)
     if (url.startsWith('/api/user/topup/self?')) {
       if (historyFails) return { data: { success: false, message: 'busy' } }
-      return ok({ items: topups, total: topups.length })
+      // Paged like New API: page_size is capped at 100.
+      const query = new URL(url, 'http://localhost').searchParams
+      const size = Math.min(Number(query.get('page_size')) || 10, 100)
+      const page = Math.max(1, Number(query.get('p')) || 1)
+      return ok({
+        items: topups.slice((page - 1) * size, page * size),
+        total: topups.length,
+      })
     }
     throw new Error(`Unexpected wallet request: ${url}`)
   })
@@ -237,6 +244,10 @@ describe('wallet', () => {
     ).toBeInTheDocument()
     expect(await within(figures).findByText('¥10')).toBeInTheDocument()
     expect(within(figures).getByText('Paid top-ups: 1')).toBeInTheDocument()
+    // New API only returns the last 30 days of orders
+    expect(
+      within(figures).getByText('Topped up, last 30 days')
+    ).toBeInTheDocument()
 
     const deals = await screen.findByRole('button', { name: /^Starter pack/ })
     expect(deals).toHaveTextContent(
@@ -418,6 +429,136 @@ describe('wallet', () => {
     expect(
       await line('bw-paid', 'Payment received: $1,000 added, plus $100 bonus')
     ).toBeInTheDocument()
+  })
+
+  it('does not count an earlier order’s bonus as this one’s', async () => {
+    RULES.first = { pay: 6, bonus: 40, days: 30, plan_id: 5 }
+    const done = nowSec() - 30
+    topups = [
+      {
+        ...PAID,
+        id: 9,
+        amount: 100,
+        money: 10,
+        trade_no: 'USR7NOsecond',
+        create_time: done - 20,
+        complete_time: done,
+      },
+    ]
+    // the starter pack bought a minute before
+    subscriptions = [
+      sub({
+        id: 2,
+        plan_id: 5,
+        start_time: done - 60,
+        amount_total: 40 * DOLLAR,
+      }),
+    ]
+    await renderWallet(returning, { paid: 'USR7NOsecond' })
+    expect(
+      await line('bw-paid', 'Payment received: $100 added')
+    ).toBeInTheDocument()
+
+    // this order's own 3% bonus, granted after it was credited
+    subscriptions = [
+      ...subscriptions,
+      sub({
+        id: 3,
+        plan_id: 3,
+        start_time: done + 2,
+        amount_total: 3 * DOLLAR,
+      }),
+    ]
+    await act(() =>
+      client.invalidateQueries({ queryKey: ['bear-wallet', 'subscriptions'] })
+    )
+    expect(
+      await line('bw-paid', 'Payment received: $100 added, plus $3 bonus')
+    ).toBeInTheDocument()
+  })
+
+  it('names the starter pack’s bonus on the starter top-up', async () => {
+    RULES.first = { pay: 6, bonus: 40, days: 30, plan_id: 5 }
+    const done = nowSec() - 30
+    topups = [
+      {
+        ...PAID,
+        id: 9,
+        amount: 60,
+        money: 6,
+        trade_no: 'USR7NOstarter',
+        create_time: done - 20,
+        complete_time: done,
+      },
+    ]
+    subscriptions = [
+      sub({
+        id: 2,
+        plan_id: 5,
+        start_time: done + 1,
+        amount_total: 40 * DOLLAR,
+      }),
+    ]
+    await renderWallet(returning, { paid: 'USR7NOstarter' })
+    expect(
+      await line('bw-paid', 'Payment received: $60 added, plus $40 bonus')
+    ).toBeInTheDocument()
+  })
+
+  it('says the gift pack arrived only once the wallet holds it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      await renderWallet(returning, { paid: 'SUBUSR7NOnotpaid' })
+      expect(
+        await screen.findByText('Confirming your payment…')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('Payment received. The gift pack is in your wallet.')
+      ).not.toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(3000 * 25)
+      expect(
+        await screen.findByText(
+          'The payment is not confirmed yet. Refresh this page in a few minutes.'
+        )
+      ).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('says the gift pack arrived when the wallet holds it', async () => {
+    subscriptions = [sub({ plan_id: 4, amount_total: 200 * DOLLAR })]
+    await renderWallet(returning, { paid: 'SUBUSR7NOgift' })
+    expect(
+      await screen.findByText(
+        'Payment received. The gift pack is in your wallet.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('pages through more than 100 orders', async () => {
+    topups = Array.from({ length: 101 }, (_, i) => ({
+      ...PAID,
+      id: i + 1,
+      trade_no: `USR7NOrow-${i + 1}`,
+      create_time: PAID.create_time - i,
+    }))
+    await renderWallet(returning)
+    const history = screen.getByRole('region', { name: 'Top-up history' })
+    for (let shown = 20; shown <= 100; shown += 20) {
+      expect(
+        await within(history).findByText(`USR7NOrow-${shown}`)
+      ).toBeInTheDocument()
+      const more = within(history).getByRole('button', { name: 'Show more' })
+      await waitFor(() => expect(more).toBeEnabled())
+      fireEvent.click(more)
+    }
+    expect(
+      await within(history).findByText('USR7NOrow-101')
+    ).toBeInTheDocument()
+    expect(
+      within(history).queryByRole('button', { name: 'Show more' })
+    ).not.toBeInTheDocument()
   })
 
   it('truncates a long order number inside its cell', async () => {

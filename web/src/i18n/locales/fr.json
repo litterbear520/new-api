@@ -8425,7 +8425,7 @@
     "Top up, redeem a code and see your top-ups.": "Rechargez, utilisez un code d’échange et consultez vos recharges.",
     "Order number": "Numéro de commande",
     "Credited amount": "Montant crédité",
-    "Total topped up": "Total rechargé",
+    "Topped up, last 30 days": "Rechargé sur 30 jours",
     "{{count}} paid top-ups": "{{count}} recharges payées",
     "Includes {{amount}} with an expiry date": "Dont {{amount}} avec date d’expiration",
     "{{amount}} expires on {{date}}": "{{amount}} expire le {{date}}",

@@ -8425,7 +8425,7 @@
     "Top up, redeem a code and see your top-ups.": "Nạp tiền, đổi mã và xem lịch sử nạp.",
     "Order number": "Mã đơn hàng",
     "Credited amount": "Số tiền được cộng",
-    "Total topped up": "Tổng đã nạp",
+    "Topped up, last 30 days": "Đã nạp trong 30 ngày",
     "{{count}} paid top-ups": "{{count}} lần nạp",
     "Includes {{amount}} with an expiry date": "Gồm {{amount}} có hạn dùng",
     "{{amount}} expires on {{date}}": "{{amount}} hết hạn ngày {{date}}",
