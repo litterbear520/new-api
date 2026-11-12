@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { costOfUsage } from '@/features/bear-chat/lib/cost'
 import { classifyError } from '@/features/bear-chat/lib/errors'
 import { ChatRequestError } from '@/features/bear-chat/lib/stream'
+import { useAuthStore } from '@/stores/auth-store'
 import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { BRAIN_FALLBACKS, MAX_STEPS } from '../../constants'
@@ -53,6 +54,8 @@ import { openCalls, placeToolResult, wireMessages } from './transcript'
 type Run = {
   projectId: string
   messageId: string
+  /** The account that started it; its requests go out as that account only. */
+  uid: number | null
   ctrl: AbortController
   stopped: boolean
   steps: number
@@ -152,7 +155,7 @@ async function step(run: Run): Promise<StepOutcome> {
   let lastError: ChatRequestError | null = null
   let swapPart: string | null = null
   for (const [i, model] of chain.entries()) {
-    if (run.stopped) return { kind: 'aborted' }
+    if (run.stopped || ownerLeft(run)) return { kind: 'aborted' }
     if (i > 0) {
       // One line that follows the switches, not one line per model.
       const text = {
@@ -414,7 +417,7 @@ export async function loop(run: Run): Promise<void> {
     if (!out.toolCalls.length) break
     let end = false
     for (const call of out.toolCalls) {
-      if (run.stopped) return
+      if (run.stopped || ownerLeft(run)) return
       const res = await runTool(run, call)
       if (res.pause) {
         editMessage(run.projectId, run.messageId, (m) => ({
@@ -445,6 +448,7 @@ export function newRun(projectId: string, messageId: string): Run {
   return {
     projectId,
     messageId,
+    uid: useBearDrawStore.getState().uid,
     ctrl: new AbortController(),
     stopped: false,
     steps: 0,
@@ -480,6 +484,7 @@ export async function resume(
         ? last.tool_calls?.find((c) => c.id === id)
         : undefined
     if (!call) continue
+    if (ownerLeft(run)) return
     const res = await runTool(run, call)
     if (res.pause) {
       editMessage(projectId, messageId, (m) => ({ ...m, status: 'waiting' }))
@@ -496,6 +501,24 @@ export async function resume(
     }
   }
   await loop(run)
+}
+
+/**
+ * The account that started the run signed out, or another one signed in
+ * (the page is not reloaded): stop it before it sends anything more under
+ * the new account.
+ */
+function ownerLeft(run: Run): boolean {
+  if (run.uid != null && useAuthStore.getState().auth.user?.id === run.uid) {
+    return false
+  }
+  if (runs.get(run.projectId) === run) runs.delete(run.projectId)
+  run.stopped = true
+  run.ctrl.abort()
+  closeOpenCalls(run.projectId, { status: 'interrupted' })
+  finishTurn(run.projectId, run.messageId, 'stopped')
+  setLive(run.projectId, null)
+  return true
 }
 
 /** Stops the turn: aborts the request, queued pictures stay unsent. */

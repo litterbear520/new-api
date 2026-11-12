@@ -19,10 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 import { waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { clearAuthentication } from '@/lib/auth-session'
 import { useAuthStore } from '@/stores/auth-store'
 import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
-import { activeRun, setAgentModels } from '../lib/agent/run'
+import { activeRun, loop, newRun, setAgentModels } from '../lib/agent/run'
 import { send, stop } from '../lib/engine'
 import type { Project } from '../types'
 
@@ -124,6 +125,49 @@ afterEach(() => {
   })
   vi.unstubAllGlobals()
   useAuthStore.getState().auth.reset()
+})
+
+describe('a run started by one account', () => {
+  test('stops when another account signs in, sending nothing as it', async () => {
+    let release!: (res: Response) => void
+    const first = new Promise<Response>((resolve) => {
+      release = resolve
+    })
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(() => first)
+      .mockResolvedValue(reply('finished'))
+    vi.stubGlobal('fetch', fetchMock)
+    const p = project('account-test')
+    p.messages = [
+      {
+        id: 'agent',
+        role: 'agent',
+        mode: 'agent',
+        status: 'running',
+        startedAt: 1,
+        cost: 0,
+        parts: [],
+      },
+    ]
+    p.transcript = [{ role: 'user', content: 'private brief belonging to A' }]
+    useBearDrawStore.getState().init(1, [p])
+    const task = loop(newRun(p.id, 'agent'))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    clearAuthentication(false)
+    login(2)
+    release(
+      reply('', {
+        name: 'load_skill',
+        args: { skill_id: 'missing-fixture-skill' },
+      })
+    )
+    await task
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(activeRun(p.id)).toBeNull()
+    const m = findProject(p.id)?.messages[0]
+    expect(m?.role === 'agent' && m.status).toBe('stopped')
+  })
 })
 
 describe('answering a question card with a new picture', () => {
