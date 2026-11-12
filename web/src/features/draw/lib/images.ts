@@ -213,8 +213,12 @@ function stamp(d = new Date()) {
 }
 
 /** The full picture: from this visit's memory, else from the database. */
+export async function fullImageBlob(id: string): Promise<Blob | null> {
+  return fresh.get(id) ?? (await getImageBlob(id, 'full'))
+}
+
 async function fullBlob(id: string): Promise<Blob> {
-  const blob = fresh.get(id) ?? (await getImageBlob(id, 'full'))
+  const blob = await fullImageBlob(id)
   if (!blob) throw new Error('Picture not found')
   return blob
 }

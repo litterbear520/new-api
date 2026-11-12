@@ -16,8 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { canvasBlob } from '@/features/draw/lib/images'
-import { getImageBlob } from '@/features/draw/lib/storage'
+import { canvasBlob, fullImageBlob } from '@/features/draw/lib/images'
 
 import type { CanvasNode, ImageRef, Project } from '../types'
 import { makeZip, type ZipFile } from './zip'
@@ -121,7 +120,8 @@ async function render(
   node: CanvasNode,
   img: ImageRef
 ): Promise<Rendered | null> {
-  const blob = await getImageBlob(img.id, 'full')
+  // Also a picture kept only in memory (storage was full).
+  const blob = await fullImageBlob(img.id)
   if (!blob) return null
   const png = Boolean(img.clear)
   const type = png ? 'image/png' : 'image/jpeg'

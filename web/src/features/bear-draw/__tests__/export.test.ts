@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { primeImageUrls, revokeImageUrls } from '@/features/draw/lib/images'
 import { getImageBlob } from '@/features/draw/lib/storage'
 
 import { SKILLS } from '../data/skills'
@@ -195,5 +196,19 @@ describe('exportGroup', () => {
     const count = await exportGroup(project(['n1', 'n3']), 'g1')
     expect(count).toBe(1)
     expect(await savedText()).toContain('淘宝-1-细节图-1024x1024.jpg')
+  })
+
+  test('a picture kept only in memory (full storage) is still packed', async () => {
+    vi.mocked(getImageBlob).mockImplementation(async (id) =>
+      id === 'img-n1' ? null : jpeg(3)
+    )
+    primeImageUrls('img-n1', jpeg(1))
+    try {
+      const count = await exportGroup(project(['n1', 'n3']), 'g1')
+      expect(count).toBe(2)
+      expect(await savedText()).toContain('淘宝-1-首图-1024x1024.jpg')
+    } finally {
+      revokeImageUrls(['img-n1'])
+    }
   })
 })
