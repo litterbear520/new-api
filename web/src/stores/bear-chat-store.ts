@@ -121,7 +121,27 @@ export const useBearChatStore = create<ChatState & ChatActions>()((set) => ({
   },
 
   init: (uid, convs) =>
-    set({ uid, loaded: true, convs: [...convs].sort(byNewest), curId: null }),
+    set((s) => ({
+      uid,
+      loaded: true,
+      convs: [...convs].sort(byNewest),
+      curId: null,
+      // Another account on this browser: nothing of the last one carries over
+      // (an unsent system prompt would go out in the new account's chat).
+      ...(s.uid !== null && s.uid !== uid
+        ? {
+            draftSystem: '',
+            live: null,
+            panel: {
+              ...s.panel,
+              open: false,
+              max: false,
+              artId: null,
+              dismissed: null,
+            },
+          }
+        : {}),
+    })),
 
   select: (id) =>
     set((s) => ({
