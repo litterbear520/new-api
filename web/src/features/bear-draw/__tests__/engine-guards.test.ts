@@ -24,7 +24,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { activeRun, loop, newRun, setAgentModels } from '../lib/agent/run'
-import { send, stop } from '../lib/engine'
+import { createProject, send, stop } from '../lib/engine'
 import type { Project } from '../types'
 
 vi.mock('../lib/storage', async (original) => ({
@@ -125,6 +125,25 @@ afterEach(() => {
   })
   vi.unstubAllGlobals()
   useAuthStore.getState().auth.reset()
+})
+
+describe('stopping while a picked skill loads', () => {
+  test('no planner request goes out afterwards', async () => {
+    const fetchMock = vi.fn(async () => reply('finished after stop'))
+    vi.stubGlobal('fetch', fetchMock)
+    const p = createProject('stop-test')
+    send(p.id, {
+      mode: 'agent',
+      text: 'design a set',
+      refs: [],
+      skillId: 'taobao-main-set',
+    })
+    stop(p.id, { quiet: true })
+    await vi.dynamicImportSettled()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(activeRun(p.id)).toBeNull()
+  })
 })
 
 describe('a run started by one account', () => {

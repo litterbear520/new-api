@@ -210,7 +210,10 @@ async function startAgentTurn(projectId: string, user: UserMessage) {
   if (skill) {
     setLive(projectId, 'skill')
     const callId = `pre_${message.id}`
+    const epoch = epochOf(projectId)
     const content = await loadSkillForModel(projectId, message.id, skill.id)
+    // Stopped while the skill was loading: no run exists yet to stop.
+    if (epochOf(projectId) !== epoch) return
     edit(projectId, (p) => ({
       ...p,
       transcript: [
