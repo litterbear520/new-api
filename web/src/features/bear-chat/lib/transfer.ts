@@ -118,3 +118,19 @@ export function fromJson(text: string): Conversation[] {
     updatedAt: typeof c.updatedAt === 'number' ? c.updatedAt : now,
   }))
 }
+
+/**
+ * What an import adds: conversations this account already has are skipped,
+ * the rest get new ids. Saved chats are keyed by id alone, across every
+ * account on this browser, so keeping the file's id would move another
+ * account's copy of that chat into this one.
+ */
+export function importable(
+  list: Conversation[],
+  known: ReadonlySet<string>,
+  makeId: () => string
+): Conversation[] {
+  return list
+    .filter((c) => !known.has(c.id))
+    .map((c) => ({ ...c, id: makeId() }))
+}

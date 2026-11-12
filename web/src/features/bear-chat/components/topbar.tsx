@@ -58,11 +58,12 @@ import { Tip } from '@/features/draw/components/tip'
 import { cn } from '@/lib/utils'
 import { currentConversation, useBearChatStore } from '@/stores/bear-chat-store'
 
-import { lastRequest } from '../lib/run'
+import { lastRequest, newId } from '../lib/run'
 import {
   downloadText,
   fileSafe,
   fromJson,
+  importable,
   toJson,
   toMarkdown,
 } from '../lib/transfer'
@@ -179,15 +180,14 @@ export const Topbar = memo(function Topbar(props: TopbarProps) {
 
   const importFile = async (file: File) => {
     try {
-      const list = fromJson(await file.text())
       const known = new Set(useBearChatStore.getState().convs.map((c) => c.id))
-      let added = 0
-      for (const c of list) {
-        if (known.has(c.id)) continue
-        putConv(c)
-        added += 1
-      }
-      toast.success(t('Imported {{count}} conversations', { count: added }))
+      const list = importable(fromJson(await file.text()), known, () =>
+        newId('c')
+      )
+      for (const c of list) putConv(c)
+      toast.success(
+        t('Imported {{count}} conversations', { count: list.length })
+      )
     } catch {
       toast.error(t('This file is not a chat export'))
     }
