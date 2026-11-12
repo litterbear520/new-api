@@ -8562,6 +8562,8 @@
     "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "Обновлять можно раз в {{minutes}} мин. Повторите через {{wait}} мин.",
     "Has reset": "Сброшено",
     "Select Refresh quota for the latest": "Выберите «Обновить квоту», чтобы увидеть актуальные данные",
-    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Браузер не смог сохранить последние изменения, поэтому они пропадут, как только вы закроете страницу. Удалите старые диалоги, чтобы освободить место."
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Браузер не смог сохранить последние изменения, поэтому они пропадут, как только вы закроете страницу. Удалите старые диалоги, чтобы освободить место.",
+    "Delete project “{{title}}”": "Удалить проект «{{title}}»",
+    "Confirm deleting “{{title}}”": "Подтвердить удаление «{{title}}»"
   }
 }

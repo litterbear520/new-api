@@ -23,7 +23,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -81,10 +81,75 @@ describe('继续上次', () => {
     ])
 
     await user.click(screen.getByRole('button', { name: /All 5/ }))
-    const items = await screen.findAllByRole('menuitem')
-    expect(items).toHaveLength(5)
-    await user.click(items[4])
+    const rows = await screen.findAllByRole('menuitem', { name: /^项目 \d/ })
+    expect(rows).toHaveLength(5)
+    expect(
+      screen.getAllByRole('menuitem', { name: /^Delete project/ })
+    ).toHaveLength(5)
+    await user.click(rows[4])
     expect(router.state.location.search).toEqual({ p: 'p5' })
+  })
+
+  it('deletes a project from 「全部」 on the second press and stays open', async () => {
+    const user = userEvent.setup()
+    const router = renderStrip(5)
+    await user.click(await screen.findByRole('button', { name: /All 5/ }))
+
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Delete project “项目 5”' })
+    )
+    // the first press only arms the button
+    expect(useBearDrawStore.getState().projects).toHaveLength(5)
+    const confirm = screen.getByRole('menuitem', {
+      name: 'Confirm deleting “项目 5”',
+    })
+    expect(confirm.textContent).toContain('Confirm delete')
+
+    await user.click(confirm)
+    expect(useBearDrawStore.getState().projects.map((p) => p.id)).toEqual([
+      'p1',
+      'p2',
+      'p3',
+      'p4',
+    ])
+    // still in the menu, still on the home page
+    expect(screen.getByRole('menu')).toBeTruthy()
+    expect(screen.queryByRole('menuitem', { name: /项目 5/ })).toBeNull()
+    expect(router.state.location.search).toEqual({})
+
+    // down to three: the menu stays until it is closed
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Delete project “项目 4”' })
+    )
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Confirm deleting “项目 4”' })
+    )
+    expect(useBearDrawStore.getState().projects).toHaveLength(3)
+    expect(screen.getByRole('menu')).toBeTruthy()
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /All/ })).toBeNull()
+    )
+  })
+
+  it('disarms the delete button when the pointer moves to another row', async () => {
+    const user = userEvent.setup()
+    renderStrip(5)
+    await user.click(await screen.findByRole('button', { name: /All 5/ }))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Delete project “项目 2”' })
+    )
+    expect(
+      screen.getByRole('menuitem', { name: 'Confirm deleting “项目 2”' })
+    ).toBeTruthy()
+
+    await user.hover(screen.getByRole('menuitem', { name: /^项目 3/ }))
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', { name: 'Delete project “项目 2”' })
+      ).toBeTruthy()
+    )
+    expect(useBearDrawStore.getState().projects).toHaveLength(5)
   })
 
   it('has no 「全部」 menu with three projects or fewer', async () => {

@@ -18,13 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
 import { ChevronDown, Image as ImageIcon } from 'lucide-react'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRelativeTime } from '@/features/draw/components/relative-time'
@@ -33,6 +32,7 @@ import { useMoney } from '@/features/draw/hooks/use-money'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import type { Project } from '../../types'
+import { ProjectMenuRow } from '../project/project-menu-row'
 import { useProjectNav } from '../project/use-project-nav'
 import { useWarmOnUse } from './use-home'
 
@@ -65,28 +65,29 @@ function ResumeItem(props: { project: Project }) {
   )
 }
 
-/** Every project, newest first, in a menu. */
-function AllProjects(props: { projects: Project[] }) {
+/**
+ * Every project, newest first, in a menu; each row can be deleted. The
+ * menu stays while open even when deleting leaves three or fewer.
+ */
+function AllProjects(props: {
+  projects: Project[]
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const { t } = useTranslation()
-  const ago = useRelativeTime()
   const nav = useProjectNav()
   return (
-    <DropdownMenu>
+    <DropdownMenu open={props.open} onOpenChange={props.onOpenChange}>
       <DropdownMenuTrigger className='bd-resume-all'>
         {t('All {{count}}', { count: props.projects.length })}
         <ChevronDown aria-hidden='true' />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align='start'
-        className='bd-pmenu max-h-[min(60vh,420px)] w-72'
+        className='bd-pmenu max-h-[min(60vh,420px)] w-80'
       >
         {props.projects.map((p) => (
-          <DropdownMenuItem key={p.id} onClick={() => nav.open(p.id)}>
-            <span className='bd-pmenu-t'>
-              {p.title || t('Untitled project')}
-            </span>
-            <span className='bd-pmenu-r'>{ago(p.updatedAt)}</span>
-          </DropdownMenuItem>
+          <ProjectMenuRow key={p.id} project={p} onOpen={nav.open} />
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -98,7 +99,10 @@ export function ResumeStrip() {
   const { t } = useTranslation()
   const projects = useBearDrawStore((s) => s.projects)
   const ref = useRef<HTMLElement>(null)
+  const [allOpen, setAllOpen] = useState(false)
   useWarmOnUse(ref)
+  // the last project was deleted from the open menu: don't reopen it later
+  if (!projects.length && allOpen) setAllOpen(false)
   if (!projects.length) return null
   return (
     <nav ref={ref} className='bd-row' aria-label={t('Recent projects')}>
@@ -107,7 +111,13 @@ export function ResumeStrip() {
         {projects.slice(0, RECENT).map((p) => (
           <ResumeItem key={p.id} project={p} />
         ))}
-        {projects.length > RECENT && <AllProjects projects={projects} />}
+        {(projects.length > RECENT || allOpen) && (
+          <AllProjects
+            projects={projects}
+            open={allOpen}
+            onOpenChange={setAllOpen}
+          />
+        )}
       </div>
     </nav>
   )

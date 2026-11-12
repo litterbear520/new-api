@@ -8562,6 +8562,8 @@
     "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "{{minutes}} 分鐘內只能重新整理一次，{{wait}} 分鐘後可以再重新整理。",
     "Has reset": "已重設",
     "Select Refresh quota for the latest": "點「重新整理額度」查看最新",
-    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "瀏覽器沒能儲存最近的改動，關掉頁面就沒了。刪掉一些舊對話，騰出空間。"
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "瀏覽器沒能儲存最近的改動，關掉頁面就沒了。刪掉一些舊對話，騰出空間。",
+    "Delete project “{{title}}”": "刪除「{{title}}」",
+    "Confirm deleting “{{title}}”": "確認刪除「{{title}}」"
   }
 }

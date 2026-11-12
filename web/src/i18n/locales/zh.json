@@ -8562,6 +8562,8 @@
     "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "{{minutes}} 分钟内只能刷新一次，{{wait}} 分钟后可以再刷新。",
     "Has reset": "已重置",
     "Select Refresh quota for the latest": "点“刷新额度”查看最新",
-    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "浏览器没能保存最近的改动，关掉页面就没了。删掉一些旧对话，腾出空间。"
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "浏览器没能保存最近的改动，关掉页面就没了。删掉一些旧对话，腾出空间。",
+    "Delete project “{{title}}”": "删除「{{title}}」",
+    "Confirm deleting “{{title}}”": "确认删除「{{title}}」"
   }
 }

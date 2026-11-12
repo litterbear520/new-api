@@ -8562,6 +8562,8 @@
     "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "更新は {{minutes}} 分に 1 回までです。{{wait}} 分後にもう一度お試しください。",
     "Has reset": "リセット済み",
     "Select Refresh quota for the latest": "「クォータを更新」で最新の状態を確認できます",
-    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "ブラウザに最新の変更を保存できませんでした。ページを閉じると消えます。古い会話を削除して空き容量を作ってください。"
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "ブラウザに最新の変更を保存できませんでした。ページを閉じると消えます。古い会話を削除して空き容量を作ってください。",
+    "Delete project “{{title}}”": "「{{title}}」を削除",
+    "Confirm deleting “{{title}}”": "「{{title}}」の削除を確認"
   }
 }

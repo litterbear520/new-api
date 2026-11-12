@@ -31,11 +31,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { useRelativeTime } from '@/features/draw/components/relative-time'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { deleteProject, renameProject } from '../../lib/engine'
 import type { Project } from '../../types'
+import { ProjectMenuRow } from './project-menu-row'
 import { useProjectNav } from './use-project-nav'
 
 /** The title, edited in place: Enter or leaving the field keeps it, Esc drops it. */
@@ -84,12 +84,11 @@ function RenameField(props: {
 
 /**
  * The project title and its menu: rename, a new project, the recent
- * projects, and delete (asks first).
+ * projects (each with its own delete), and delete this one (asks first).
  */
 export function TitleMenu(props: { project: Project }) {
   const { t } = useTranslation()
   const nav = useProjectNav()
-  const relative = useRelativeTime()
   const projects = useBearDrawStore((s) => s.projects)
   const [renaming, setRenaming] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -124,7 +123,7 @@ export function TitleMenu(props: { project: Project }) {
           <span>{title}</span>
           <ChevronDown aria-hidden='true' />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='start' className='bd-pmenu w-72'>
+        <DropdownMenuContent align='start' className='bd-pmenu w-80'>
           <DropdownMenuItem onClick={() => setRenaming(true)}>
             <Pencil aria-hidden='true' />
             {t('Rename')}
@@ -139,13 +138,12 @@ export function TitleMenu(props: { project: Project }) {
               <DropdownMenuGroup>
                 <DropdownMenuLabel>{t('Recent projects')}</DropdownMenuLabel>
                 {recent.map((x) => (
-                  <DropdownMenuItem key={x.id} onClick={() => nav.open(x.id)}>
-                    <Images aria-hidden='true' />
-                    <span className='bd-pmenu-t'>
-                      {x.title || t('Untitled project')}
-                    </span>
-                    <span className='bd-pmenu-r'>{relative(x.updatedAt)}</span>
-                  </DropdownMenuItem>
+                  <ProjectMenuRow
+                    key={x.id}
+                    project={x}
+                    icon={<Images aria-hidden='true' />}
+                    onOpen={nav.open}
+                  />
                 ))}
               </DropdownMenuGroup>
             </>

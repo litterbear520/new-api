@@ -8562,6 +8562,8 @@
     "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "Une actualisation toutes les {{minutes}} minutes. Réessayez dans {{wait}} min.",
     "Has reset": "Réinitialisé",
     "Select Refresh quota for the latest": "Sélectionnez Actualiser le quota pour voir le dernier relevé",
-    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Le navigateur n’a pas pu enregistrer vos dernières modifications : elles disparaîtront à la fermeture de la page. Supprimez d’anciennes conversations pour libérer de l’espace."
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Le navigateur n’a pas pu enregistrer vos dernières modifications : elles disparaîtront à la fermeture de la page. Supprimez d’anciennes conversations pour libérer de l’espace.",
+    "Delete project “{{title}}”": "Supprimer le projet « {{title}} »",
+    "Confirm deleting “{{title}}”": "Confirmer la suppression de « {{title}} »"
   }
 }

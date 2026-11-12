@@ -195,3 +195,47 @@ For commercial licensing, please contact support@quantumnous.com
   color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
 }
+/* a project row in those menus: open it, or delete it from the trash button
+   (press once to arm 「确认删除」, again to delete) */
+.bd-prow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.bd-prow-open {
+  flex: 1;
+  min-width: 0;
+}
+.bd-prow-del {
+  flex: none;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  color: var(--muted-foreground);
+}
+.bd-prow-del > svg {
+  color: inherit;
+}
+.bd-prow-del[data-highlighted],
+.bd-prow[data-armed] .bd-prow-del {
+  color: var(--destructive);
+}
+.bd-prow[data-armed] .bd-prow-del {
+  background: color-mix(in oklab, var(--destructive) 12%, transparent);
+  font-size: 12px;
+  font-weight: 500;
+}
+/* with a mouse the button shows on the row's hover or focus; touch screens
+   always show it */
+@media (hover: hover) and (pointer: fine) {
+  .bd-prow-del {
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .bd-prow:hover .bd-prow-del,
+  .bd-prow:focus-within .bd-prow-del,
+  .bd-prow[data-armed] .bd-prow-del {
+    opacity: 1;
+  }
+}

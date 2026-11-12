@@ -8562,6 +8562,8 @@
     "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "Mỗi {{minutes}} phút chỉ làm mới được một lần. Thử lại sau {{wait}} phút.",
     "Has reset": "Đã đặt lại",
     "Select Refresh quota for the latest": "Chọn Làm mới hạn mức để xem số mới nhất",
-    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Trình duyệt không lưu được các thay đổi gần đây, chúng sẽ mất khi bạn đóng trang. Hãy xóa bớt các cuộc trò chuyện cũ để giải phóng dung lượng."
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Trình duyệt không lưu được các thay đổi gần đây, chúng sẽ mất khi bạn đóng trang. Hãy xóa bớt các cuộc trò chuyện cũ để giải phóng dung lượng.",
+    "Delete project “{{title}}”": "Xóa dự án “{{title}}”",
+    "Confirm deleting “{{title}}”": "Xác nhận xóa “{{title}}”"
   }
 }
