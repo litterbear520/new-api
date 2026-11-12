@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
 import { ChevronDown, Image as ImageIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -36,7 +36,7 @@ import { ProjectMenuRow } from '../project/project-menu-row'
 import { useProjectNav } from '../project/use-project-nav'
 import { useWarmOnUse } from './use-home'
 
-/** Recent projects shown as buttons; the rest are in 「全部」. */
+/** Recent projects shown as buttons; all of them are in 「全部」. */
 const RECENT = 3
 
 function ResumeItem(props: { project: Project }) {
@@ -66,18 +66,14 @@ function ResumeItem(props: { project: Project }) {
 }
 
 /**
- * Every project, newest first, in a menu; each row can be deleted. The
- * menu stays while open even when deleting leaves three or fewer.
+ * Every project, newest first, in a menu; each row can be deleted. Shown
+ * with any number of projects, so the ones on the strip can be deleted too.
  */
-function AllProjects(props: {
-  projects: Project[]
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
+function AllProjects(props: { projects: Project[] }) {
   const { t } = useTranslation()
   const nav = useProjectNav()
   return (
-    <DropdownMenu open={props.open} onOpenChange={props.onOpenChange}>
+    <DropdownMenu>
       <DropdownMenuTrigger className='bd-resume-all'>
         {t('All {{count}}', { count: props.projects.length })}
         <ChevronDown aria-hidden='true' />
@@ -99,10 +95,7 @@ export function ResumeStrip() {
   const { t } = useTranslation()
   const projects = useBearDrawStore((s) => s.projects)
   const ref = useRef<HTMLElement>(null)
-  const [allOpen, setAllOpen] = useState(false)
   useWarmOnUse(ref)
-  // the last project was deleted from the open menu: don't reopen it later
-  if (!projects.length && allOpen) setAllOpen(false)
   if (!projects.length) return null
   return (
     <nav ref={ref} className='bd-row' aria-label={t('Recent projects')}>
@@ -111,13 +104,7 @@ export function ResumeStrip() {
         {projects.slice(0, RECENT).map((p) => (
           <ResumeItem key={p.id} project={p} />
         ))}
-        {(projects.length > RECENT || allOpen) && (
-          <AllProjects
-            projects={projects}
-            open={allOpen}
-            onOpenChange={setAllOpen}
-          />
-        )}
+        <AllProjects projects={projects} />
       </div>
     </nav>
   )

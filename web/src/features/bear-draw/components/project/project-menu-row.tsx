@@ -41,8 +41,8 @@ function neighbourDelete(button: HTMLElement): HTMLElement | null {
  * One project in a project menu: the row opens it, the trash button at the
  * end deletes it. The first press arms the button (「确认删除」), the second
  * deletes; moving to another item disarms it. The menu stays open and the
- * focus moves to the next row's delete button, so several projects can go
- * in a row.
+ * focus moves to the next row's delete button (or the menu's first item),
+ * so several projects can go in a row.
  */
 export function ProjectMenuRow(props: {
   project: Project
@@ -81,9 +81,15 @@ export function ProjectMenuRow(props: {
           }
           setArmed(false)
           const next = neighbourDelete(e.currentTarget)
+          const menu = e.currentTarget.closest<HTMLElement>('[role="menu"]')
           void deleteProject(p.id)
-          // the focused button goes away with its row
-          if (next) requestAnimationFrame(() => next.focus())
+          // The focused button goes away with its row: go to the next row,
+          // or to the menu's first item when no other row is left.
+          requestAnimationFrame(() => {
+            const target =
+              next ?? menu?.querySelector<HTMLElement>('[role="menuitem"]')
+            if (target?.isConnected) target.focus()
+          })
         }}
         onBlur={() => setArmed(false)}
       >

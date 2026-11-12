@@ -117,9 +117,11 @@ describe('继续上次', () => {
     expect(screen.queryByRole('menuitem', { name: /项目 5/ })).toBeNull()
     expect(router.state.location.search).toEqual({})
 
-    // down to three: the menu stays until it is closed
+    // down to three: 「全部」 stays, also after closing and reopening
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: /All 4/ }))
     await user.click(
-      screen.getByRole('menuitem', { name: 'Delete project “项目 4”' })
+      await screen.findByRole('menuitem', { name: 'Delete project “项目 4”' })
     )
     await user.click(
       screen.getByRole('menuitem', { name: 'Confirm deleting “项目 4”' })
@@ -127,9 +129,7 @@ describe('继续上次', () => {
     expect(useBearDrawStore.getState().projects).toHaveLength(3)
     expect(screen.getByRole('menu')).toBeTruthy()
     await user.keyboard('{Escape}')
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: /All/ })).toBeNull()
-    )
+    expect(await screen.findByRole('button', { name: /All 3/ })).toBeTruthy()
   })
 
   it('disarms the delete button when the pointer moves to another row', async () => {
@@ -152,9 +152,17 @@ describe('继续上次', () => {
     expect(useBearDrawStore.getState().projects).toHaveLength(5)
   })
 
-  it('has no 「全部」 menu with three projects or fewer', async () => {
-    renderStrip(3)
-    await screen.findByRole('navigation', { name: 'Recent projects' })
-    expect(screen.queryByRole('button', { name: /All/ })).toBeNull()
-  })
+  it.each([1, 2, 3])(
+    'offers 「全部」 with its delete buttons for %i projects too',
+    async (count) => {
+      const user = userEvent.setup()
+      renderStrip(count)
+      await user.click(
+        await screen.findByRole('button', { name: `All ${count}` })
+      )
+      expect(
+        await screen.findAllByRole('menuitem', { name: /^Delete project/ })
+      ).toHaveLength(count)
+    }
+  )
 })

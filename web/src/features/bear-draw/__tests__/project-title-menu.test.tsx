@@ -44,6 +44,12 @@ const project = (n: number): Project => ({
   nodes: [],
 })
 
+/** The title menu of p1, as the project page shows it. */
+function CurrentProject() {
+  const current = useBearDrawStore((s) => s.projects.find((p) => p.id === 'p1'))
+  return current ? <TitleMenu project={current} /> : null
+}
+
 function renderMenu(count: number) {
   useBearDrawStore.setState({
     projects: Array.from({ length: count }, (_, i) => project(i + 1)),
@@ -52,12 +58,7 @@ function renderMenu(count: number) {
   const draw = createRoute({
     getParentRoute: () => root,
     path: '/draw',
-    component: () => {
-      const current = useBearDrawStore((s) =>
-        s.projects.find((p) => p.id === 'p1')
-      )
-      return current ? <TitleMenu project={current} /> : null
-    },
+    component: CurrentProject,
   })
   const router = createRouter({
     routeTree: root.addChildren([draw]),
@@ -142,5 +143,27 @@ describe('project title menu', () => {
     expect(useBearDrawStore.getState().projects.map((p) => p.id)).toEqual([
       'p1',
     ])
+  })
+
+  it('keeps the focus in the menu after deleting the only other project', async () => {
+    const user = userEvent.setup()
+    renderMenu(2)
+    await user.click(await screen.findByRole('button', { name: /项目 1/ }))
+    await user.keyboard('{Home}{ArrowDown}{ArrowDown}{ArrowDown}')
+    expect(document.activeElement).toBe(
+      screen.getByRole('menuitem', { name: 'Delete project “项目 2”' })
+    )
+    await user.keyboard('{Enter}{Enter}')
+    expect(useBearDrawStore.getState().projects.map((p) => p.id)).toEqual([
+      'p1',
+    ])
+    const menu = screen.getByRole('menu')
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('menuitem', { name: 'Rename' })
+      )
+    )
+    await user.keyboard('{ArrowDown}')
+    expect(menu).toContainElement(document.activeElement as HTMLElement)
   })
 })
