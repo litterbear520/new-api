@@ -20,9 +20,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { createApiKey, fetchTokenKey, searchApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
+import { useAuthStore } from '@/stores/auth-store'
 
-import { DRAW_TOKEN_NAME } from '../../constants'
-import { getDrawKey } from '../draw-key'
+import { DRAW_TOKEN_NAME, STORAGE_KEYS } from '../../constants'
+import { forgetDrawKeyWhenSignedOut, getDrawKey } from '../draw-key'
 
 vi.mock('@/features/keys/api', () => ({
   searchApiKeys: vi.fn(),
@@ -57,8 +58,13 @@ const page = (items: ApiKey[]) => ({
   data: { items, total: items.length, page: 1, page_size: 50 },
 })
 
+const signIn = (id: number) =>
+  useAuthStore.getState().auth.setUser({ id, username: `u${id}`, role: 1 })
+
 beforeEach(() => {
   localStorage.clear()
+  useAuthStore.getState().auth.reset('idle')
+  signIn(1)
   vi.mocked(fetchTokenKey).mockResolvedValue({
     success: true,
     data: { key: 'secret' },
@@ -104,6 +110,7 @@ describe('getDrawKey', () => {
     await getDrawKey(1, ['gpt-image-2'])
     expect(fetchTokenKey).toHaveBeenCalledTimes(1)
 
+    signIn(2)
     await getDrawKey(2, ['gpt-image-2'])
     expect(fetchTokenKey).toHaveBeenCalledTimes(2)
   })
@@ -113,5 +120,55 @@ describe('getDrawKey', () => {
 
     await expect(getDrawKey(1, ['gpt-image-2'])).rejects.toThrow('disabled')
     expect(createApiKey).not.toHaveBeenCalled()
+  })
+
+  test('a lookup still loading when the account changes is not shared', async () => {
+    vi.mocked(searchApiKeys).mockResolvedValue(page([token({})]))
+    type Revealed = Awaited<ReturnType<typeof fetchTokenKey>>
+    let releaseA: (value: Revealed) => void = () => {}
+    vi.mocked(fetchTokenKey)
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (releaseA = resolve))
+      )
+      .mockResolvedValueOnce({ success: true, data: { key: 'of-b' } })
+
+    const forA = getDrawKey(1, ['gpt-image-2'])
+    await vi.waitFor(() => expect(fetchTokenKey).toHaveBeenCalledTimes(1))
+    useAuthStore.getState().auth.reset()
+    signIn(2)
+
+    await expect(getDrawKey(2, ['gpt-image-2'])).resolves.toBe('sk-of-b')
+    releaseA({ success: true, data: { key: 'of-a' } })
+    await expect(forA).rejects.toThrow('account changed')
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEYS.key) ?? '')
+    ).toMatchObject({ uid: 2, key: 'sk-of-b' })
+  })
+})
+
+describe('forgetDrawKeyWhenSignedOut', () => {
+  const cached = JSON.stringify({ uid: 1, id: 7, key: 'sk-secret' })
+
+  test('signing out drops the key', () => {
+    localStorage.setItem(STORAGE_KEYS.key, cached)
+    const stop = forgetDrawKeyWhenSignedOut()
+    useAuthStore.getState().auth.setBootstrapState('complete')
+    expect(localStorage.getItem(STORAGE_KEYS.key)).toBe(cached)
+
+    useAuthStore.getState().auth.reset()
+    expect(localStorage.getItem(STORAGE_KEYS.key)).toBeNull()
+    stop()
+  })
+
+  test('a page that loads with nobody signed in drops it once checked', () => {
+    useAuthStore.getState().auth.reset('idle')
+    localStorage.setItem(STORAGE_KEYS.key, cached)
+    const stop = forgetDrawKeyWhenSignedOut()
+    useAuthStore.getState().auth.setBootstrapState('checking')
+    expect(localStorage.getItem(STORAGE_KEYS.key)).toBe(cached)
+
+    useAuthStore.getState().auth.setBootstrapState('complete')
+    expect(localStorage.getItem(STORAGE_KEYS.key)).toBeNull()
+    stop()
   })
 })

@@ -32,6 +32,7 @@ import { SiteBar } from '@/components/site-bar/site-bar'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeCustomizationProvider } from '@/context/theme-customization-provider'
 import { saveAffiliateCode } from '@/features/auth/lib/storage'
+import { forgetDrawKeyWhenSignedOut } from '@/features/draw/lib/draw-key'
 import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
 import { getSetupStatus, takeSetupStatusPrefetch } from '@/features/setup/api'
@@ -58,6 +59,8 @@ function RootComponent() {
       saveAffiliateCode(aff)
     }
   }, [])
+
+  useEffect(() => forgetDrawKeyWhenSignedOut(), [])
 
   useEffect(
     () =>

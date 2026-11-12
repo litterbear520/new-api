@@ -25,6 +25,7 @@ import {
 import { API_KEY_STATUS, NEW_KEY_GROUP } from '@/features/keys/constants'
 import type { ApiKey } from '@/features/keys/types'
 import { createServerError } from '@/lib/server-error-message'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { DRAW_TOKEN_NAME, STORAGE_KEYS } from '../constants'
 
@@ -33,18 +34,21 @@ import { DRAW_TOKEN_NAME, STORAGE_KEYS } from '../constants'
  * API token, 「网页画图」: image models only, unlimited quota (the account
  * balance still applies), no expiry. Revealing a key is audited and rate
  * limited (20 per 20 minutes), so the key is revealed once and kept in this
- * browser. A deleted token is created again on the next picture.
+ * browser until nobody is signed in here (see forgetDrawKeyWhenSignedOut). A
+ * deleted token is created again on the next picture.
  */
 
 type CachedKey = { uid: number; id: number; key: string }
 
+const REASONS = {
+  disabled: 'The drawing token is disabled',
+  missing: 'The drawing token could not be created',
+  switched: 'The account changed while the drawing token was loading',
+} as const
+
 export class DrawKeyError extends Error {
-  constructor(public reason: 'disabled' | 'missing') {
-    super(
-      reason === 'disabled'
-        ? 'The drawing token is disabled'
-        : 'The drawing token could not be created'
-    )
+  constructor(public reason: keyof typeof REASONS) {
+    super(REASONS[reason])
   }
 }
 
@@ -133,12 +137,18 @@ async function resolveKey(uid: number, models: string[]): Promise<string> {
   if (!res.success || !res.data?.key) {
     throw createServerError(res, 'Failed to load API keys')
   }
+  // Signed out (or someone else signed in) while the key was loading: the
+  // key belongs to the old account, so neither keep nor use it.
+  if (useAuthStore.getState().auth.user?.id !== uid) {
+    throw new DrawKeyError('switched')
+  }
   const key = `sk-${res.data.key}`
   writeCache({ uid, id: token.id, key })
   return key
 }
 
-let inflight: Promise<string> | null = null
+/** One lookup at a time per account, never shared across accounts. */
+const inflight = new Map<number, Promise<string>>()
 
 /** The key for drawing; `fresh` skips this browser's copy (e.g. after a 401). */
 export function getDrawKey(
@@ -149,10 +159,27 @@ export function getDrawKey(
   const cached = readCache()
   if (!fresh && cached && cached.uid === uid) return Promise.resolve(cached.key)
   if (fresh) writeCache(null)
-  inflight ??= resolveKey(uid, models).finally(() => {
-    inflight = null
-  })
-  return inflight
+  let pending = inflight.get(uid)
+  if (!pending) {
+    pending = resolveKey(uid, models).finally(() => inflight.delete(uid))
+    inflight.set(uid, pending)
+  }
+  return pending
+}
+
+/**
+ * The key never expires and spends the account's balance, so it must not
+ * outlive the session in this browser: it is dropped whenever nobody is
+ * signed in (signed out here or in another tab, or a session that had
+ * expired when the page loaded). Returns the unsubscribe function.
+ */
+export function forgetDrawKeyWhenSignedOut(): () => void {
+  const check = () => {
+    const { user, bootstrapState } = useAuthStore.getState().auth
+    if (!user && bootstrapState === 'complete') writeCache(null)
+  }
+  check()
+  return useAuthStore.subscribe(check)
 }
 
 /** Once per visit: make sure the token still allows every image model. */
