@@ -16,7 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { t } from 'i18next'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import { useDrawStore } from '@/stores/draw-store'
 
@@ -27,11 +29,40 @@ import type { DrawRoom } from '../types'
  * Loads this user's conversations from IndexedDB and writes every changed
  * conversation back, a moment after it changes. Saving lives at module level
  * so a picture that finishes after the user left the page is still kept.
+ * A failed save (usually a full browser storage) is told once and retried
+ * after the next save that works.
  */
 
 const SAVE_DELAY = 400
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
 let unsubscribe: (() => void) | null = null
+/** Conversations whose last save failed, by id. */
+const unsaved = new Set<string>()
+let warned = false
+
+function saveFailed(id: string) {
+  unsaved.add(id)
+  if (warned) return
+  warned = true
+  toast.warning(
+    t(
+      'This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.'
+    )
+  )
+}
+
+/** `id` saved: retry the conversations whose save failed. */
+function savedOk(uid: number, id: string) {
+  unsaved.delete(id)
+  const s = useDrawStore.getState()
+  for (const failed of unsaved) {
+    const room = s.uid === uid && s.rooms.find((r) => r.id === failed)
+    // Gone, or another account's: nothing left to save.
+    if (!room) unsaved.delete(failed)
+    else if (!timers.has(failed)) scheduleSave(uid, room)
+  }
+  if (!unsaved.size) warned = false
+}
 
 function scheduleSave(uid: number, room: DrawRoom) {
   const old = timers.get(room.id)
@@ -41,7 +72,10 @@ function scheduleSave(uid: number, room: DrawRoom) {
     setTimeout(() => {
       timers.delete(room.id)
       const latest = useDrawStore.getState().rooms.find((r) => r.id === room.id)
-      if (latest) void saveRoom(uid, latest).catch(() => undefined)
+      if (!latest) return
+      void saveRoom(uid, latest)
+        .then(() => savedOk(uid, room.id))
+        .catch(() => saveFailed(room.id))
     }, SAVE_DELAY)
   )
 }

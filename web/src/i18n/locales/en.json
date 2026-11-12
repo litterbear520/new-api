@@ -8561,6 +8561,7 @@
     "No quota reading yet. Select Refresh quota to see it.": "No quota reading yet. Select Refresh quota to see it.",
     "One refresh every {{minutes}} minutes. Try again in {{wait}} min.": "One refresh every {{minutes}} minutes. Try again in {{wait}} min.",
     "Has reset": "Has reset",
-    "Select Refresh quota for the latest": "Select Refresh quota for the latest"
+    "Select Refresh quota for the latest": "Select Refresh quota for the latest",
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space."
   }
 }

@@ -16,7 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { t } from 'i18next'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import { useBearChatStore } from '@/stores/bear-chat-store'
 
@@ -32,6 +34,8 @@ import type { Conversation } from '../types'
  * Loads this user's conversations and writes every changed one back a
  * moment later (at least every 2 s while a reply streams). Saving lives at
  * module level so a reply that finishes after the user left is still kept.
+ * A failed save (usually a full browser storage) is told once and retried
+ * after the next write that works, e.g. once old chats are deleted.
  */
 
 const SAVE_DELAY = 400
@@ -41,6 +45,33 @@ const timers = new Map<
   { t: ReturnType<typeof setTimeout>; since: number }
 >()
 let unsubscribe: (() => void) | null = null
+/** Chats whose last save failed, by id. */
+const unsaved = new Set<string>()
+let warned = false
+
+function saveFailed(id: string) {
+  unsaved.add(id)
+  if (warned) return
+  warned = true
+  toast.warning(
+    t(
+      'This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.'
+    )
+  )
+}
+
+/** A write worked (`id` saved, or a chat deleted): retry the failed ones. */
+function wroteOk(uid: number, id?: string) {
+  if (id) unsaved.delete(id)
+  const s = useBearChatStore.getState()
+  for (const failed of unsaved) {
+    const conv = s.uid === uid && s.convs.find((c) => c.id === failed)
+    // gone, or another account's: nothing left to save
+    if (!conv) unsaved.delete(failed)
+    else if (!timers.has(failed)) scheduleSave(uid, conv)
+  }
+  if (!unsaved.size) warned = false
+}
 
 function scheduleSave(uid: number, conv: Conversation) {
   const old = timers.get(conv.id)
@@ -57,7 +88,10 @@ function scheduleSave(uid: number, conv: Conversation) {
       const latest = useBearChatStore
         .getState()
         .convs.find((c) => c.id === conv.id)
-      if (latest) void saveConversation(uid, latest).catch(() => undefined)
+      if (!latest) return
+      void saveConversation(uid, latest)
+        .then(() => wroteOk(uid, conv.id))
+        .catch(() => saveFailed(conv.id))
     }, wait),
   })
 }
@@ -77,7 +111,11 @@ function watch() {
       const pending = timers.get(id)
       if (pending) clearTimeout(pending.t)
       timers.delete(id)
-      void deleteConversation(id).catch(() => undefined)
+      unsaved.delete(id)
+      const uid = state.uid
+      void deleteConversation(id)
+        .then(() => wroteOk(uid))
+        .catch(() => undefined)
     }
   })
 }
