@@ -714,6 +714,9 @@ export function startBlackHole(
           sizeBloom(w, h)
           // a frame now, or the resized canvas shows blank until the next one
           last = 0
+          // the window may have changed again while this one baked: a resize
+          // then skips its rebake, so look now (nothing if the size held)
+          rebake()
         } else if (!current) return
       }
     } catch (e) {

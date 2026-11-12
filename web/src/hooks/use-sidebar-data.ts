@@ -108,10 +108,17 @@ export function useSidebarData(): SidebarData {
             icon: BarChart3,
           },
           {
-            // task and drawing logs are tabs on the same page
+            // task and drawing logs are tabs on the same page, so the entry
+            // stays while any of the three is on; the page opens the first
+            // tab that is on
             title: t('Usage Logs'),
             url: '/usage-logs/common',
             activeUrls: ['/usage-logs/task', '/usage-logs/drawing'],
+            configUrls: [
+              '/usage-logs/common',
+              '/usage-logs/task',
+              '/usage-logs/drawing',
+            ],
             icon: FileText,
           },
           {

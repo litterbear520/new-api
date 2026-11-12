@@ -57,8 +57,15 @@ export function NightSeaAuthDialog(props: NightSeaAuthDialogProps) {
   const canRegister =
     !status?.self_use_mode_enabled && status?.register_enabled !== false
   const view = canRegister ? props.view : 'sign-in'
-  const { onOpenChange, onViewChange, canvasRef, skyFrames, open, origin } =
-    props
+  const {
+    onOpenChange,
+    onViewChange,
+    canvasRef,
+    skyFrames,
+    open,
+    origin,
+    byTouch,
+  } = props
 
   // Elements as state, so effects run once the portal has mounted them.
   const [card, setCard] = useState<HTMLDivElement | null>(null)
@@ -181,18 +188,16 @@ export function NightSeaAuthDialog(props: NightSeaAuthDialogProps) {
     }
   }, [card])
 
-  // Touch opens without the keyboard; otherwise the first field takes focus.
-  const initialFocus = useCallback(
-    (openType: string) => {
-      if (openType === 'touch') return card
-      return (
-        card?.querySelector<HTMLElement>(
-          'input:not([type=hidden]):not([tabindex="-1"])'
-        ) ?? true
-      )
-    },
-    [card]
-  )
+  // A tap opens without the keyboard; otherwise the first field takes focus.
+  // Base UI's own open type only comes from its Trigger, which isn't used here.
+  const initialFocus = useCallback(() => {
+    if (byTouch) return card
+    return (
+      card?.querySelector<HTMLElement>(
+        'input:not([type=hidden]):not([tabindex="-1"])'
+      ) ?? true
+    )
+  }, [card, byTouch])
 
   const signIn = view === 'sign-in'
 

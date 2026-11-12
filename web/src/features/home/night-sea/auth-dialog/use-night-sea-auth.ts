@@ -16,7 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useState, type MouseEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react'
 
 export type NightSeaAuthView = 'sign-in' | 'sign-up'
 
@@ -27,6 +33,8 @@ export type DialogState = {
   view: NightSeaAuthView
   /** Centre of the button that opened the dialog; the card grows out of it. */
   origin: Point | null
+  /** Opened by a tap: no field takes focus, so no keyboard comes up. */
+  byTouch: boolean
 }
 
 /**
@@ -39,7 +47,19 @@ export function useNightSeaAuth(opened?: NightSeaAuthView) {
     open: opened !== undefined,
     view: opened ?? 'sign-in',
     origin: null,
+    byTouch: false,
   })
+
+  // A click doesn't say what made it, so keep the last press's pointer.
+  const pointer = useRef('')
+  useEffect(() => {
+    const press = (e: PointerEvent) => {
+      pointer.current = e.pointerType
+    }
+    window.addEventListener('pointerdown', press, { capture: true })
+    return () =>
+      window.removeEventListener('pointerdown', press, { capture: true })
+  }, [])
 
   const trigger = useCallback(
     (view: NightSeaAuthView) => (e: MouseEvent<HTMLElement>) => {
@@ -53,6 +73,8 @@ export function useNightSeaAuth(opened?: NightSeaAuthView) {
         open: true,
         view,
         origin: { x: box.left + box.width / 2, y: box.top + box.height / 2 },
+        // detail 0: the keyboard's Enter, whatever was pressed before it
+        byTouch: e.detail !== 0 && pointer.current === 'touch',
       })
     },
     []

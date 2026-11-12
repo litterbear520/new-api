@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SectionPageLayout } from '@/components/layout'
@@ -34,6 +34,7 @@ import {
   useUsageLogsContext,
 } from './components/usage-logs-provider'
 import { UsageLogsTable } from './components/usage-logs-table'
+import { shownUsageLogsSection } from './lib/shown-section'
 import {
   isUsageLogsSectionId,
   USAGE_LOGS_DEFAULT_SECTION,
@@ -60,7 +61,7 @@ function UsageLogsContent() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const params = route.useParams()
-  const activeCategory: UsageLogsSectionId =
+  const requestedCategory: UsageLogsSectionId =
     params.section && isUsageLogsSectionId(params.section)
       ? params.section
       : USAGE_LOGS_DEFAULT_SECTION
@@ -98,6 +99,20 @@ function UsageLogsContent() {
         ),
     [filteredTabGroups]
   )
+  // A tab switched off (e.g. the sidebar entry's common logs) opens the
+  // first one that is on, in the URL too.
+  const activeCategory = shownUsageLogsSection(
+    requestedCategory,
+    visibleSections
+  )
+  useEffect(() => {
+    if (activeCategory === requestedCategory) return
+    void navigate({
+      to: '/usage-logs/$section',
+      params: { section: activeCategory },
+      replace: true,
+    })
+  }, [activeCategory, requestedCategory, navigate])
 
   const handleSectionChange = useCallback(
     (section: string) => {

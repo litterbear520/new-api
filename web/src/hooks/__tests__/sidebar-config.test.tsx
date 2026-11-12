@@ -190,7 +190,9 @@ describe('audit log sidebar entry', () => {
   )
 
   it('hiding Usage Logs does not hide the independently configured Audit Logs entry', () => {
-    const { result } = sidebarFor({ console: { enabled: true, log: false } })
+    const { result } = sidebarFor({
+      console: { enabled: true, log: false, task: false, midjourney: false },
+    })
     const titles = result.current
       .flatMap((group) => group.items)
       .map((item) => item.title)
@@ -258,5 +260,41 @@ describe('console sidebar layout', () => {
         .flatMap((group) => group.items)
         .map((item) => item.title)
     ).not.toContain('Account settings')
+  })
+})
+
+describe('usage logs entry', () => {
+  const logsEntry = (admin?: object, user?: object) =>
+    sidebarFor(admin, user)
+      .result.current.flatMap((group) => group.items)
+      .find((item) => item.title === 'Usage Logs')
+
+  it.each([
+    [
+      { console: { enabled: true, log: false, task: true, midjourney: false } },
+      undefined,
+    ],
+    [
+      undefined,
+      { console: { enabled: true, log: false, task: true, midjourney: false } },
+    ],
+    [
+      { console: { enabled: true, log: false, task: false, midjourney: true } },
+      undefined,
+    ],
+    [
+      undefined,
+      { console: { enabled: true, log: false, task: false, midjourney: true } },
+    ],
+  ])('stays while only task or drawing logs are on (%j, %j)', (admin, user) => {
+    expect(logsEntry(admin, user)).toBeDefined()
+  })
+
+  it('is hidden when all three kinds of logs are off', () => {
+    expect(
+      logsEntry({
+        console: { enabled: true, log: false, task: false, midjourney: false },
+      })
+    ).toBeUndefined()
   })
 })

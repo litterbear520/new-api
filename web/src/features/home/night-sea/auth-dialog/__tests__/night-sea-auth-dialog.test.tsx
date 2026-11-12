@@ -256,3 +256,32 @@ it('marks the main-line hint for the legibility style on another line', async ()
   // The selector auth-dialog.css gives a text shadow (see layout.test.ts).
   expect(hint.matches(".ns-auth [data-slot='button'] ~ p")).toBe(true)
 })
+
+it('a tap opens the dialog without focusing a field, so no keyboard comes up', async () => {
+  renderHome()
+  const user = userEvent.setup()
+  const trigger = await screen.findByRole('link', { name: 'Open sign-in' })
+
+  await user.pointer([
+    { keys: '[TouchA>]', target: trigger },
+    { keys: '[/TouchA]' },
+  ])
+
+  const dialog = await screen.findByRole('dialog')
+  await waitFor(() =>
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+  )
+  expect(document.activeElement?.tagName).not.toBe('INPUT')
+})
+
+it('a mouse click after a tap still focuses the first field', async () => {
+  renderHome()
+  const user = userEvent.setup()
+  const trigger = await screen.findByRole('link', { name: 'Open sign-in' })
+  fireEvent.pointerDown(document.body, { pointerType: 'touch' })
+
+  await user.click(trigger)
+
+  await screen.findByRole('dialog')
+  await waitFor(() => expect(document.activeElement?.tagName).toBe('INPUT'))
+})
