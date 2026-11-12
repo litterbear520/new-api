@@ -453,13 +453,15 @@ export function newRun(projectId: string, messageId: string): Run {
 
 /**
  * Gives a paused tool call its result and continues the turn. Other calls
- * of the same planner message that are still open are run first.
+ * of the same planner message that are still open are run first. `after`
+ * (pictures the user sent with the answer) follows the results.
  */
 export async function resume(
   projectId: string,
   messageId: string,
   callId: string,
-  content: unknown
+  content: unknown,
+  after: ApiMessage[] = []
 ) {
   setToolResult(projectId, callId, content)
   const run = newRun(projectId, messageId)
@@ -470,6 +472,8 @@ export async function resume(
   const open = p ? openCalls(p.transcript) : []
   let last: ApiMessage | undefined
   for (const m of p?.transcript ?? []) if (m.role === 'assistant') last = m
+  // Their results still land before it (placeToolResult, repairTranscript).
+  if (after.length) pushTranscript(projectId, ...after)
   for (const id of open) {
     const call =
       last?.role === 'assistant'

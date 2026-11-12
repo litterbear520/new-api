@@ -25,6 +25,7 @@ import { findProject, newId, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import type {
   AgentMessage,
+  ApiMessage,
   Attachment,
   Mode,
   Part,
@@ -296,8 +297,21 @@ export function send(projectId: string, input: SendInput): boolean {
     // The rest of the turn shows under the user's words.
     const next = newAgentMessage(projectId)
     setLive(projectId, 'think')
+    // Pictures sent with the answer reach the planner as a user turn.
+    const after: ApiMessage[] = user.refs.length
+      ? [
+          {
+            role: 'user',
+            content: userTurnText(
+              { ...user, text: '(These pictures came with my answer above.)' },
+              {}
+            ),
+            images: user.refs.map((r) => r.id),
+          },
+        ]
+      : []
     if (card.type === 'plan' || card.type === 'questions') {
-      void resume(projectId, next.id, card.callId, content).then(() =>
+      void resume(projectId, next.id, card.callId, content, after).then(() =>
         clearLiveIfIdle(projectId)
       )
     }
