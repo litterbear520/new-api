@@ -127,10 +127,12 @@ export function useBearDrawPersistence(uid: number | undefined): LoadState {
         )
         if (waiting) store.setLive(p.id, { phase: 'wait', since: Date.now() })
       }
-      if (copies.length) {
-        await Promise.all(copies.map((p) => saveProject(uid, p)))
-      }
-      markMigrated(uid)
+      // A copy that can't be written (full storage) stays for this visit and
+      // is copied again next time; the projects already loaded are kept.
+      const saved = await Promise.allSettled(
+        copies.map((p) => saveProject(uid, p))
+      )
+      if (saved.every((r) => r.status === 'fulfilled')) markMigrated(uid)
     }
     load().catch(() => {
       if (cancelled) return
