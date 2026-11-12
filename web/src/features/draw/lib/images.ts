@@ -26,6 +26,12 @@ import { getImageBlob } from './storage'
 
 const THUMB_SIZE = 640
 const urls = new Map<string, string>()
+/**
+ * Full pictures made in this visit. Their object URLs keep the bytes alive
+ * anyway; holding the Blob lets download and copy work for a picture that
+ * could not be stored (full browser storage).
+ */
+const fresh = new Map<string, Blob>()
 const loading = new Map<string, Promise<string | null>>()
 const listeners = new Set<() => void>()
 
@@ -60,6 +66,7 @@ export function loadImageUrl(
 
 /** Register blobs we already hold, so they show without a database read. */
 export function primeImageUrls(id: string, blob: Blob, thumb?: Blob) {
+  fresh.set(id, blob)
   if (!urls.has(urlKey(id, 'full'))) {
     urls.set(urlKey(id, 'full'), URL.createObjectURL(blob))
   }
@@ -78,6 +85,7 @@ export function subscribeImageUrls(fn: () => void) {
 
 export function revokeImageUrls(ids: Iterable<string>) {
   for (const id of ids) {
+    fresh.delete(id)
     for (const variant of ['full', 'thumb'] as const) {
       const key = urlKey(id, variant)
       const url = urls.get(key)
@@ -204,9 +212,15 @@ function stamp(d = new Date()) {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
 }
 
-export async function downloadImage(id: string) {
-  const blob = await getImageBlob(id, 'full')
+/** The full picture: from this visit's memory, else from the database. */
+async function fullBlob(id: string): Promise<Blob> {
+  const blob = fresh.get(id) ?? (await getImageBlob(id, 'full'))
   if (!blob) throw new Error('Picture not found')
+  return blob
+}
+
+export async function downloadImage(id: string) {
+  const blob = await fullBlob(id)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -219,8 +233,7 @@ export async function downloadImage(id: string) {
 
 /** Copies a picture as PNG; throws where the browser can't. */
 export async function copyImageToClipboard(id: string) {
-  const blob = await getImageBlob(id, 'full')
-  if (!blob) throw new Error('Picture not found')
+  const blob = await fullBlob(id)
   let png = blob
   if (blob.type !== 'image/png') {
     const src = await decode(blob)
