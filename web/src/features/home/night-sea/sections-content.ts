@@ -86,7 +86,7 @@ export const SETUP_TOOLS: SetupTool[] = [
     file: '~/.claude/settings.json',
     lang: 'json',
     how: '把这份配置写进 ~/.claude/settings.json，sk-你的密钥 换成刚才的密钥，再运行 claude。',
-    note: '地址不带 /v1。想用 GPT 模型，把模型名换成 gpt-6.1-sol。',
+    note: '地址不带 /v1。想用 GPT 模型，把模型名换成 gpt-6.2-sol。',
     guide: '/docs/tools/claude-code/',
   },
   {
@@ -135,7 +135,7 @@ export const SETUP_TOOLS: SetupTool[] = [
 export function setupSnippet(tool: SetupTool['id'], url: string): string {
   if (tool === 'codex') {
     return [
-      'model = "gpt-6.1-sol"',
+      'model = "gpt-6.2-sol"',
       'model_provider = "xiaoxiong"',
       '',
       '[model_providers.xiaoxiong]',
@@ -162,7 +162,7 @@ export function setupSnippet(tool: SetupTool['id'], url: string): string {
       '      "apiKey": "$XIAOXIONG_API_KEY",',
       '      "models": [',
       '        {',
-      '          "id": "gpt-6.1-sol",',
+      '          "id": "gpt-6.2-sol",',
       '          "reasoning": true,',
       '          "input": ["text", "image"],',
       '          "contextWindow": 272000',
@@ -206,8 +206,8 @@ export function setupSnippet(tool: SetupTool['id'], url: string): string {
       '          "name": "GLM-5",',
       '          "limit": { "context": 200000, "output": 32000 }',
       '        },',
-      '        "gpt-6.1-sol": {',
-      '          "name": "GPT-6.1 Sol",',
+      '        "gpt-6.2-sol": {',
+      '          "name": "GPT-6.2 Sol",',
       '          "provider": { "npm": "@ai-sdk/openai" },',
       '          "limit": { "context": 272000, "output": 128000 }',
       '        }',
@@ -472,7 +472,7 @@ export function faqs(deal: Deal | null): Faq[] {
 export const FEATURED_MODELS = [
   'claude-opus-4-6',
   'claude-sonnet-4-6',
-  'gpt-6.1-sol',
+  'gpt-6.2-sol',
   'gpt-6-luna',
   'gemini-3.8-flash',
   'gemini-3-flash',

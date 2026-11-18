@@ -63,7 +63,7 @@ export function buildSnippet(
           path: '~/.codex/config.toml',
         }),
         parts: [
-          'model = "gpt-6.1-sol"\nmodel_provider = "xiaoxiong"\n\n',
+          'model = "gpt-6.2-sol"\nmodel_provider = "xiaoxiong"\n\n',
           '[model_providers.xiaoxiong]\nname = "小熊API"\n',
           `base_url = "${origin}/v1"\n`,
           'env_key = "XIAOXIONG_API_KEY"\nwire_api = "responses"\n\n',

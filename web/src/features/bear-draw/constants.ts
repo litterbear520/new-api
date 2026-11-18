@@ -86,7 +86,7 @@ export const BRAIN_META: Array<{ id: string; note: string; tag?: 'default' }> =
       note: 'Cheap and quick, fine for everyday sets',
       tag: 'default',
     },
-    { id: 'gpt-6.1-sol', note: 'Plans more carefully, writes finer prompts' },
+    { id: 'gpt-6.2-sol', note: 'Plans more carefully, writes finer prompts' },
     { id: 'gemini-3.8-flash', note: 'Reads reference pictures more closely' },
     { id: 'claude-sonnet-4-6', note: 'More refined copywriting' },
   ]
@@ -97,6 +97,7 @@ export const BRAIN_FALLBACKS = [
   'gpt-5.6-luna',
   'gemini-3-flash',
   'gemini-3.8-flash',
+  'gpt-6.2-sol',
   'gpt-6.1-sol',
 ]
 

@@ -117,7 +117,7 @@ describe('home sections content', () => {
     })
     expect(provider.models).toEqual([
       {
-        id: 'gpt-6.1-sol',
+        id: 'gpt-6.2-sol',
         reasoning: true,
         input: ['text', 'image'],
         contextWindow: 272000,
@@ -147,10 +147,10 @@ describe('home sections content', () => {
     expect(Object.keys(provider.models)).toEqual([
       'claude-sonnet-4-6',
       'glm-5',
-      'gpt-6.1-sol',
+      'gpt-6.2-sol',
     ])
     // GPT goes to the Responses API through OpenAI's package
-    expect(provider.models['gpt-6.1-sol'].provider).toEqual({
+    expect(provider.models['gpt-6.2-sol'].provider).toEqual({
       npm: '@ai-sdk/openai',
     })
     for (const model of Object.values(provider.models)) {

@@ -20,6 +20,7 @@ import type { TFunction } from 'i18next'
 
 /** Tried in order when the user has not picked a model yet. */
 export const PREFERRED_MODELS = [
+  'gpt-6.2-sol',
   'gpt-6.1-sol',
   'gpt-6-sol',
   'claude-sonnet-4-6',
@@ -37,12 +38,14 @@ export const IMAGE_MODEL =
  */
 export const MODEL_NOTES: Array<{ match: RegExp; tag?: string; note: string }> =
   [
-    { match: /^gpt-6\.1-sol/, tag: 'Smartest', note: 'Code and hard problems' },
+    { match: /^gpt-6\.2-sol/, tag: 'Smartest', note: 'Code and hard problems' },
     {
-      match: /^gpt-6-astra/,
+      match: /^gpt-6\.2-astra/,
       tag: 'Most capable',
       note: 'The hardest problems; costs the most',
     },
+    { match: /^gpt-6\.1-sol/, note: 'Strong at code and reasoning' },
+    { match: /^gpt-6-astra/, note: 'The hardest problems; costs the most' },
     {
       match: /^claude-opus/,
       tag: 'Writer',
