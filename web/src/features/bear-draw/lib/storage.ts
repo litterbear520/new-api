@@ -177,7 +177,10 @@ export async function saveProject(uid: number, p: Project): Promise<void> {
   await committed(tx)
 }
 
+/** Rejects only when a stored record could not be deleted. */
 export async function removeProjectRecord(id: string): Promise<void> {
+  // No IndexedDB here (some private windows): nothing was ever stored.
+  if (typeof indexedDB === 'undefined') return
   const db = await openDb()
   const tx = db.transaction(PROJECTS, 'readwrite')
   tx.objectStore(PROJECTS).delete(id)
@@ -197,6 +200,19 @@ export function imageIdsOf(p: Project): Set<string> {
       if (part.type !== 'progress') continue
       for (const it of part.items) if (it.img) ids.add(it.img.id)
     }
+  }
+  return ids
+}
+
+/**
+ * Every picture this user's stored projects refer to. The classic drawing
+ * page keeps these when it deletes a conversation: copied projects point at
+ * its pictures.
+ */
+export async function storedImageIds(uid: number): Promise<Set<string>> {
+  const ids = new Set<string>()
+  for (const p of await loadProjects(uid)) {
+    for (const id of imageIdsOf(p)) ids.add(id)
   }
   return ids
 }

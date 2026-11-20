@@ -565,7 +565,15 @@ export async function deleteProject(projectId: string): Promise<void> {
   if (!p) return
   stop(projectId, { quiet: true })
   store.removeProject(projectId)
-  await removeProjectRecord(projectId).catch(() => undefined)
+  try {
+    await removeProjectRecord(projectId)
+  } catch {
+    // The record is still stored and would come back on reload, so the
+    // project and its pictures stay.
+    if (!findProject(projectId)) useBearDrawStore.getState().putProject(p)
+    toast.error(t('Delete failed'))
+    return
+  }
   // Pictures copied from the classic page still belong to its conversations.
   if (p.migrated) return
   const keep = new Set<string>()

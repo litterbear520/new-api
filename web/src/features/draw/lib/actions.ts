@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { imageIdsOf, storedImageIds } from '@/features/bear-draw/lib/storage'
+import { useBearDrawStore } from '@/stores/bear-draw-store'
 import {
   baseItem,
   currentRoom,
@@ -401,24 +403,42 @@ export function renameRoom(room: DrawRoom, title: string) {
 
 const pendingDeletes = new Map<string, ReturnType<typeof setTimeout>>()
 
+/** Pictures that other conversations or the new drawing page still use. */
+async function picturesInUse(room: DrawRoom): Promise<Set<string>> {
+  const { rooms, uid } = useDrawStore.getState()
+  const keep = new Set(rooms.flatMap((r) => imagesOf(r).map((img) => img.id)))
+  const design = useBearDrawStore.getState()
+  if (design.uid === uid) {
+    for (const p of design.projects) {
+      for (const id of imageIdsOf(p)) keep.add(id)
+    }
+    const logo = design.brandKit?.logo?.id
+    if (logo) keep.add(logo)
+  }
+  const stored =
+    uid == null ? null : await storedImageIds(uid).catch(() => null)
+  // Unknown whether a project uses them: keep them all.
+  for (const id of stored ?? imagesOf(room).map((img) => img.id)) keep.add(id)
+  return keep
+}
+
+async function removeStoredRoom(room: DrawRoom) {
+  const keep = await picturesInUse(room)
+  await deleteStoredRoom(room, keep)
+  revokeImageUrls(
+    imagesOf(room)
+      .map((img) => img.id)
+      .filter((id) => !keep.has(id))
+  )
+}
+
 /** Removes a conversation now and from storage a little later; returns undo. */
 export function deleteRoomWithUndo(room: DrawRoom): () => void {
   const s = useDrawStore.getState()
   s.removeRoom(room.id)
   const timer = setTimeout(() => {
     pendingDeletes.delete(room.id)
-    const others = new Set(
-      useDrawStore
-        .getState()
-        .rooms.flatMap((r) => imagesOf(r).map((img) => img.id))
-    )
-    void deleteStoredRoom(room, others).then(() =>
-      revokeImageUrls(
-        imagesOf(room)
-          .map((img) => img.id)
-          .filter((id) => !others.has(id))
-      )
-    )
+    void removeStoredRoom(room).catch(() => undefined)
   }, 6000)
   pendingDeletes.set(room.id, timer)
   return () => {

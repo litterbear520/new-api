@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { classicRooms, markMigrated } from '../lib/migrate'
-import { loadProjects, removeProjectRecord, saveProject } from '../lib/storage'
+import { loadProjects, saveProject } from '../lib/storage'
 import type { Project } from '../types'
 
 /*
@@ -87,12 +87,11 @@ function watch() {
       if (before.get(p.id) !== p) scheduleSave(state.uid, p)
       before.delete(p.id)
     }
-    // whatever is left was deleted
+    // whatever is left was deleted; deleteProject removes its record
     for (const id of before.keys()) {
       const pending = timers.get(id)
       if (pending) clearTimeout(pending.t)
       timers.delete(id)
-      void removeProjectRecord(id).catch(() => undefined)
     }
   })
   document.addEventListener('visibilitychange', () => {
