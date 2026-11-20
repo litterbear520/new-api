@@ -16,7 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import type { AssistantTurn, Conversation } from '../types'
+import type {
+  AssistantTurn,
+  ChatImage,
+  ChatTurn,
+  Conversation,
+  Reply,
+  ReplyStatus,
+} from '../types'
 import { splitThink } from './artifacts'
 
 /*
@@ -82,23 +89,103 @@ export function toJson(convs: Conversation[]): string {
   )
 }
 
-function isConversation(value: unknown): value is Conversation {
-  if (!value || typeof value !== 'object') return false
-  const c = value as Partial<Conversation>
-  return (
-    typeof c.id === 'string' &&
-    typeof c.title === 'string' &&
-    Array.isArray(c.turns) &&
-    c.turns.every(
-      (t) =>
-        t &&
-        typeof t === 'object' &&
-        typeof t.id === 'string' &&
-        (t.role === 'user'
-          ? typeof t.text === 'string'
-          : t.role === 'assistant' && Array.isArray(t.replies))
-    )
-  )
+type Loose = Record<string, unknown>
+
+const isObject = (value: unknown): value is Loose =>
+  !!value && typeof value === 'object'
+
+const text = (value: unknown) => (typeof value === 'string' ? value : '')
+const num = (value: unknown, fallback: number) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+const STATUSES = new Set<ReplyStatus>(['done', 'stopped', 'error'])
+
+function cleanImage(value: unknown): ChatImage | null {
+  if (!isObject(value) || typeof value.id !== 'string') return null
+  if (typeof value.url !== 'string' || !value.url.startsWith('data:image/')) {
+    return null
+  }
+  return {
+    id: value.id,
+    url: value.url,
+    ...(typeof value.name === 'string' ? { name: value.name } : {}),
+    w: num(value.w, 0),
+    h: num(value.h, 0),
+  }
+}
+
+function cleanReply(value: unknown, now: number): Reply | null {
+  if (!isObject(value) || typeof value.id !== 'string') return null
+  const reply = { ...value } as Loose
+  // A reply that was still streaming when it was exported ended there.
+  const status = STATUSES.has(value.status as ReplyStatus)
+    ? (value.status as ReplyStatus)
+    : 'stopped'
+  if (!isObject(value.error) || typeof value.error.message !== 'string') {
+    delete reply.error
+  }
+  if (typeof value.reasoning !== 'string') delete reply.reasoning
+  return {
+    ...(reply as Partial<Reply>),
+    id: value.id,
+    model: text(value.model),
+    content: text(value.content),
+    status,
+    startedAt: num(value.startedAt, now),
+  }
+}
+
+function cleanTurn(value: unknown, now: number): ChatTurn | null {
+  if (!isObject(value) || typeof value.id !== 'string') return null
+  if (value.role === 'user') {
+    if (typeof value.text !== 'string') return null
+    const images = Array.isArray(value.images)
+      ? value.images
+          .map(cleanImage)
+          .filter((img): img is ChatImage => img !== null)
+      : []
+    return {
+      id: value.id,
+      role: 'user',
+      text: value.text,
+      ...(images.length ? { images } : {}),
+      at: num(value.at, now),
+    }
+  }
+  if (value.role !== 'assistant' || !Array.isArray(value.replies)) return null
+  const replies = value.replies
+    .map((r) => cleanReply(r, now))
+    .filter((r): r is Reply => r !== null)
+  if (!replies.length) return null
+  const cur = Math.trunc(num(value.cur, replies.length - 1))
+  return {
+    id: value.id,
+    role: 'assistant',
+    replies,
+    cur: Math.min(Math.max(cur, 0), replies.length - 1),
+  }
+}
+
+/**
+ * One conversation from a file, with every field the page reads checked:
+ * a hand-edited or foreign file must not break the page when it is opened.
+ */
+function cleanConversation(value: unknown, now: number): Conversation | null {
+  if (!isObject(value) || typeof value.id !== 'string') return null
+  if (typeof value.title !== 'string' || !Array.isArray(value.turns)) {
+    return null
+  }
+  return {
+    id: value.id,
+    title: value.title,
+    ...(value.named === true ? { named: true } : {}),
+    createdAt: num(value.createdAt, now),
+    updatedAt: num(value.updatedAt, now),
+    ...(typeof value.system === 'string' ? { system: value.system } : {}),
+    turns: value.turns
+      .map((t) => cleanTurn(t, now))
+      .filter((t): t is ChatTurn => t !== null),
+  }
 }
 
 /** Conversations in an exported file; throws when it is not one of ours. */
@@ -109,14 +196,12 @@ export function fromJson(text: string): Conversation[] {
       ? (data as { conversations: unknown }).conversations
       : data
   if (!Array.isArray(list)) throw new Error('not a chat export')
-  const convs = list.filter(isConversation)
-  if (!convs.length) throw new Error('no conversations')
   const now = Date.now()
-  return convs.map((c) => ({
-    ...c,
-    createdAt: typeof c.createdAt === 'number' ? c.createdAt : now,
-    updatedAt: typeof c.updatedAt === 'number' ? c.updatedAt : now,
-  }))
+  const convs = list
+    .map((c) => cleanConversation(c, now))
+    .filter((c): c is Conversation => c !== null)
+  if (!convs.length) throw new Error('no conversations')
+  return convs
 }
 
 /**
