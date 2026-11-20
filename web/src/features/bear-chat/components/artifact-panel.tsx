@@ -330,7 +330,8 @@ export function ArtifactPanel(props: ArtifactPanelProps) {
           </Tip>
         </div>
         <div className='bc-ap-b'>
-          {previewable && view === 'preview' && (
+          {/* a closed panel is only hidden: drop the page so it stops running */}
+          {previewable && view === 'preview' && panel.open && (
             <div className={cn('bc-prev', !doc && 'bc-waiting')}>
               {doc ? (
                 <iframe
