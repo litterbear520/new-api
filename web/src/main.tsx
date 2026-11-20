@@ -28,7 +28,7 @@ import { installBuildMetadata } from '@/lib/build-metadata'
 import '@/lib/dayjs'
 import { applyFaviconToDom } from '@/lib/dom-utils'
 import { initializeFrontendCache } from '@/lib/frontend-cache'
-import { crossFades } from '@/lib/page-swap'
+import { crossFades, viewTransitionTypesSupported } from '@/lib/page-swap'
 import { createAppQueryClient } from '@/lib/query-client'
 import { readCachedStatus, statusQueryOptions } from '@/lib/status-query'
 import { clearRetiredThemePreferences } from '@/lib/theme-storage'
@@ -85,7 +85,8 @@ const router = createRouter({
   // console's frame, cross-fades the whole screen once the next page is
   // ready, while the site bar's lens slides on (see
   // components/site-bar/site-bar.css); other page changes only fade the page in.
-  defaultViewTransition: {
+  // Browsers without view transition types get no router transitions at all.
+  defaultViewTransition: viewTransitionTypesSupported() && {
     types: ({ fromLocation, toLocation, pathChanged }) => {
       if (!fromLocation || !pathChanged) return false
       const from = {

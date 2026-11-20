@@ -50,3 +50,17 @@ export function inPageSwap() {
     return false
   }
 }
+
+/**
+ * Whether the browser can tell a cross-fade from other page changes. One
+ * that has view transitions but not their types (Safari 18.0–18.1, Chrome
+ * 111–124) would cross-fade the whole screen on every page change, so the
+ * router gets no view transitions there.
+ */
+export function viewTransitionTypesSupported() {
+  try {
+    return CSS.supports('selector(:active-view-transition-type(a))')
+  } catch {
+    return false
+  }
+}

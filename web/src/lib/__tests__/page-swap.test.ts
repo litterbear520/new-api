@@ -18,7 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { crossFades, inPageSwap } from '../page-swap'
+import {
+  crossFades,
+  inPageSwap,
+  viewTransitionTypesSupported,
+} from '../page-swap'
 
 const light = { dark: false, console: false }
 const night = { dark: true, console: false }
@@ -65,4 +69,16 @@ test('a browser without view transition types never has a page swap', () => {
     throw new SyntaxError('unknown pseudo-class')
   })
   expect(inPageSwap()).toBe(false)
+})
+
+test('view transitions are used only where their types are known', () => {
+  vi.stubGlobal('CSS', { supports: () => false })
+  expect(viewTransitionTypesSupported()).toBe(false)
+  const supports = vi.fn(() => true)
+  vi.stubGlobal('CSS', { supports })
+  expect(viewTransitionTypesSupported()).toBe(true)
+  expect(supports).toHaveBeenCalledWith(
+    'selector(:active-view-transition-type(a))'
+  )
+  vi.unstubAllGlobals()
 })
