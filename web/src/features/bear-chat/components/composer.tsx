@@ -23,9 +23,11 @@ import {
   useRef,
   useState,
   type ClipboardEvent,
+  type Dispatch,
   type FormEvent,
   type KeyboardEvent,
   type ReactNode,
+  type SetStateAction,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -66,7 +68,7 @@ type ComposerProps = {
   writing: boolean
   empty: boolean
   images: ChatImage[]
-  setImages: (next: ChatImage[]) => void
+  setImages: Dispatch<SetStateAction<ChatImage[]>>
   perch: ReactNode
 }
 

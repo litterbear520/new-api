@@ -99,7 +99,7 @@ export async function readImage(file: File): Promise<ChatImage> {
 export async function addPictures(
   files: File[],
   current: ChatImage[],
-  set: (next: ChatImage[]) => void
+  set: (update: (prev: ChatImage[]) => ChatImage[]) => void
 ): Promise<number> {
   const picked = files.filter(isImageFile)
   const take = picked.slice(0, Math.max(0, MAX_IMAGES - current.length))
@@ -107,6 +107,7 @@ export async function addPictures(
     take.map((f) => readImage(f).catch(() => null))
   )
   const ok = read.filter((x): x is ChatImage => x !== null)
-  if (ok.length) set([...current, ...ok])
+  // Another paste may have landed while these were decoding.
+  if (ok.length) set((prev) => [...prev, ...ok].slice(0, MAX_IMAGES))
   return picked.length - ok.length
 }
