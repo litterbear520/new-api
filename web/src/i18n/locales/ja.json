@@ -8590,6 +8590,8 @@
     "Save pictures": "画像を保存",
     "Press and hold a picture to save it.": "画像を長押しして保存してください。",
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "このプロジェクトは別のタブで変更されたため、最新の内容に更新しました。直前の変更は保存されていません。",
-    "This project was deleted in another tab.": "このプロジェクトは別のタブで削除されました。"
+    "This project was deleted in another tab.": "このプロジェクトは別のタブで削除されました。",
+    "The pictures are ready": "画像の準備ができました",
+    "Save to Photos": "写真に保存"
   }
 }

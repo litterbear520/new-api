@@ -466,8 +466,11 @@ For commercial licensing, please contact support@quantumnous.com
    them room and equal negative margins keep every gap as it was
    (margins of the turns collapse as before, 14 + 8 + 8 = 30, 6 + 8 + 8 = 22).
    Containment also stops a first artifact card's top margin from merging
-   with the gap above, so it is dropped where it would have merged. */
-@supports (content-visibility: auto) {
+   with the gap above, so it is dropped where it would have merged.
+   Not in WebKit (the only engine with font: -apple-system-body): Safari
+   does not hold the view still when a placeholder grows to its real height
+   above it, so scrolling up a long conversation jumped (11-20, Safari 27). */
+@supports (content-visibility: auto) and (not (font: -apple-system-body)) {
   .bc-col > .bc-u:nth-last-child(n + 13),
   .bc-col > .bc-a:nth-last-child(n + 13) {
     content-visibility: auto;

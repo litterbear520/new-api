@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { act, render, screen } from '@testing-library/react'
 import type { TFunction } from 'i18next'
+import { toast as sonner } from 'sonner'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { getImageBlob } from '@/features/draw/lib/storage'
@@ -39,6 +40,7 @@ import type { CanvasNode, Project } from '../types'
  */
 
 vi.mock('@/features/draw/lib/storage', () => ({ getImageBlob: vi.fn() }))
+vi.mock('sonner', () => ({ toast: vi.fn() }))
 
 const BYTES: Record<string, Blob> = {
   'img-a': new Blob(['jpeg-a'], { type: 'image/jpeg' }),
@@ -236,5 +238,105 @@ describe('下载 in WeChat and QQ', () => {
       true
     )
     expect(saved).toEqual([])
+  })
+})
+
+describe('下载 on a phone or tablet', () => {
+  let share: ReturnType<typeof vi.fn>
+  let canShare: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    share = vi.fn(async () => undefined)
+    canShare = vi.fn(() => true)
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: share,
+    })
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: canShare,
+    })
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({ matches: query === '(pointer: coarse)', media: query }) as never
+    )
+    vi.mocked(sonner).mockReset()
+  })
+
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'share')
+    Reflect.deleteProperty(navigator, 'canShare')
+  })
+
+  /** Name and type of each file in the last share. */
+  const shared = () => {
+    const last = share.mock.calls.at(-1)
+    if (!last) throw new Error('nothing was shared')
+    return (last[0] as { files: File[] }).files.map((f) => [f.name, f.type])
+  }
+
+  test('several pictures go to the share sheet as files, not a ZIP', async () => {
+    download(['a', 'b', 'c'])
+    await until(() => share.mock.calls.length > 0)
+    expect(shared()).toEqual([
+      ['小熊画图-20261120-191224-1.jpg', 'image/jpeg'],
+      ['小熊画图-20261120-191224-2.png', 'image/png'],
+      ['小熊画图-20261120-191224-3.jpg', 'image/jpeg'],
+    ])
+    const files = (share.mock.calls[0][0] as { files: File[] }).files
+    expect(await files[1].text()).toBe('png-b')
+    expect(saved).toEqual([])
+    expect(toast).not.toHaveBeenCalled()
+  })
+
+  test('closing the sheet without a choice says nothing', async () => {
+    share.mockRejectedValueOnce(new DOMException('', 'AbortError'))
+    download(['a', 'b'])
+    await until(() => share.mock.calls.length > 0)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(toast).not.toHaveBeenCalled()
+    expect(sonner).not.toHaveBeenCalled()
+    expect(saved).toEqual([])
+  })
+
+  test('a refused sheet offers a button that shares on its own tap', async () => {
+    share.mockRejectedValueOnce(new DOMException('', 'NotAllowedError'))
+    download(['a', 'b'])
+    await until(() => vi.mocked(sonner).mock.calls.length > 0)
+    const [message, opts] = vi.mocked(sonner).mock.calls[0] as unknown as [
+      string,
+      { action: { label: string; onClick: () => void } },
+    ]
+    expect(message).toBe('The pictures are ready')
+    expect(opts.action.label).toBe('Save to Photos')
+    opts.action.onClick()
+    await until(() => share.mock.calls.length > 1)
+    expect(shared()).toHaveLength(2)
+    expect(saved).toEqual([])
+  })
+
+  test('files that cannot be shared fall back to the ZIP', async () => {
+    canShare.mockReturnValue(false)
+    download(['a', 'b'])
+    await until(() => saved.length > 0)
+    expect(share).not.toHaveBeenCalled()
+    expect(saved.map((s) => s.name)).toEqual(['小熊画图-20261120-191224.zip'])
+  })
+
+  test('one picture still downloads as itself', async () => {
+    download(['b'])
+    await until(() => saved.length > 0)
+    expect(share).not.toHaveBeenCalled()
+    expect(saved.map((s) => s.name)).toEqual(['小熊画图-20261120-191224.png'])
+  })
+
+  test('a computer keeps the ZIP', async () => {
+    vi.mocked(window.matchMedia).mockImplementation(
+      (query: string) => ({ matches: false, media: query }) as never
+    )
+    download(['a', 'b'])
+    await until(() => saved.length > 0)
+    expect(share).not.toHaveBeenCalled()
+    expect(saved.map((s) => s.name)).toEqual(['小熊画图-20261120-191224.zip'])
   })
 })

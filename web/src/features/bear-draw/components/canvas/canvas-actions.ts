@@ -23,7 +23,12 @@ import { findProject } from '@/stores/bear-draw-store'
 
 import type { ActionPayload, CanvasApi, MarkInfo } from '../../lib/canvas/types'
 import { deletePicture, retryPicture } from '../../lib/engine'
-import { downloadPictures } from '../../lib/export'
+import {
+  downloadPictures,
+  pictureFiles,
+  shareFiles,
+  sharesToPhotos,
+} from '../../lib/export'
 import { edit } from '../../lib/project-edit'
 import type { Project } from '../../types'
 import { deletedFrom, restoreDeleted } from './delete-undo'
@@ -96,7 +101,59 @@ function removeWithUndo(x: ActionContext, p: ActionPayload) {
   })
 }
 
-/** One picture as itself, several as one ZIP; WeChat and QQ: long press. */
+/**
+ * Opens the share sheet with these pictures; its 存储 N 张图像 saves them to
+ * Photos. Reading or packing them can take long enough that Safari no longer
+ * counts the tap: then a toast button shares them on its own tap. Returns
+ * false when they can't be shared at all, for the caller to download them.
+ */
+async function offerShare(
+  t: TFunction,
+  files: File[],
+  fallBack: () => void
+): Promise<boolean> {
+  const result = await shareFiles(files)
+  if (result === 'unsupported' || result === 'failed') return false
+  if (result !== 'blocked') return true
+  toast(t('The pictures are ready'), {
+    action: {
+      label: t('Save to Photos'),
+      onClick: () => {
+        void shareFiles(files).then((again) => {
+          if (again === 'unsupported' || again === 'failed') fallBack()
+        })
+      },
+    },
+    duration: 15000,
+  })
+  return true
+}
+
+/** Several pictures on a phone or tablet: the share sheet, else the ZIP. */
+async function shareToPhotos(x: ActionContext, ids: string[]) {
+  const failed = () => x.cv.toast(x.t('Download failed'))
+  const fallBack = () =>
+    downloadPictures(ids)
+      .then((n) => {
+        if (n) failed()
+      })
+      .catch(failed)
+  const files = await pictureFiles(ids).catch(() => [])
+  if (!files.length) {
+    failed()
+    return
+  }
+  if (!(await offerShare(x.t, files, () => void fallBack()))) {
+    await fallBack()
+    return
+  }
+  if (files.length < ids.length) failed()
+}
+
+/**
+ * One picture as itself, several as one ZIP (on a phone or tablet: the share
+ * sheet, to save them to Photos); WeChat and QQ: long press.
+ */
 function download(x: ActionContext, p: ActionPayload) {
   const nodes = new Map(x.project.nodes.map((n) => [n.id, n]))
   const ready = p.nodes.flatMap((pn) => {
@@ -108,6 +165,13 @@ function download(x: ActionContext, p: ActionPayload) {
   if (!ready.length) return
   if (blocksDownloads(navigator.userAgent)) {
     openSaveSheet(ready)
+    return
+  }
+  if (ready.length > 1 && sharesToPhotos()) {
+    void shareToPhotos(
+      x,
+      ready.map((r) => r.id)
+    )
     return
   }
   const failed = () => x.cv.toast(x.t('Download failed'))

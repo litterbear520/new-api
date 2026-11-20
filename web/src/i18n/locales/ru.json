@@ -8590,6 +8590,8 @@
     "Save pictures": "Сохранить изображения",
     "Press and hold a picture to save it.": "Нажмите и удерживайте изображение, чтобы сохранить его.",
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Этот проект изменили в другой вкладке, поэтому он обновлён. Последнее изменение не сохранено.",
-    "This project was deleted in another tab.": "Этот проект удалили в другой вкладке."
+    "This project was deleted in another tab.": "Этот проект удалили в другой вкладке.",
+    "The pictures are ready": "Изображения готовы",
+    "Save to Photos": "Сохранить в Фото"
   }
 }

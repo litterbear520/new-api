@@ -8590,6 +8590,8 @@
     "Save pictures": "保存图片",
     "Press and hold a picture to save it.": "长按图片保存。",
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "这个项目在另一个标签页改过，已经刷新成最新的内容。刚才的改动没有保存。",
-    "This project was deleted in another tab.": "这个项目已经在另一个标签页删除。"
+    "This project was deleted in another tab.": "这个项目已经在另一个标签页删除。",
+    "The pictures are ready": "图片准备好了",
+    "Save to Photos": "存到相册"
   }
 }

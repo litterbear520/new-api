@@ -106,6 +106,11 @@ describe('older turns of a long conversation', () => {
     for (const size of sizes) expect(size[1]).toMatch(/^auto\b.*\bauto \d+px$/)
   })
 
+  test('are left alone in Safari, which would jump on the way up', () => {
+    const block = /@supports([^{]+)\{[^@]*content-visibility:\s*auto/.exec(css)
+    expect(block?.[1]).toContain('not (font: -apple-system-body)')
+  })
+
   test('are all but the last 12', () => {
     const { container } = render(thread(conversation(10), false))
     const picked = new Set(container.querySelectorAll(deferred.join(',')))

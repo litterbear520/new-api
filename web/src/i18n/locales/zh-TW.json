@@ -8590,6 +8590,8 @@
     "Save pictures": "儲存圖片",
     "Press and hold a picture to save it.": "長按圖片儲存。",
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "這個專案在另一個分頁改過，已經重新整理成最新的內容。剛才的改動沒有儲存。",
-    "This project was deleted in another tab.": "這個專案已經在另一個分頁刪除。"
+    "This project was deleted in another tab.": "這個專案已經在另一個分頁刪除。",
+    "The pictures are ready": "圖片準備好了",
+    "Save to Photos": "存到相簿"
   }
 }

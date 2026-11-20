@@ -8590,6 +8590,8 @@
     "Save pictures": "Enregistrer les images",
     "Press and hold a picture to save it.": "Appuyez longuement sur une image pour l’enregistrer.",
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Ce projet a été modifié dans un autre onglet et vient d’être rechargé. Votre dernière modification n’a pas été enregistrée.",
-    "This project was deleted in another tab.": "Ce projet a été supprimé dans un autre onglet."
+    "This project was deleted in another tab.": "Ce projet a été supprimé dans un autre onglet.",
+    "The pictures are ready": "Les images sont prêtes",
+    "Save to Photos": "Enregistrer dans Photos"
   }
 }

@@ -251,3 +251,64 @@ export async function downloadPictures(
   }
   return failed
 }
+
+/**
+ * Whether 下载 hands several pictures to the system share sheet instead of a
+ * ZIP: touch devices whose browser shares files (iPhone, iPad, Android).
+ * There a ZIP only reaches the Files app; the sheet's 存储 N 张图像 puts the
+ * pictures in Photos.
+ */
+export function sharesToPhotos(): boolean {
+  return (
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function' &&
+    typeof matchMedia === 'function' &&
+    matchMedia('(pointer: coarse)').matches
+  )
+}
+
+/**
+ * The pictures as files, named as in the ZIP (小熊画图-20261120-191224-1.jpg
+ * …), original bytes. Pictures that can't be read are left out.
+ */
+export async function pictureFiles(
+  imageIds: string[],
+  now = new Date()
+): Promise<File[]> {
+  const base = `${FALLBACK_NAME}-${stamp(now)}`
+  const files: File[] = []
+  for (const id of imageIds) {
+    const blob = await fullImageBlob(id).catch(() => null)
+    if (!blob) continue
+    const ext = pictureExt(blob)
+    const type = ext === 'jpg' ? 'image/jpeg' : 'image/png'
+    files.push(new File([blob], `${base}-${files.length + 1}.${ext}`, { type }))
+  }
+  return files
+}
+
+/**
+ * shared: the sheet closed on a choice; cancelled: closed without one;
+ * blocked: the browser refused because the tap was too long ago (Safari),
+ * a new tap can share; unsupported or failed: no sheet, download instead.
+ */
+export type ShareResult =
+  | 'shared'
+  | 'cancelled'
+  | 'blocked'
+  | 'unsupported'
+  | 'failed'
+
+/** Opens the system share sheet with these files. */
+export async function shareFiles(files: File[]): Promise<ShareResult> {
+  if (!navigator.canShare({ files })) return 'unsupported'
+  try {
+    await navigator.share({ files })
+    return 'shared'
+  } catch (error) {
+    const name = error instanceof DOMException ? error.name : ''
+    if (name === 'AbortError') return 'cancelled'
+    if (name === 'NotAllowedError') return 'blocked'
+    return 'failed'
+  }
+}
