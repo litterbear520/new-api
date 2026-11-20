@@ -25,6 +25,28 @@ import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { handleServerError } from '@/lib/handle-server-error'
 
 /**
+ * Writes text that is still on its way. Safari only lets a page write the
+ * clipboard inside the click, and the key arrives after a request, so the
+ * write starts now and the text fills in when it comes. False when the
+ * browser can't do this or refused, so the caller copies the plain way.
+ */
+async function writeWhenReady(text: Promise<string | null>): Promise<boolean> {
+  if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
+    return false
+  }
+  const blob = text.then((value) => {
+    if (value == null) throw new Error('no text')
+    return new Blob([value], { type: 'text/plain' })
+  })
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })])
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Copies text that may contain the real key. The key list only has masked
  * keys, so the full one is fetched at the moment of copying and never kept.
  * `copiedId` names what was copied last, for two seconds.
@@ -46,18 +68,23 @@ export function useKeyCopy() {
     ) => {
       setBusyId(id)
       try {
-        let key = ''
-        if (keyId) {
-          const res = await fetchTokenKey(keyId)
-          if (!res.success || !res.data?.key) {
-            handleServerError(res, t('Failed to copy to clipboard'))
+        const text = keyId
+          ? fetchTokenKey(keyId).then((res) => {
+              if (res.success && res.data?.key) {
+                return build(`sk-${res.data.key}`)
+              }
+              handleServerError(res, t('Failed to copy to clipboard'))
+              return null
+            })
+          : Promise.resolve(build(''))
+        // Nothing may be awaited before this call: it must stay in the click.
+        if (!(await writeWhenReady(text))) {
+          const value = await text
+          if (value == null) return
+          if (!(await copyToClipboard(value))) {
+            toast.error(t('Failed to copy to clipboard'))
             return
           }
-          key = `sk-${res.data.key}`
-        }
-        if (!(await copyToClipboard(build(key)))) {
-          toast.error(t('Failed to copy to clipboard'))
-          return
         }
         setCopiedId(id)
         clearTimeout(timer.current)
