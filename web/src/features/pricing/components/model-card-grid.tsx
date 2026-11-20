@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { memo, useMemo, useState } from 'react'
+import { memo, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -35,16 +35,30 @@ export interface ModelCardGridProps {
   usdExchangeRate?: number
   selectedGroup?: string
   linkSearch?: PricingSearch
+  /** The page on show; without it the grid keeps its own, starting at 1. */
+  page?: number
+  onPageChange?: (page: number) => void
 }
 
 export const ModelCardGrid = memo(function ModelCardGrid(
   props: ModelCardGridProps
 ) {
   const { t } = useTranslation()
-  const [page, setPage] = useState(1)
+  const [ownPage, setOwnPage] = useState(1)
+  const page = props.page ?? ownPage
+  const onPageChange = props.onPageChange ?? setOwnPage
   const pageSize = DEFAULT_PRICING_PAGE_SIZE
   const totalPages = Math.max(1, Math.ceil(props.models.length / pageSize))
   const currentPage = Math.min(page, totalPages)
+  const listRef = useRef<HTMLDivElement>(null)
+  // A new page starts at the top of the list, where the focus goes too.
+  const goTo = (next: number) => {
+    onPageChange(next)
+    const list = listRef.current
+    if (!list) return
+    list.focus({ preventScroll: true })
+    list.scrollIntoView({ block: 'start' })
+  }
 
   const pagedModels = useMemo(() => {
     const start = (currentPage - 1) * pageSize
@@ -91,7 +105,15 @@ export const ModelCardGrid = memo(function ModelCardGrid(
 
   return (
     <div className='flex flex-col gap-4 sm:gap-5'>
-      <div className='grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3'>
+      <div
+        ref={listRef}
+        tabIndex={-1}
+        aria-label={t('Page {{current}} of {{total}}', {
+          current: currentPage,
+          total: totalPages,
+        })}
+        className='grid scroll-mt-20 grid-cols-1 gap-3 outline-none sm:gap-4 md:grid-cols-2 xl:grid-cols-3'
+      >
         {pagedModels.map((model) => (
           <ModelCard
             key={model.id ?? model.model_name}
@@ -118,7 +140,7 @@ export const ModelCardGrid = memo(function ModelCardGrid(
               type='button'
               variant='outline'
               size='sm'
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              onClick={() => goTo(Math.max(1, currentPage - 1))}
               disabled={currentPage <= 1}
               className='gap-1.5'
             >
@@ -129,9 +151,7 @@ export const ModelCardGrid = memo(function ModelCardGrid(
               type='button'
               variant='outline'
               size='sm'
-              onClick={() =>
-                setPage((current) => Math.min(totalPages, current + 1))
-              }
+              onClick={() => goTo(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage >= totalPages}
               className='gap-1.5'
             >

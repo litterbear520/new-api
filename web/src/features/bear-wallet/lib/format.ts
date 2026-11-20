@@ -53,13 +53,32 @@ export function monthDay(unixSeconds: number, locale?: string): string {
   }).format(new Date(unixSeconds * 1000))
 }
 
-/** Date and time of an order: 10月25日 14:58 · Oct 25, 14:58 */
-export function orderTime(unixSeconds: number, locale?: string): string {
+/**
+ * Date and time of an order: 10月25日 14:58 · Oct 25, 14:58, with the year
+ * once it is not this year's. h23 runs 00–23: some engines turn hour12 false
+ * into h24, which shows midnight as 24:05 in English.
+ */
+export function orderTime(
+  unixSeconds: number,
+  locale?: string,
+  now = new Date()
+): string {
+  const at = new Date(unixSeconds * 1000)
   return new Intl.DateTimeFormat(locale, {
+    ...(at.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
-  }).format(new Date(unixSeconds * 1000))
+    hourCycle: 'h23',
+  }).format(at)
+}
+
+/** A share as the language writes it: 12.5% · 12,5 % (fr). */
+export function percentText(share: number, locale?: string, digits = 0) {
+  return new Intl.NumberFormat(locale, {
+    style: 'percent',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(share)
 }

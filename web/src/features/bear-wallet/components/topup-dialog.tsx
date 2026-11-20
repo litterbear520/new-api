@@ -38,7 +38,7 @@ import { useSystemConfigStore } from '@/stores/system-config-store'
 
 import { CUSTOM_MAX, CUSTOM_MIN, DEFAULT_PAY } from '../constants'
 import { refusalText, usePayMoney } from '../hooks/use-pay-money'
-import { usd } from '../lib/format'
+import { percentText, usd } from '../lib/format'
 import { starterOffer, type Starter, type TopupOffer } from '../lib/offer'
 import { planDays, quotaToUsd } from '../lib/packs'
 import {
@@ -491,7 +491,9 @@ export function TopupDialog(props: TopupDialogProps) {
                 className='bw-chip'
               >
                 {yuan(chipMoney[index] ?? chip, locale)}
-                {chipQuote.rate > 0 && <sup>+{percent(chipQuote.rate)}%</sup>}
+                {chipQuote.rate > 0 && (
+                  <sup>+{percentText(chipQuote.rate, locale)}</sup>
+                )}
               </Radio.Root>
             )
           })}

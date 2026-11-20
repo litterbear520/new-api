@@ -73,10 +73,15 @@ export function useGlass<T extends HTMLElement>(opts: GlassOptions) {
   }, [])
 }
 
-/** The hairline of light on every glass surface turns towards the mouse. */
+/**
+ * The hairline of light on every glass surface turns towards the mouse.
+ * `ready` says the root is on the page: a page that first shows a loading
+ * state mounts it later, and the light starts then.
+ */
 export function useGlassLight(
   root: RefObject<HTMLElement | null>,
-  selector = '.dw-glass'
+  selector = '.dw-glass',
+  ready = true
 ) {
   useEffect(() => {
     const el = root.current
@@ -120,5 +125,5 @@ export function useGlassLight(
       document.removeEventListener('mouseout', leave)
       if (raf) cancelAnimationFrame(raf)
     }
-  }, [root, selector])
+  }, [root, selector, ready])
 }

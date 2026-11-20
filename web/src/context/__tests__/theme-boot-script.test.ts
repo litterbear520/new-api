@@ -66,6 +66,24 @@ describe('index.html theme boot script', () => {
     expect(document.documentElement).not.toHaveClass('light')
   })
 
+  it('puts the browser bar and native controls on the dark theme', () => {
+    mockSystemDarkMode(false)
+    localStorage.setItem(THEME_STORAGE_KEYS.mode, 'dark')
+    document.head.innerHTML =
+      '<meta name="theme-color" content="#fff" />' +
+      '<meta name="color-scheme" content="light" />'
+
+    runBootScript()
+
+    expect(
+      document.querySelector('meta[name=theme-color]')?.getAttribute('content')
+    ).toBe('#151515')
+    expect(
+      document.querySelector('meta[name=color-scheme]')?.getAttribute('content')
+    ).toBe('dark')
+    document.head.innerHTML = ''
+  })
+
   it('applies the saved light preference even when the system is dark', () => {
     mockSystemDarkMode(true)
     localStorage.setItem(THEME_STORAGE_KEYS.mode, 'light')

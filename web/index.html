@@ -14,6 +14,9 @@
     />
 
     <meta name="theme-color" content="#fff" />
+    <!-- Native controls and the blank page before the CSS arrives; the theme
+         script below and use-theme-color-meta.ts keep it on the theme. -->
+    <meta name="color-scheme" content="light" />
     <!-- Resolve the theme before first paint so the page never flashes light
          and one-shot detectors (e.g. Dark Reader) see the real theme.
          Keep in sync with ThemeProvider and THEME_STORAGE_KEYS.mode. -->
@@ -29,6 +32,14 @@
             : 'light'
         }
         document.documentElement.classList.add(theme)
+        if (theme === 'dark') {
+          // #151515 is the .dark --background, so the browser bar is dark
+          // from the start.
+          var bar = document.querySelector('meta[name=theme-color]')
+          var scheme = document.querySelector('meta[name=color-scheme]')
+          if (bar) bar.setAttribute('content', '#151515')
+          if (scheme) scheme.setAttribute('content', 'dark')
+        }
       })()
     </script>
     <!-- Coming from the docs (another site on this domain), the browser would

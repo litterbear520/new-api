@@ -58,6 +58,11 @@ import { ParamsMenu } from './params-menu'
 import { SystemDialog } from './system-dialog'
 
 const MAX_HEIGHT = 384
+
+const sizesItself = () =>
+  typeof CSS !== 'undefined' &&
+  typeof CSS.supports === 'function' &&
+  CSS.supports('field-sizing', 'content')
 const ROTATE_MS = 5200
 
 type ComposerProps = {
@@ -110,10 +115,11 @@ export const Composer = memo(function Composer(props: ComposerProps) {
     return () => clearInterval(id)
   }, [text])
 
-  // grow with the text up to MAX_HEIGHT, then scroll
+  // grow with the text up to MAX_HEIGHT, then scroll; browsers with
+  // field-sizing do this in CSS without a layout per keystroke
   useEffect(() => {
     const ta = taRef.current
-    if (!ta) return
+    if (!ta || sizesItself()) return
     ta.style.height = 'auto'
     ta.style.height = `${Math.min(ta.scrollHeight, MAX_HEIGHT)}px`
   }, [text, props.empty])

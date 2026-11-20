@@ -867,6 +867,11 @@ For commercial licensing, please contact support@quantumnous.com
   max-height: min(384px, 40vh);
   overflow-y: auto;
   overflow-wrap: anywhere;
+  field-sizing: content;
+}
+/* field-sizing ignores rows: the empty first box keeps its two lines */
+.bc-ta[rows='2'] {
+  min-height: 42px;
 }
 .bc .bc-ta:focus-visible {
   outline: none;

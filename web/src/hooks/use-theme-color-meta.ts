@@ -56,7 +56,8 @@ function toHex(color: string): string {
 }
 
 /**
- * Keeps the browser UI colour (meta theme-color) on the page background.
+ * Keeps the browser UI colour (meta theme-color) on the page background,
+ * and meta color-scheme on the theme.
  * The colour is read from the page itself, so it follows a theme switch and
  * a colour preset alike.
  */
@@ -64,6 +65,7 @@ export function useThemeColorMeta() {
   useEffect(() => {
     const meta = document.querySelector("meta[name='theme-color']")
     if (!meta) return
+    const scheme = document.querySelector("meta[name='color-scheme']")
 
     let frame = 0
     const sync = () => {
@@ -73,6 +75,11 @@ export function useThemeColorMeta() {
         meta.setAttribute(
           'content',
           toHex(getComputedStyle(document.body).backgroundColor)
+        )
+        // index.html set it for the first theme; it follows every switch.
+        scheme?.setAttribute(
+          'content',
+          document.documentElement.classList.contains('dark') ? 'dark' : 'light'
         )
       })
     }

@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { percentText } from '@/features/bear-wallet/lib/format'
 import { API_KEY_STATUS, API_KEY_STATUSES } from '@/features/keys/constants'
 import { toIntlLocale } from '@/i18n/languages'
 import { formatTimestamp, formatTimestampRelative } from '@/lib/format'
@@ -181,7 +182,7 @@ export function UsageBreakdown(props: UsageBreakdownProps) {
                         />
                       </div>
                       <span className='text-muted-foreground w-11 text-right text-xs!'>
-                        {total > 0 ? `${(share * 100).toFixed(1)}%` : '–'}
+                        {total > 0 ? percentText(share, locale, 1) : '–'}
                       </span>
                     </div>
                   </TableCell>

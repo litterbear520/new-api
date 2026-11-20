@@ -24,7 +24,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import i18n from 'i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -115,6 +115,23 @@ async function renderPricing(entry: string, firstModel = 'chat-model') {
     </QueryClientProvider>
   )
   await screen.findByRole('heading', { name: firstModel })
+  return router
+}
+
+/** 25 models, so the cards take two pages of 20. */
+function serveManyModels() {
+  const models = Array.from({ length: 25 }, (_, i) => ({
+    ...PRICING.data[0],
+    id: i + 1,
+    model_name: `model-${String(i + 1).padStart(2, '0')}`,
+  }))
+  const reply = vi.mocked(api.get).getMockImplementation()
+  if (!reply) throw new Error('api.get is not mocked')
+  vi.mocked(api.get).mockImplementation(async (url: string, config) =>
+    url === '/api/pricing'
+      ? { data: { ...PRICING, data: models } }
+      : reply(url, config)
+  )
 }
 
 describe('pricing page', () => {
@@ -152,6 +169,34 @@ describe('pricing page', () => {
     expect(
       screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
     ).toEqual(['per-call-model'])
+  })
+
+  it('opens on the page the URL names', async () => {
+    serveManyModels()
+    await renderPricing('/pricing/?page=2', 'model-21')
+    expect(screen.queryByRole('heading', { name: 'model-01' })).toBeNull()
+  })
+
+  it('writes the page into the URL, so back from a model returns to it', async () => {
+    serveManyModels()
+    const router = await renderPricing('/pricing/', 'model-01')
+    fireEvent.click(screen.getByRole('button', { name: /Next page/ }))
+    await screen.findByRole('heading', { name: 'model-21' })
+    await waitFor(() =>
+      expect(router.state.location.search).toMatchObject({ page: 2 })
+    )
+  })
+
+  it('starts a new search on page 1', async () => {
+    serveManyModels()
+    const router = await renderPricing('/pricing/?page=2', 'model-21')
+    fireEvent.change(screen.getByRole('textbox', { name: /search/i }), {
+      target: { value: 'model' },
+    })
+    await screen.findByRole('heading', { name: 'model-01' })
+    await waitFor(() =>
+      expect(router.state.location.search).not.toHaveProperty('page')
+    )
   })
 
   it.each([

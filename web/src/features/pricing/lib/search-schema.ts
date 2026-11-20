@@ -44,6 +44,8 @@ export const pricingSearchSchema = z.object({
   tokenUnit: z.enum(['M', 'K']).optional(),
   view: z.enum(['card', 'table']).optional().catch(undefined),
   rechargePrice: z.boolean().optional(),
+  /** The card list's page, so 返回 and the browser's back land on it again. */
+  page: z.number().int().min(2).optional().catch(undefined),
 })
 
 export type PricingSearch = z.infer<typeof pricingSearchSchema>

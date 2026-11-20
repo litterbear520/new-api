@@ -121,7 +121,6 @@ export function BearChat() {
   const [images, setImages] = useState<ChatImage[]>([])
   const bear = useBear({ svg: bearEl, perch: perchRef, dark: night, mood })
   const director = bear.director
-  useGlassLight(rootRef, '.bc-glass')
 
   const onSvg = useCallback((svg: SVGSVGElement | null) => {
     bearRef.current = svg
@@ -148,6 +147,7 @@ export function BearChat() {
   const width = panelOn ? panelWidth(cardW, panelW) : 0
 
   const shown = load !== 'loading' && env.models.length > 0
+  useGlassLight(rootRef, '.bc-glass', shown)
 
   // sizes: the card for the panel, the dock for the chat's bottom padding
   useEffect(() => {

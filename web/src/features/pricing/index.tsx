@@ -16,7 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useMemo } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { PublicLayout } from '@/components/layout'
@@ -83,7 +84,7 @@ export function Pricing() {
   )
 
   // Carried to the details page, so its back link returns to the same view
-  const linkSearch = useMemo<PricingSearch>(
+  const filterSearch = useMemo<PricingSearch>(
     () => ({
       search: searchInput || undefined,
       sort: sortBy === SORT_OPTIONS.NAME ? undefined : sortBy,
@@ -94,6 +95,34 @@ export function Pricing() {
       tag: tagFilter === FILTER_ALL ? undefined : tagFilter,
     }),
     [searchInput, sortBy, vendorFilter, groupFilter, quotaTypeFilter, tagFilter]
+  )
+
+  // The page lives in the URL too: the browser's back from a model returns
+  // to it. Other filters give other results, so a change starts at page 1.
+  const navigate = useNavigate({ from: '/pricing/' })
+  const urlPage = useSearch({ from: '/pricing/' }).page
+  const [page, setPage] = useState(urlPage ?? 1)
+  const changePage = useCallback(
+    (next: number) => {
+      setPage(next)
+      void navigate({
+        search: (prev) => ({ ...prev, page: next > 1 ? next : undefined }),
+        replace: true,
+        resetScroll: false,
+      })
+    },
+    [navigate]
+  )
+  const filterKey = JSON.stringify(filterSearch)
+  const shownFilters = useRef(filterKey)
+  useEffect(() => {
+    if (shownFilters.current === filterKey) return
+    shownFilters.current = filterKey
+    changePage(1)
+  }, [filterKey, changePage])
+  const linkSearch = useMemo<PricingSearch>(
+    () => ({ ...filterSearch, page: page > 1 ? page : undefined }),
+    [filterSearch, page]
   )
 
   // The site sells $1 of credit for `priceRate` yuan; say so when it is a deal
@@ -181,6 +210,8 @@ export function Pricing() {
                 usdExchangeRate={usdExchangeRate}
                 selectedGroup={groupFilter}
                 linkSearch={linkSearch}
+                page={page}
+                onPageChange={changePage}
               />
             )}
           </div>
