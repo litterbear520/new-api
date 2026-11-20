@@ -530,7 +530,7 @@ export function TopupDialog(props: TopupDialogProps) {
         {opened ? (
           <p className='bw-acct' role='status'>
             {t(
-              'The cashier opened in a new tab. Come back here after paying and the balance updates by itself.'
+              'Taking you to the cashier. After paying you come back here and the balance updates by itself.'
             )}
           </p>
         ) : (

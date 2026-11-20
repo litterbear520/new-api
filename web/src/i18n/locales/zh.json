@@ -8568,6 +8568,7 @@
     "This browser could not save your latest changes, so they last only until you close the page. Delete old projects to free space.": "浏览器没能保存最近的改动，关掉页面就没了。删掉一些旧项目，腾出空间。",
     "Browser storage is full, so the picture was not added. Delete old projects to free space.": "浏览器存储空间满了，这张图没有加上。删掉一些旧项目，腾出空间。",
     "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "有些文件跳过了：这里只能用 PNG、JPEG、WebP、GIF、BMP、AVIF 和 HEIC 图片。",
-    "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "浏览器存储空间满了，这个技能没有保存。删掉不再用的技能，再试一次。"
+    "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "浏览器存储空间满了，这个技能没有保存。删掉不再用的技能，再试一次。",
+    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "正在前往收银台。付完会回到这里，余额会自动更新。"
   }
 }

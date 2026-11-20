@@ -47,16 +47,6 @@ export function getPaymentErrorTranslation(
 }
 
 /**
- * Check if browser is Safari
- */
-function isSafariBrowser(): boolean {
-  return (
-    navigator.userAgent.includes('Safari') &&
-    !navigator.userAgent.includes('Chrome')
-  )
-}
-
-/**
  * Submit payment form (for non-Stripe payments)
  */
 export function submitPaymentForm(
@@ -67,10 +57,8 @@ export function submitPaymentForm(
   form.action = url
   form.method = 'POST'
 
-  // Don't open in new tab for Safari
-  if (!isSafariBrowser()) {
-    form.target = '_blank'
-  }
+  // Same tab in every browser: the cashier comes back to the wallet by
+  // itself, and a new tab opened after an awaited request can be blocked.
 
   // Add form parameters
   Object.entries(params).forEach(([key, value]) => {
