@@ -55,6 +55,8 @@ type HeroProps = {
   /** The composer, in its slot under the greeting. */
   composer: ReactNode
   onPick: (skill: Skill, text: string) => void
+  /** The last recent project was deleted from 「全部」: where the focus goes. */
+  onProjectsGone?: () => void
 }
 
 /**
@@ -77,7 +79,7 @@ export function Hero(props: HeroProps) {
       {props.composer}
       <div className='bd-rows'>
         <HelpRow onPick={props.onPick} />
-        <ResumeStrip />
+        <ResumeStrip onEmptied={props.onProjectsGone} />
       </div>
     </section>
   )

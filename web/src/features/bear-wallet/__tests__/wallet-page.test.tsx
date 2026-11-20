@@ -257,7 +257,8 @@ describe('wallet', () => {
 
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
     const history = screen.getByRole('region', { name: 'Top-up history' })
-    expect(await within(history).findByText('USR7NOold')).toBeInTheDocument()
+    // Once in its column, once under the time for phones
+    expect(await within(history).findAllByText('USR7NOold')).toHaveLength(2)
     expect(within(history).getByText('+$100')).toBeInTheDocument()
     expect(within(history).getByText('Credited')).toBeInTheDocument()
     expect(within(history).getByText('Top-up bonus')).toBeInTheDocument()
@@ -322,6 +323,41 @@ describe('wallet', () => {
     fireEvent.click(screen.getByRole('radio', { name: '¥50+8%' }))
     expect(input).toHaveValue('')
     expect(await line('bw-res', 'You get $500 + $40 bonus')).toBeInTheDocument()
+  })
+
+  it('says an amount is under the minimum only once typing stops, and links it to the field', async () => {
+    topupInfo = { ...topupInfo, min_topup: 100 }
+    await renderWallet(returning, { initialTab: 'topup' })
+    const input = await screen.findByRole('textbox', {
+      name: 'Custom amount in yuan',
+    })
+
+    fireEvent.change(input, { target: { value: '5' } })
+    expect(
+      screen.queryByText('The minimum top-up is $100')
+    ).not.toBeInTheDocument()
+    expect(input).not.toHaveAttribute('aria-invalid')
+    expect(
+      screen.getByRole('button', { name: /^Continue to pay/ })
+    ).toBeDisabled()
+
+    const message = await screen.findByText('The minimum top-up is $100')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAttribute('aria-describedby', message.closest('p')?.id)
+  })
+
+  it('says an amount is under the minimum as soon as the field is left', async () => {
+    topupInfo = { ...topupInfo, min_topup: 100 }
+    await renderWallet(returning, { initialTab: 'topup' })
+    const input = await screen.findByRole('textbox', {
+      name: 'Custom amount in yuan',
+    })
+
+    fireEvent.change(input, { target: { value: '5' } })
+    fireEvent.blur(input)
+
+    expect(screen.getByText('The minimum top-up is $100')).toBeInTheDocument()
+    expect(input).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('opens on the amount picked on the overview', async () => {
@@ -547,18 +583,52 @@ describe('wallet', () => {
     const history = screen.getByRole('region', { name: 'Top-up history' })
     for (let shown = 20; shown <= 100; shown += 20) {
       expect(
-        await within(history).findByText(`USR7NOrow-${shown}`)
-      ).toBeInTheDocument()
+        await within(history).findAllByText(`USR7NOrow-${shown}`)
+      ).toHaveLength(2)
       const more = within(history).getByRole('button', { name: 'Show more' })
-      await waitFor(() => expect(more).toBeEnabled())
+      await waitFor(() =>
+        expect(more).not.toHaveAttribute('aria-disabled', 'true')
+      )
       fireEvent.click(more)
     }
-    expect(
-      await within(history).findByText('USR7NOrow-101')
-    ).toBeInTheDocument()
+    expect(await within(history).findAllByText('USR7NOrow-101')).toHaveLength(2)
     expect(
       within(history).queryByRole('button', { name: 'Show more' })
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps Show more focusable while the next page loads', async () => {
+    const user = userEvent.setup()
+    topups = Array.from({ length: 21 }, (_, i) => ({
+      ...PAID,
+      id: i + 1,
+      trade_no: `USR7NOrow-${i + 1}`,
+    }))
+    // The second page answers when the test says so.
+    let answer = () => {}
+    const reply = vi.mocked(api.get).getMockImplementation()
+    if (!reply) throw new Error('api.get is not mocked')
+    vi.mocked(api.get).mockImplementation(async (url, config) => {
+      if (url.startsWith('/api/user/topup/self?p=2&')) {
+        await new Promise<void>((resolve) => {
+          answer = resolve
+        })
+      }
+      return reply(url, config)
+    })
+    await renderWallet(returning)
+    const history = screen.getByRole('region', { name: 'Top-up history' })
+    await within(history).findAllByText('USR7NOrow-20')
+    const more = within(history).getByRole('button', { name: 'Show more' })
+
+    more.focus()
+    await user.keyboard('{Enter}')
+
+    await waitFor(() => expect(more).toHaveAttribute('aria-disabled', 'true'))
+    expect(more).not.toBeDisabled()
+    expect(more).toHaveFocus()
+    answer()
+    expect(await within(history).findAllByText('USR7NOrow-21')).toHaveLength(2)
   })
 
   it('truncates a long order number inside its cell', async () => {
@@ -566,11 +636,31 @@ describe('wallet', () => {
     topups = [{ ...PAID, trade_no: trade }]
     await renderWallet(returning)
     const history = screen.getByRole('region', { name: 'Top-up history' })
-    const order = await within(history).findByText(trade)
+    const [phone, column] = await within(history).findAllByText(trade)
     // Auto table layout ignores max-width on a cell, so the limit sits on the
     // element that truncates.
-    expect(order).toHaveClass('max-w-56')
-    expect(order.closest('td')).not.toHaveClass('max-w-56')
+    expect(column).toHaveClass('max-w-56')
+    expect(column.closest('td')).not.toHaveClass('max-w-56')
+    expect(phone).toHaveClass('max-w-32')
+    expect(phone.closest('td')).not.toHaveClass('max-w-32')
+  })
+
+  it('shows the order number under the time on phones, with a button that copies it', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText')
+    await renderWallet(returning)
+    const history = screen.getByRole('region', { name: 'Top-up history' })
+
+    const copy = await within(history).findByRole('button', {
+      name: 'Copy order number: USR7NOold',
+    })
+    const time = copy.closest('td')
+    expect(time).toBe(within(history).getAllByRole('row')[1].firstElementChild)
+    expect(copy.parentElement).toHaveClass('sm:hidden')
+    expect(copy.parentElement).toHaveTextContent('USR7NOold')
+
+    await user.click(copy)
+    expect(writeText).toHaveBeenCalledWith('USR7NOold')
   })
 
   it('moves between amounts with the arrow keys, one Tab stop per group', async () => {
@@ -930,7 +1020,8 @@ describe('wallet', () => {
 
     historyFails = false
     fireEvent.click(within(history).getByRole('button', { name: 'Retry' }))
-    expect(await within(history).findByText('USR7NOold')).toBeInTheDocument()
+    // Once in its column, once under the time for phones
+    expect(await within(history).findAllByText('USR7NOold')).toHaveLength(2)
   })
 
   it('stops saying it is confirming once it stops asking', async () => {

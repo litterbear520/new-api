@@ -28,6 +28,10 @@ type MainProps = React.HTMLAttributes<HTMLElement> & {
   pageScroll?: boolean
 }
 
+/**
+ * A console page's frame. The main landmark is ConsoleScroller's, one per
+ * page, so this is a plain box inside it.
+ */
 export function Main({
   className,
   fluid = true,
@@ -35,7 +39,8 @@ export function Main({
   ...props
 }: MainProps) {
   return (
-    <main
+    <div
+      data-slot='main'
       data-page-scroll={pageScroll || undefined}
       className={cn(
         'flex min-h-0 flex-1 flex-col overflow-hidden',

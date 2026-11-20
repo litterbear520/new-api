@@ -20,6 +20,7 @@ import { ArrowUp, ImagePlus, NotebookPen, Plus, X } from 'lucide-react'
 import {
   memo,
   useEffect,
+  useId,
   useRef,
   useState,
   type ClipboardEvent,
@@ -29,6 +30,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react'
+import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -95,6 +97,7 @@ export const Composer = memo(function Composer(props: ComposerProps) {
   const system = convId ? convSystem : draftSystem
   const examples = getExamples(t)
   const example = examples[rot % examples.length]
+  const exampleId = useId()
   const glass = useGlass<HTMLFormElement>(
     props.dark
       ? { bezel: 18, depth: 16, frost: 6, tint: [0.3, 0.55], tone: 'sea' }
@@ -132,12 +135,16 @@ export const Composer = memo(function Composer(props: ComposerProps) {
     props.setImages([])
   }
 
+  // the example goes into the box, ready to edit, with the caret at its end
+  const fillExample = () => {
+    flushSync(() => setText(example))
+    const ta = taRef.current
+    if (!ta) return
+    ta.focus()
+    ta.setSelectionRange(example.length, example.length)
+  }
+
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab' && !text && !e.shiftKey) {
-      e.preventDefault()
-      setText(example)
-      return
-    }
     if (
       e.key === 'Enter' &&
       !e.shiftKey &&
@@ -206,14 +213,6 @@ export const Composer = memo(function Composer(props: ComposerProps) {
           </div>
         )}
         <div className='bc-taw'>
-          {!text && (
-            <div className='bc-ph' aria-hidden='true'>
-              <span className='bc-ph-ex'>
-                {t('Ask anything, e.g. {{example}}', { example })}
-              </span>
-              <kbd className='bc-tabk'>Tab</kbd>
-            </div>
-          )}
           <textarea
             ref={taRef}
             className='bc-ta'
@@ -235,6 +234,25 @@ export const Composer = memo(function Composer(props: ComposerProps) {
               props.director?.blur()
             }}
           />
+          {/* after the box, so Tab goes from the box to the button */}
+          {!text && (
+            <div className='bc-ph'>
+              <span className='bc-ph-ex' aria-hidden='true'>
+                {t('Ask anything, e.g. {{example}}', { example })}
+              </span>
+              <button
+                type='button'
+                className='bc-useex'
+                aria-describedby={exampleId}
+                onClick={fillExample}
+              >
+                {t('Use example')}
+              </button>
+              <span id={exampleId} hidden>
+                {example}
+              </span>
+            </div>
+          )}
         </div>
         <div className='bc-tb'>
           <DropdownMenu>

@@ -96,6 +96,12 @@ describe('meteors', () => {
     expect(onSighting).toHaveBeenLastCalledWith(true)
   })
 
+  test('are for the pointer only: Tab never lands on one', () => {
+    renderMeteors()
+    act(() => vi.advanceTimersByTime(3000))
+    expect(meteor()).toHaveAttribute('tabindex', '-1')
+  })
+
   test('a caught meteor makes a wish where it was', () => {
     const { onWish } = renderMeteors()
     act(() => vi.advanceTimersByTime(3000))

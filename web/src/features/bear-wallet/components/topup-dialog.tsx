@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Radio } from '@base-ui/react/radio'
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
@@ -173,6 +173,10 @@ export function TopupDialog(props: TopupDialogProps) {
   const [methodInput, setMethodInput] = useState<string | null>(null)
   const [opening, setOpening] = useState(false)
   const [opened, setOpened] = useState(false)
+  // The field was left since its last edit: an amount under the minimum is
+  // pointed out then, or once typing has stopped, not at the first digit.
+  const [customLeft, setCustomLeft] = useState(false)
+  const resultId = useId()
   const { processPayment } = usePayment()
 
   const start = firstChoice(props, chips, starter)
@@ -190,8 +194,19 @@ export function TopupDialog(props: TopupDialogProps) {
   else if (choice.kind === 'custom') pay = parseCustom(custom) ?? 0
   const first = props.canGetStarter ? props.rules.first : null
   const amount = quote(pay, props.price, tiers, first).amount
-  const belowMin =
-    choice.kind !== 'gift' && amount > 0 && amount < props.minTopup
+  const isBelowMin = (dollars: number) =>
+    dollars > 0 && dollars < props.minTopup
+  const belowMin = choice.kind !== 'gift' && isBelowMin(amount)
+  const settledCustom = useDebounce(custom, QUOTE_DEBOUNCE_MS)
+  const showBelowMin =
+    belowMin &&
+    (choice.kind !== 'custom' ||
+      customLeft ||
+      settledCustom === custom ||
+      // Typing from one amount under the minimum to another keeps it shown.
+      isBelowMin(
+        quote(parseCustom(settledCustom) ?? 0, props.price, tiers, first).amount
+      ))
   const request = choice.kind !== 'gift' && !belowMin ? toRequest(amount) : 0
   // Buttons are asked for at once (and ahead of time); typing waits a moment.
   const typed = useDebounce(request, QUOTE_DEBOUNCE_MS)
@@ -252,6 +267,7 @@ export function TopupDialog(props: TopupDialogProps) {
     setCustomInput(null)
     setMethodInput(null)
     setOpened(false)
+    setCustomLeft(false)
   }
 
   let result = null
@@ -280,13 +296,16 @@ export function TopupDialog(props: TopupDialogProps) {
       </span>
     )
   } else if (belowMin) {
-    result = (
-      <span className='bw-dim'>
-        {t('The minimum top-up is {{amount}}', {
-          amount: usd(props.minTopup, locale),
-        })}
-      </span>
-    )
+    // Until then the pay button alone is off.
+    if (showBelowMin) {
+      result = (
+        <span className='bw-dim'>
+          {t('The minimum top-up is {{amount}}', {
+            amount: usd(props.minTopup, locale),
+          })}
+        </span>
+      )
+    }
   } else if (shownPrice?.refusal) {
     result = (
       <span className='bw-dim'>
@@ -489,7 +508,11 @@ export function TopupDialog(props: TopupDialogProps) {
               max: CUSTOM_MAX,
             })}
             aria-label={t('Custom amount in yuan')}
+            aria-invalid={showBelowMin || undefined}
+            aria-describedby={showBelowMin ? resultId : undefined}
+            onBlur={() => setCustomLeft(true)}
             onChange={(event) => {
+              setCustomLeft(false)
               setPicked({ kind: 'custom' })
               setCustomInput(
                 event.target.value.replaceAll(/\D/g, '').slice(0, 6)
@@ -497,7 +520,7 @@ export function TopupDialog(props: TopupDialogProps) {
             }}
           />
         </label>
-        <p className='bw-res' aria-live='polite'>
+        <p id={resultId} className='bw-res' aria-live='polite'>
           {result}
         </p>
         {bonusNote && <p className='bw-fine'>{bonusNote}</p>}

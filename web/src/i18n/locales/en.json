@@ -8569,6 +8569,23 @@
     "Browser storage is full, so the picture was not added. Delete old projects to free space.": "Browser storage is full, so the picture was not added. Delete old projects to free space.",
     "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.",
     "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.",
-    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "Taking you to the cashier. After paying you come back here and the balance updates by itself."
+    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "Taking you to the cashier. After paying you come back here and the balance updates by itself.",
+    "Compare view": "Compare view",
+    "Picture deleted": "Picture deleted",
+    "Pictures deleted": "Pictures deleted",
+    "Set deleted": "Set deleted",
+    "Use example": "Use example",
+    "Replying": "Replying",
+    "Reply finished": "Reply finished",
+    "Reply stopped": "Reply stopped",
+    "Reply failed": "Reply failed",
+    "Recent conversations: {{title}}": "Recent conversations: {{title}}",
+    "View log details: {{time}}": "View log details: {{time}}",
+    "Latency test done. Fastest: {{latency}} ms": "Latency test done. Fastest: {{latency}} ms",
+    "Latency test done. No address can be reached": "Latency test done. No address can be reached",
+    "{{metric}} per day, by model family": "{{metric}} per day, by model family",
+    "{{metric}} per hour, by model family": "{{metric}} per hour, by model family",
+    "Copy order number": "Copy order number",
+    "Show password": "Show password"
   }
 }

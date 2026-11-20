@@ -47,7 +47,12 @@ const NOTICE_KEYS = {
   },
 } as const
 
-const linkClassName = 'hover:text-foreground underline underline-offset-4'
+// The notice sits in the sign-in dialog: a new tab keeps what was typed there.
+const legalLinkProps = {
+  className: 'hover:text-foreground underline underline-offset-4',
+  target: '_blank',
+  rel: 'noopener noreferrer',
+}
 
 /** Passive legal notice: continuing means agreeing, no checkbox needed. */
 export function TermsFooter(props: TermsFooterProps) {
@@ -80,8 +85,8 @@ export function TermsFooter(props: TermsFooterProps) {
         i18nKey={i18nKey}
         values={{ systemName }}
         components={{
-          terms: <a href='/user-agreement' className={linkClassName} />,
-          privacy: <a href='/privacy-policy' className={linkClassName} />,
+          terms: <a href='/user-agreement' {...legalLinkProps} />,
+          privacy: <a href='/privacy-policy' {...legalLinkProps} />,
         }}
       />
     </p>

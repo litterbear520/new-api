@@ -129,9 +129,14 @@ For commercial licensing, please contact support@quantumnous.com
 .bd-cv button:disabled {
   cursor: default;
 }
-/* The canvas itself takes the keyboard without a ring (as in the prototype). */
+/*
+ * Keyboard focus on the canvas itself: an inner ring (the host clips
+ * anything outside). An outline paints above the canvas's own layers and
+ * stays in forced colours. Accent on the floor: 3.6:1 light, 4.5:1+ dark.
+ */
 .bd-cv.bd-cv[tabindex]:focus-visible {
-  outline: none;
+  outline: 2px solid var(--bd-accent);
+  outline-offset: -2px;
 }
 /* The project pane's glass bar covers the top right corner (project.css). */
 .bd-cvp .bd-cv {

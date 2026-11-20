@@ -108,16 +108,17 @@ export function Pricing() {
   if (isLoading) {
     return (
       <PublicLayout showMainContainer={false}>
-        <div className='mx-auto w-full max-w-6xl px-4 pt-16 pb-8 sm:px-6 sm:pt-20 sm:pb-10'>
+        <main className='mx-auto w-full max-w-6xl px-4 pt-16 pb-8 sm:px-6 sm:pt-20 sm:pb-10'>
           <LoadingSkeleton viewMode='card' />
-        </div>
+        </main>
       </PublicLayout>
     )
   }
 
   return (
     <PublicLayout showMainContainer={false}>
-      <div className='relative'>
+      {/* the full-width page, its backdrop glow included, is the main landmark */}
+      <main className='relative'>
         <div
           aria-hidden
           className='pointer-events-none absolute inset-x-0 top-0 h-[520px] opacity-20 dark:opacity-[0.10]'
@@ -184,7 +185,7 @@ export function Pricing() {
             )}
           </div>
         </PageTransition>
-      </div>
+      </main>
     </PublicLayout>
   )
 }

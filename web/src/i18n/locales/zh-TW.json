@@ -8569,6 +8569,23 @@
     "Browser storage is full, so the picture was not added. Delete old projects to free space.": "瀏覽器儲存空間滿了，這張圖沒有加上。刪掉一些舊專案，騰出空間。",
     "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "有些檔案跳過了：這裡只能用 PNG、JPEG、WebP、GIF、BMP、AVIF 和 HEIC 圖片。",
     "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "瀏覽器儲存空間滿了，這個技能沒有儲存。刪掉不再用的技能，再試一次。",
-    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "正在前往收銀台。付完會回到這裡，餘額會自動更新。"
+    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "正在前往收銀台。付完會回到這裡，餘額會自動更新。",
+    "Compare view": "對比方式",
+    "Picture deleted": "已刪除這張圖",
+    "Pictures deleted": "已刪除這些圖",
+    "Set deleted": "已刪除這一組",
+    "Use example": "使用範例",
+    "Replying": "正在回覆",
+    "Reply finished": "回覆完成",
+    "Reply stopped": "已停止回覆",
+    "Reply failed": "回覆出錯",
+    "Recent conversations: {{title}}": "最近的對話：{{title}}",
+    "View log details: {{time}}": "查看日誌詳情：{{time}}",
+    "Latency test done. Fastest: {{latency}} ms": "測速完成，最快 {{latency}} 毫秒",
+    "Latency test done. No address can be reached": "測速完成，所有位址都無法連線",
+    "{{metric}} per day, by model family": "{{metric}}：每天 · 按模型系列",
+    "{{metric}} per hour, by model family": "{{metric}}：每小時 · 按模型系列",
+    "Copy order number": "複製訂單號",
+    "Show password": "顯示密碼"
   }
 }

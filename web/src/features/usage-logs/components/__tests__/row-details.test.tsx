@@ -24,7 +24,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -100,13 +100,22 @@ it('opens the log details sheet when a log row is clicked', async () => {
   expect(sheet).toHaveTextContent('req-row-1')
 })
 
-it('opens the log details sheet when Enter is pressed on a focused log row', async () => {
+it('opens the log details sheet when Enter is pressed on the time button of a row', async () => {
   const user = userEvent.setup()
   const row = await renderLogs()
+  const open = within(row).getByRole('button', {
+    name: /^View log details: (\d{4}-)?\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
+  })
 
-  row.focus()
+  open.focus()
   await user.keyboard('{Enter}')
 
   const sheet = await screen.findByRole('dialog', { name: /Log Details/ })
   expect(sheet).toHaveTextContent('req-row-1')
+})
+
+it('leaves the log row itself out of the Tab order when the row is rendered', async () => {
+  const row = await renderLogs()
+
+  expect(row).not.toHaveAttribute('tabindex')
 })

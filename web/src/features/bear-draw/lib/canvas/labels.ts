@@ -92,6 +92,7 @@ export type CanvasLabels = {
   slideHint: string
   escClose: string
   divider: string
+  compareView: string
 }
 
 export const DEFAULT_LABELS: CanvasLabels = {
@@ -165,6 +166,7 @@ export const DEFAULT_LABELS: CanvasLabels = {
   slideHint: 'Drag the line in the middle · ← → to nudge · Esc to close',
   escClose: 'Esc to close',
   divider: 'Compare divider',
+  compareView: 'Compare view',
 }
 
 /** Labels with the given ones on top; undefined entries keep the old text. */

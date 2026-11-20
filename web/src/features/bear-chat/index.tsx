@@ -36,6 +36,7 @@ import { LoadingState } from '@/components/loading-state'
 import { useTheme } from '@/context/theme-provider'
 import { useGlassLight } from '@/features/draw/hooks/use-glass'
 import { disposeGlass } from '@/features/draw/lib/glass'
+import { imeOwnsKey } from '@/features/draw/lib/ime'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 import { currentConversation, useBearChatStore } from '@/stores/bear-chat-store'
@@ -48,6 +49,7 @@ import { Composer } from './components/composer'
 import { EmptyHero } from './components/empty-hero'
 import { Meteors } from './components/meteor'
 import { NightSkyCanvas } from './components/night-sky'
+import { ReplyAnnouncer } from './components/reply-announcer'
 import { Thread } from './components/thread'
 import { Topbar } from './components/topbar'
 import { useBear } from './hooks/use-bear'
@@ -169,10 +171,11 @@ export function BearChat() {
     openPanel(writingId, { view: 'code', max: false })
   }, [writingId, narrow, openPanel])
 
-  // Esc stops the reply, unless it is closing a menu or a dialog
+  // Esc stops the reply, unless it is closing a menu, a dialog or an IME's
+  // candidate list
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return
+      if (e.key !== 'Escape' || e.defaultPrevented || imeOwnsKey(e)) return
       const target = e.target instanceof Element ? e.target : null
       if (
         target?.closest(
@@ -265,6 +268,7 @@ export function BearChat() {
 
   const stick = useStickToBottom({ initial: 'instant', resize: 'smooth' })
   const { scrollToBottom } = stick
+  const jumpShown = Boolean(conv) && !stick.isNearBottom
   useEffect(() => {
     if (conv?.id) void scrollToBottom('instant')
   }, [conv?.id, scrollToBottom])
@@ -410,12 +414,20 @@ export function BearChat() {
             <div ref={dockRef} className='bc-dock-in'>
               <button
                 type='button'
-                className={cn(
-                  'bc-tobot bc-glass',
-                  conv && !stick.isNearBottom && 'bc-on'
-                )}
+                className={cn('bc-tobot bc-glass', jumpShown && 'bc-on')}
                 aria-label={t('Jump to the latest')}
-                onClick={() => void scrollToBottom('smooth')}
+                // faded out, it is out of the Tab order and screen readers
+                inert={!jumpShown}
+                onClick={(e) => {
+                  void scrollToBottom('smooth')
+                  // from the keyboard (detail 0) the button is about to
+                  // fade out, so the focus goes on to the message box
+                  if (e.detail === 0) {
+                    rootRef.current
+                      ?.querySelector<HTMLTextAreaElement>('.bc-ta')
+                      ?.focus()
+                  }
+                }}
               >
                 <BearSvg className='bc-mini' />
                 <ArrowDown className='bc-arr' aria-hidden='true' />
@@ -439,6 +451,7 @@ export function BearChat() {
             </div>
           </div>
         </div>
+        <ReplyAnnouncer />
         {load === 'unavailable' && (
           <p className='bc-storage-note'>
             {t(

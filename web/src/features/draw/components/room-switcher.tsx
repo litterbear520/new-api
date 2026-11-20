@@ -34,6 +34,7 @@ import { coverOf, roomItems, useDrawStore } from '@/stores/draw-store'
 
 import { useImageUrl } from '../hooks/use-image-url'
 import { deleteRoomWithUndo, renameRoom } from '../lib/actions'
+import { imeOwnsKey } from '../lib/ime'
 import type { DrawRoom } from '../types'
 import { Bear } from './bear'
 import { useRelativeTime } from './relative-time'
@@ -90,6 +91,7 @@ export function RoomSwitcher(props: { room: DrawRoom }) {
         autoFocus
         onFocus={(e) => e.currentTarget.select()}
         onKeyDown={(e) => {
+          if (imeOwnsKey(e.nativeEvent)) return
           if (e.key === 'Enter') {
             e.preventDefault()
             renameRoom(props.room, e.currentTarget.value)

@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Languages, Check } from 'lucide-react'
+import { Languages } from 'lucide-react'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -25,20 +25,22 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
   INTERFACE_LANGUAGE_OPTIONS,
   normalizeInterfaceLanguage,
+  toIntlLocale,
 } from '@/i18n/languages'
 import { api } from '@/lib/api'
-import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 /**
- * The interface languages as menu items, each with a small flag and a check
- * on the current one.
+ * The interface languages as one-of-a-set menu items, each with a small flag;
+ * the current one is checked. Each name is marked with its own language, so
+ * a screen reader says Русский in Russian, not with the page's voice.
  */
 function LanguageMenuItems() {
   const { i18n } = useTranslation()
@@ -60,21 +62,17 @@ function LanguageMenuItems() {
   )
 
   return (
-    <>
+    <DropdownMenuRadioGroup
+      value={currentLanguage}
+      onValueChange={(code: string) => handleChangeLanguage(code)}
+    >
       {INTERFACE_LANGUAGE_OPTIONS.map((lang) => (
-        <DropdownMenuItem
-          key={lang.code}
-          onClick={() => handleChangeLanguage(lang.code)}
-        >
+        <DropdownMenuRadioItem key={lang.code} value={lang.code} closeOnClick>
           <LanguageFlag code={lang.code} />
-          {lang.label}
-          <Check
-            size={14}
-            className={cn('ms-auto', currentLanguage !== lang.code && 'hidden')}
-          />
-        </DropdownMenuItem>
+          <span lang={toIntlLocale(lang.code)}>{lang.label}</span>
+        </DropdownMenuRadioItem>
       ))}
-    </>
+    </DropdownMenuRadioGroup>
   )
 }
 

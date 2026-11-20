@@ -485,13 +485,12 @@ function Setup(props: {
           >
             <div className='ns-code-file'>
               <code translate='no'>{tool.file}</code>
-              <button
-                type='button'
-                onClick={copySnippet.copy}
-                aria-live='polite'
-              >
+              <button type='button' onClick={copySnippet.copy}>
                 {copySnippet.label}
               </button>
+              <span role='status' className='sr-only'>
+                {copySnippet.status}
+              </span>
             </div>
             <Snippet tool={tool} code={snippet} />
           </div>

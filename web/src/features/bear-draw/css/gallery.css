@@ -170,11 +170,31 @@ For commercial licensing, please contact support@quantumnous.com
   font-weight: 500;
   color: #111;
   background: rgb(255 255 255 / 0.94);
+  /* while the overlay is see-through a tap goes to the picture, not here */
+  pointer-events: none;
+}
+.bd-gc:hover .bd-gc-use,
+.bd-gc:focus-within .bd-gc-use {
   pointer-events: auto;
 }
 .bd-gc-use svg {
   width: 13px;
   height: 13px;
+}
+/* no hover (phones, tablets): 「用这个」 stays on the picture, without the prompt */
+@media (hover: none) {
+  .bd-gc-hover {
+    padding: 8px;
+    background: none;
+    opacity: 1;
+    transform: none;
+  }
+  .bd-gc-hover p {
+    display: none;
+  }
+  .bd-gc-use {
+    pointer-events: auto;
+  }
 }
 .bd-gc figcaption {
   display: flex;

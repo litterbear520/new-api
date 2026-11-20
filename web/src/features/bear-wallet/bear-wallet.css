@@ -394,6 +394,9 @@ For commercial licensing, please contact support@quantumnous.com
   box-shadow:
     inset 0 0 0 1.5px var(--bw-ink),
     0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+  /* Forced colours drop the box-shadow and paint this outline instead */
+  outline: 2px solid transparent;
+  outline-offset: 1px;
 }
 .bw-res {
   min-height: 21px;

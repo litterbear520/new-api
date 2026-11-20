@@ -20,6 +20,7 @@ import { Link } from '@tanstack/react-router'
 import { Bell, ClipboardList, ShieldCheck, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { useScrollFade } from '@/hooks/use-scroll-fade'
 import { cn } from '@/lib/utils'
 
 import type { SettingsSection } from '../constants'
@@ -43,12 +44,20 @@ export function SectionNav(props: {
     notifications: t('Notifications'),
     audit: t('Audit Logs'),
   }
+  // On phones the sections are one row that scrolls sideways.
+  const row = useScrollFade<HTMLUListElement>(
+    '[aria-current="page"]',
+    props.sections
+  )
   return (
     <nav
       aria-label={t('Account settings')}
       className='min-w-0 md:sticky md:top-0 md:self-start md:in-[[data-page-scroll]]:top-[calc(var(--app-header-height)+1rem)]'
     >
-      <ul className='-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-col md:overflow-visible md:px-0 md:pb-0'>
+      <ul
+        ref={row}
+        className='scroll-fade scroll-fade-mobile -mx-1 flex gap-1 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-col md:overflow-visible md:px-0 md:pb-0'
+      >
         {props.sections.map((section) => {
           const Icon = ICONS[section]
           const active = section === props.current

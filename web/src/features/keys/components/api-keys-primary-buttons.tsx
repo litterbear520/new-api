@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils'
 import { useApiAddressProbes } from '../hooks/use-api-address-probes'
 import type { ApiAddressGrade, ApiAddressProbe } from '../lib/api-address-probe'
 import { useApiKeys } from './api-keys-provider'
+import { ProbeSummary } from './probe-summary'
 
 type ProbeTone = ApiAddressGrade | 'checking' | 'unreachable'
 
@@ -154,6 +155,8 @@ export function ApiKeysPrimaryButtons() {
               size='icon-sm'
               onClick={start}
               disabled={loading || checking}
+              focusableWhenDisabled
+              className='aria-disabled:opacity-50'
               aria-label={t('Refresh')}
               title={t('Refresh')}
             >
@@ -163,6 +166,7 @@ export function ApiKeysPrimaryButtons() {
               />
             </Button>
           </div>
+          <ProbeSummary probes={probes} announce />
           {loading ? (
             <LoadingState inline size='sm' message={t('Loading...')} />
           ) : (

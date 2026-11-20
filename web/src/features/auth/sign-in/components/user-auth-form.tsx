@@ -373,6 +373,10 @@ export function UserAuthForm({
                   <FormControl>
                     <Input
                       autoComplete='username'
+                      autoCapitalize='none'
+                      autoCorrect='off'
+                      spellCheck={false}
+                      enterKeyHint='next'
                       placeholder={t('Enter your username or email')}
                       className='h-11'
                       {...field}
@@ -427,6 +431,7 @@ export function UserAuthForm({
                   <FormControl>
                     <PasswordInput
                       autoComplete='current-password'
+                      enterKeyHint='done'
                       placeholder={t('Enter password')}
                       className='[&_input]:h-11'
                       {...field}

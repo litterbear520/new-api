@@ -21,6 +21,7 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { CopyButton } from '@/components/copy-button'
 import { ErrorState } from '@/components/error-state'
 import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
@@ -173,6 +174,18 @@ export function HistoryPanel(props: {
       <TableRow key={record.id} className='hover:bg-transparent'>
         <TableCell className='ps-4 tabular-nums sm:ps-5'>
           {orderTime(record.create_time, locale)}
+          {/* Phones have no room for the column, so the number sits here */}
+          <div className='flex items-center gap-0.5 sm:hidden'>
+            <code className='bw-trade max-w-32' title={record.trade_no}>
+              {record.trade_no}
+            </code>
+            <CopyButton
+              value={record.trade_no}
+              className='size-6'
+              iconClassName='size-3'
+              aria-label={`${t('Copy order number')}: ${record.trade_no}`}
+            />
+          </div>
         </TableCell>
         <TableCell className='max-sm:hidden'>
           <code className='bw-trade max-w-56' title={record.trade_no}>
@@ -243,6 +256,8 @@ export function HistoryPanel(props: {
             variant='ghost'
             size='sm'
             disabled={history.isFetching}
+            focusableWhenDisabled
+            className='aria-disabled:opacity-50'
             onClick={() => void history.fetchNextPage()}
           >
             {t('Show more')}

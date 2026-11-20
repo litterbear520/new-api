@@ -49,16 +49,31 @@ async function writeWhenReady(text: Promise<string | null>): Promise<boolean> {
 /**
  * Copies text that may contain the real key. The key list only has masked
  * keys, so the full one is fetched at the moment of copying and never kept.
- * `copiedId` names what was copied last, for two seconds.
+ * `copiedId` names what was copied last, for two seconds. `announcement` says
+ * how the copy went, for a status region that screen readers read out, and
+ * is cleared after two seconds as well. A click while a copy is still
+ * running is ignored, so the button never has to be disabled.
  */
 export function useKeyCopy() {
   const { t } = useTranslation()
   const { copyToClipboard } = useCopyToClipboard({ notify: false })
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [announcement, setAnnouncement] = useState('')
+  const busy = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => () => clearTimeout(timer.current), [])
+
+  const finish = useCallback((id: string | null, message: string) => {
+    setCopiedId(id)
+    setAnnouncement(message)
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => {
+      setCopiedId(null)
+      setAnnouncement('')
+    }, 2000)
+  }, [])
 
   const copy = useCallback(
     async (
@@ -66,6 +81,8 @@ export function useKeyCopy() {
       keyId: number | null,
       build: (key: string) => string
     ) => {
+      if (busy.current) return
+      busy.current = true
       setBusyId(id)
       try {
         const text = keyId
@@ -80,23 +97,27 @@ export function useKeyCopy() {
         // Nothing may be awaited before this call: it must stay in the click.
         if (!(await writeWhenReady(text))) {
           const value = await text
-          if (value == null) return
+          if (value == null) {
+            finish(null, t('Copy failed'))
+            return
+          }
           if (!(await copyToClipboard(value))) {
             toast.error(t('Failed to copy to clipboard'))
+            finish(null, t('Copy failed'))
             return
           }
         }
-        setCopiedId(id)
-        clearTimeout(timer.current)
-        timer.current = setTimeout(() => setCopiedId(null), 2000)
+        finish(id, t('Copied'))
       } catch (error) {
         handleServerError(error, t('Failed to copy to clipboard'))
+        finish(null, t('Copy failed'))
       } finally {
+        busy.current = false
         setBusyId(null)
       }
     },
-    [copyToClipboard, t]
+    [copyToClipboard, finish, t]
   )
 
-  return { copy, copiedId, busyId }
+  return { copy, copiedId, busyId, announcement }
 }

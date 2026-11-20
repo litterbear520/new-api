@@ -29,17 +29,13 @@ export const loginFormSchema = z.object({
   password: z.string().min(1, 'Please enter your password'),
 })
 
-export const registerFormSchema = z
-  .object({
-    username: z.string().min(1, 'Please enter your username'),
-    email: z.string().optional(),
-    password: accountPasswordSchema,
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
-    path: ['confirmPassword'],
-  })
+// One password field with a show-password button: asking twice adds work and
+// gets in the way of the browser's suggested strong password.
+export const registerFormSchema = z.object({
+  username: z.string().min(1, 'Please enter your username'),
+  email: z.string().optional(),
+  password: accountPasswordSchema,
+})
 
 export const forgotPasswordFormSchema = z.object({
   email: z.string().email({

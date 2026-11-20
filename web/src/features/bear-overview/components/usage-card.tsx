@@ -30,6 +30,7 @@ import type { UsageSummary } from '../lib/usage'
 import { InfoTip } from './info-tip'
 import { Segmented } from './segmented'
 import { UsageChart, type ChartDay } from './usage-chart'
+import { UsageChartTable } from './usage-chart-table'
 
 type Metric = 'spend' | 'tokens'
 type Range = '7' | '30'
@@ -188,35 +189,12 @@ export function UsageCard(props: { summary: UsageSummary; now: Date }) {
           }
         />
       </div>
-      <table className='sr-only'>
-        <caption>{caption}</caption>
-        <thead>
-          <tr>
-            <th scope='col'>{t('Date')}</th>
-            <th scope='col'>{t('Total')}</th>
-            {families.map((key) => (
-              <th key={key} scope='col'>
-                {t(FAMILY_LABELS[key])}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {days.map((day) => (
-            <tr key={day.label}>
-              <th scope='row'>{day.label}</th>
-              <td>
-                {format(
-                  families.reduce((sum, key) => sum + (day.values[key] ?? 0), 0)
-                )}
-              </td>
-              {families.map((key) => (
-                <td key={key}>{format(day.values[key] ?? 0)}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <UsageChartTable
+        caption={caption}
+        days={days}
+        families={families}
+        format={format}
+      />
     </section>
   )
 }

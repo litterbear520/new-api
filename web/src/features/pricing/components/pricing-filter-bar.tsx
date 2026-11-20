@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useScrollFade } from '@/hooks/use-scroll-fade'
 import { getLobeIcon } from '@/lib/lobe-icon'
 
 import {
@@ -137,6 +138,11 @@ export function PricingFilterBar(props: PricingFilterBarProps) {
       .map((vendor) => ({ ...vendor, count: counts.get(vendor.name) ?? 0 }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
   }, [props.models, props.vendors])
+  // On phones the providers scroll sideways with no scrollbar.
+  const vendorRow = useScrollFade<HTMLDivElement>(
+    '[aria-pressed="true"]',
+    vendorCounts
+  )
 
   const tagCounts = useMemo(() => {
     const counts = new Map<string, number>()
@@ -182,6 +188,7 @@ export function PricingFilterBar(props: PricingFilterBarProps) {
       <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap'>
         {vendorCounts.length > 1 && (
           <ToggleGroup
+            ref={vendorRow}
             aria-label={t('Provider')}
             value={[props.vendor]}
             onValueChange={(values) => {
@@ -189,7 +196,7 @@ export function PricingFilterBar(props: PricingFilterBarProps) {
               if (values[0]) props.onVendorChange(values[0])
             }}
             spacing={0.5}
-            className='bg-muted/60 no-scrollbar min-w-0 basis-full overflow-x-auto p-0.5 sm:basis-auto'
+            className='bg-muted/60 no-scrollbar scroll-fade min-w-0 basis-full overflow-x-auto p-0.5 sm:basis-auto'
           >
             <ToggleGroupItem value={FILTER_ALL} className={SEGMENT}>
               <SegmentLabel label={t('All')} count={props.models.length} />

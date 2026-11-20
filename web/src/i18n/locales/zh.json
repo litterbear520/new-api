@@ -8569,6 +8569,23 @@
     "Browser storage is full, so the picture was not added. Delete old projects to free space.": "浏览器存储空间满了，这张图没有加上。删掉一些旧项目，腾出空间。",
     "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "有些文件跳过了：这里只能用 PNG、JPEG、WebP、GIF、BMP、AVIF 和 HEIC 图片。",
     "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "浏览器存储空间满了，这个技能没有保存。删掉不再用的技能，再试一次。",
-    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "正在前往收银台。付完会回到这里，余额会自动更新。"
+    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "正在前往收银台。付完会回到这里，余额会自动更新。",
+    "Compare view": "对比方式",
+    "Picture deleted": "已删除这张图",
+    "Pictures deleted": "已删除这些图",
+    "Set deleted": "已删除这一组",
+    "Use example": "使用示例",
+    "Replying": "正在回复",
+    "Reply finished": "回复完成",
+    "Reply stopped": "已停止回复",
+    "Reply failed": "回复出错",
+    "Recent conversations: {{title}}": "最近的对话：{{title}}",
+    "View log details: {{time}}": "查看日志详情：{{time}}",
+    "Latency test done. Fastest: {{latency}} ms": "测速完成，最快 {{latency}} 毫秒",
+    "Latency test done. No address can be reached": "测速完成，所有地址都不可用",
+    "{{metric}} per day, by model family": "{{metric}}：每天 · 按模型系列",
+    "{{metric}} per hour, by model family": "{{metric}}：每小时 · 按模型系列",
+    "Copy order number": "复制订单号",
+    "Show password": "显示密码"
   }
 }

@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { Ctx, MenuAt } from './context'
-import { closest, esc, h, translate } from './dom'
+import { closest, esc, focusEl, h, nothingFocused, translate } from './dom'
 import { clamp } from './geometry'
 import { ICONS } from './icons'
 import { measure } from './query'
@@ -58,10 +58,30 @@ function menuKeys(m: HTMLElement, e: KeyboardEvent) {
 export function createMenus(c: Ctx) {
   const d = c.d
 
-  function closeMenu() {
-    if (!c.menuEl) return
-    c.menuEl.remove()
+  /** The element focused before the menu opened, if it can take focus back. */
+  function opener(): HTMLElement {
+    const o = c.menuOpener
+    const shown =
+      !!o?.isConnected && !o.closest('[hidden], .bd-cv-tb:not(.is-on)')
+    return o && shown ? o : d.el
+  }
+
+  /**
+   * Closes the open menu. `restore` gives the focus back to what had it
+   * before (Esc, Tab, a chosen item); a press elsewhere leaves it alone.
+   */
+  function closeMenu(restore?: boolean, ring = true) {
+    const m = c.menuEl
+    if (!m) return
+    if (restore && (m.contains(document.activeElement) || nothingFocused())) {
+      const to = opener()
+      // focusVisible: no ring after a pointer choice (ignored where unknown).
+      to.focus({ preventScroll: true, focusVisible: ring } as FocusOptions)
+    }
+    m.remove()
     c.menuEl = null
+    c.menuOpener = null
+    d.zoomBtn.setAttribute('aria-expanded', 'false')
   }
 
   function menuButton(it: Exclude<MenuItem, { sep: true }>) {
@@ -72,21 +92,29 @@ export function createMenus(c: Ctx) {
     b.type = 'button'
     b.setAttribute('role', 'menuitem')
     if (it.disabled) b.disabled = true
-    b.addEventListener('click', () => {
-      closeMenu()
+    b.addEventListener('click', (e) => {
+      // detail 0: Enter or Space, which keeps the focus ring.
+      closeMenu(true, e.detail === 0)
       if (it.run) it.run()
       else if (it.id) c.fx.act(it.id, it.payload)
     })
     return b
   }
 
-  /** Opens a menu at a canvas point; `key` names it (toggle buttons). */
+  /**
+   * Opens a menu at a canvas point; `key` names it (toggle buttons).
+   * `trigger` is the button that opened it; without one, the focused
+   * element gets the focus back when the menu closes.
+   */
   function openMenu(
     items: MenuItem[],
     at: MenuAt,
     head?: HTMLElement | null,
-    key?: string
+    key?: string,
+    trigger?: HTMLElement | null
   ) {
+    const a = document.activeElement
+    const was = c.menuEl?.contains(a) ? c.menuOpener : null
     closeMenu()
     const list = tidyMenu(items)
     if (!list.length) return
@@ -103,7 +131,11 @@ export function createMenus(c: Ctx) {
         m.append(menuButton(it))
       }
     }
-    m.addEventListener('keydown', (e) => menuKeys(m, e))
+    m.addEventListener('keydown', (e) => {
+      // Tab leaves the menu from its trigger, closing it on the way.
+      if (e.key === 'Tab') closeMenu(true)
+      else menuKeys(m, e)
+    })
     d.ui.append(m)
     const mw = m.offsetWidth
     const mh = m.offsetHeight
@@ -118,9 +150,12 @@ export function createMenus(c: Ctx) {
       clamp(y, 8, c.H - mh - 8)
     )
     c.menuEl = m
-    m.querySelector<HTMLButtonElement>('button:not([disabled])')?.focus({
-      preventScroll: true,
-    })
+    c.menuOpener =
+      trigger ??
+      was ??
+      (a instanceof HTMLElement && !nothingFocused() ? a : null)
+    if (key === 'zoom') d.zoomBtn.setAttribute('aria-expanded', 'true')
+    focusEl(m.querySelector<HTMLButtonElement>('button:not([disabled])'))
   }
 
   function zoomMenu(btn: HTMLElement) {
@@ -156,7 +191,7 @@ export function createMenus(c: Ctx) {
       align: 'right',
       above: true,
     }
-    openMenu(items, at, null, 'zoom')
+    openMenu(items, at, null, 'zoom', btn)
   }
 
   d.ui.addEventListener('click', (e) => {

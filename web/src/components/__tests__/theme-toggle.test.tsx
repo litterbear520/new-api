@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ThemeProvider, useTheme } from '@/context/theme-provider'
@@ -26,6 +26,7 @@ import { THEME_STORAGE_KEYS } from '@/lib/theme-storage'
 import { useNightSeaStore } from '@/stores/night-sea-store'
 
 afterEach(() => {
+  vi.restoreAllMocks()
   localStorage.clear()
   useNightSeaStore.setState({ found: false, on: false })
   document.documentElement.classList.remove('light', 'dark')
@@ -53,6 +54,16 @@ async function click(name: string) {
 
 const stored = () => localStorage.getItem(THEME_STORAGE_KEYS.mode)
 
+/** The system asks for dark (the test setup's own system is light). */
+function darkSystem() {
+  const lightSystem = window.matchMedia
+  vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+    ...lightSystem(query),
+    matches:
+      query === '(prefers-color-scheme: dark)' || lightSystem(query).matches,
+  }))
+}
+
 test('follows the system theme until the button is clicked', () => {
   renderToggle()
 
@@ -73,8 +84,47 @@ test('clicking switches to dark and back to light without a menu', async () => {
   expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 
   await click('Switch to light theme')
+  await waitFor(() => expect(document.documentElement).toHaveClass('light'))
+})
+
+test('switching back to the system theme follows the system again', async () => {
+  renderToggle()
+
+  await click('Switch to dark theme')
+  await waitFor(() => expect(stored()).toBe('dark'))
+  await click('Switch to light theme')
+
+  // The test setup reports a light system theme: light is not stored.
+  await waitFor(() => expect(document.documentElement).toHaveClass('light'))
+  expect(stored()).toBeNull()
+  expect(
+    screen.getByRole('button', { name: 'Switch to dark theme' })
+  ).toBeInTheDocument()
+})
+
+test('on a dark system, light is stored and dark again follows the system', async () => {
+  darkSystem()
+  renderToggle()
+  expect(document.documentElement).toHaveClass('dark')
+
+  await click('Switch to light theme')
   await waitFor(() => expect(stored()).toBe('light'))
   expect(document.documentElement).toHaveClass('light')
+
+  await click('Switch to dark theme')
+  await waitFor(() => expect(document.documentElement).toHaveClass('dark'))
+  expect(stored()).toBeNull()
+})
+
+test('the night sea stays stored even on a dark system', async () => {
+  darkSystem()
+  act(() => useNightSeaStore.setState({ found: true }))
+  renderToggle()
+
+  await click('Switch to night sea')
+
+  await waitFor(() => expect(useNightSeaStore.getState().on).toBe(true))
+  expect(stored()).toBe('dark')
 })
 
 test('once a meteor was caught, the night sea follows dark', async () => {
@@ -122,9 +172,11 @@ test('the knob stays in the hand when the theme changes under it', async () => {
   expect(button).toHaveAttribute('data-held')
   expect(Number.parseFloat(knob.style.translate)).toBeCloseTo(6, 0)
 
-  // and it is still the reader's: back over the middle
+  // and it is still the reader's: back over the middle, to the system's light
   pointer('pointermove', 100)
-  await waitFor(() => expect(stored()).toBe('light'))
+  await waitFor(() => expect(document.documentElement).toHaveClass('light'))
+  expect(stored()).toBeNull()
+  expect(button).toHaveAttribute('data-held')
   pointer('pointerup', 100)
 })
 

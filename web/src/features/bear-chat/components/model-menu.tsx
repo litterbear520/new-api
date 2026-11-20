@@ -65,7 +65,13 @@ export function ModelMenu(props: ModelMenuProps) {
   const money = useChatMoney()
   const [open, setOpen] = useState(false)
   const trigger = props.trigger ?? (
-    <button type='button' className='bc-chip' aria-label={t('Choose a model')}>
+    <button
+      type='button'
+      className='bc-chip'
+      aria-label={
+        props.model ? t('Model {{model}}', { model: props.model }) : undefined
+      }
+    >
       <ModelIcon model={props.model} />
       <span className='truncate'>{props.model || t('Choose a model')}</span>
       <ChevronDown className='bc-chev' aria-hidden='true' />

@@ -46,6 +46,7 @@ class FakeClipboardItem {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
 })
@@ -85,6 +86,38 @@ describe('copying a key', () => {
     answer('abc')
     await act(() => done)
     expect(copyToClipboard).toHaveBeenCalledWith('KEY=sk-abc')
+    expect(fetchTokenKey).toHaveBeenCalledTimes(1)
+  })
+
+  test('the announcement says Copied, then clears two seconds later', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('ClipboardItem', undefined)
+    vi.mocked(fetchTokenKey).mockResolvedValue({
+      success: true,
+      data: { key: 'abc' },
+    })
+    const { result } = renderHook(() => useKeyCopy())
+
+    await act(() => result.current.copy('key', 5, (key) => key))
+    expect(result.current.announcement).toBe('Copied')
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(result.current.announcement).toBe('')
+  })
+
+  test('a second click while the key is on its way is ignored', async () => {
+    vi.stubGlobal('ClipboardItem', undefined)
+    const answer = slowKey()
+    const { result } = renderHook(() => useKeyCopy())
+
+    let done: Promise<void> = Promise.resolve()
+    act(() => {
+      done = result.current.copy('key', 5, (key) => key)
+      void result.current.copy('key', 5, (key) => key)
+    })
+    answer('abc')
+    await act(() => done)
+
     expect(fetchTokenKey).toHaveBeenCalledTimes(1)
   })
 })

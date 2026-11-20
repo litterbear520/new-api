@@ -391,6 +391,8 @@ export function AccountQuotaCard(props: {
             size='xs'
             onClick={props.onRefresh}
             disabled={props.refreshing || waiting}
+            focusableWhenDisabled
+            className='aria-disabled:opacity-50'
             aria-describedby={waiting ? waitId : undefined}
           >
             <RefreshCw

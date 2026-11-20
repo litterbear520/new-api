@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -49,6 +49,7 @@ type SectionDef = {
 
 export function SidebarModulesCard() {
   const { t } = useTranslation()
+  const idPrefix = useId()
   const [loading, setLoading] = useState(false)
   const [config, setConfig] = useState<SidebarModulesConfig>({})
   const currentUser = useAuthStore((s) => s.auth.user)
@@ -226,6 +227,7 @@ export function SidebarModulesCard() {
       <CardContent className='space-y-4 p-4'>
         {sectionDefs.map((section) => {
           const sectionEnabled = config[section.key]?.enabled !== false
+          const sectionId = `${idPrefix}-${section.key}`
           return (
             <div
               key={section.key}
@@ -233,12 +235,19 @@ export function SidebarModulesCard() {
             >
               <div className='flex items-start justify-between gap-3'>
                 <div className='min-w-0'>
-                  <p className='text-sm font-medium'>{section.title}</p>
-                  <p className='text-muted-foreground text-xs'>
+                  <p id={`${sectionId}-title`} className='text-sm font-medium'>
+                    {section.title}
+                  </p>
+                  <p
+                    id={`${sectionId}-desc`}
+                    className='text-muted-foreground text-xs'
+                  >
                     {section.description}
                   </p>
                 </div>
                 <Switch
+                  aria-labelledby={`${sectionId}-title`}
+                  aria-describedby={`${sectionId}-desc`}
                   checked={sectionEnabled}
                   onCheckedChange={(v) => toggleSection(section.key, v)}
                 />
@@ -252,14 +261,22 @@ export function SidebarModulesCard() {
                     }`}
                   >
                     <div className='mr-2 min-w-0'>
-                      <p className='truncate text-sm font-medium'>
+                      <p
+                        id={`${sectionId}-${mod.key}-title`}
+                        className='truncate text-sm font-medium'
+                      >
                         {mod.title}
                       </p>
-                      <p className='text-muted-foreground truncate text-xs'>
+                      <p
+                        id={`${sectionId}-${mod.key}-desc`}
+                        className='text-muted-foreground truncate text-xs'
+                      >
                         {mod.description}
                       </p>
                     </div>
                     <Switch
+                      aria-labelledby={`${sectionId}-${mod.key}-title`}
+                      aria-describedby={`${sectionId}-${mod.key}-desc`}
                       checked={config[section.key]?.[mod.key] !== false}
                       onCheckedChange={(v) =>
                         toggleModule(section.key, mod.key, v)

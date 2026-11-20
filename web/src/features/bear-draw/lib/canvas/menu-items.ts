@@ -150,7 +150,9 @@ export function createMenuItems(c: Ctx) {
     c.fx.openMenu(
       items,
       { x: at.x, y: at.y, align: 'center' },
-      metaHead(selNode(c))
+      metaHead(selNode(c)),
+      undefined,
+      c.d.tb.querySelector<HTMLElement>('[data-act="more"]')
     )
   }
 

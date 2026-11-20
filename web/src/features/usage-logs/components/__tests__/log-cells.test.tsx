@@ -124,7 +124,23 @@ it('explains a failed stream with its end reason and soft errors on hover', asyn
   expect(screen.getByText('Soft Errors: 2')).toBeVisible()
 })
 
-it('explains a failed stream when the alert gets keyboard focus', async () => {
+it('explains a failed stream when the alert is tapped', async () => {
+  const user = userEvent.setup()
+  renderCell(
+    'use_time',
+    { stream_status: { status: 'error', end_reason: 'client_gone' } },
+    true
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Stream Status: Error' }))
+
+  const details = await screen.findByRole('dialog', {
+    name: 'Stream Status: Error',
+  })
+  expect(details).toHaveTextContent('client_gone')
+})
+
+it('explains a failed stream when Enter is pressed on the focused alert', async () => {
   const user = userEvent.setup()
   renderCell(
     'use_time',
@@ -133,11 +149,15 @@ it('explains a failed stream when the alert gets keyboard focus', async () => {
   )
 
   await user.tab()
+  const alert = screen.getByRole('button', { name: 'Stream Status: Error' })
+  expect(alert).toHaveFocus()
+  await user.keyboard('{Enter}')
 
-  expect(
-    screen.getByRole('button', { name: 'Stream Status: Error' })
-  ).toHaveFocus()
-  expect(await screen.findByText('timeout')).toBeVisible()
+  const details = await screen.findByRole('dialog', {
+    name: 'Stream Status: Error',
+  })
+  expect(details).toHaveTextContent('timeout')
+  expect(alert).toHaveAttribute('aria-expanded', 'true')
 })
 
 it('keeps clicks and keys on the stream alert from opening the row', async () => {

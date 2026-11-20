@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tip } from '@/features/draw/components/tip'
+import { imeOwnsKey } from '@/features/draw/lib/ime'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
 import { editAndResend } from '../lib/run'
@@ -51,7 +52,9 @@ export function UserTurnView(props: UserTurnViewProps) {
           aria-label={t('Edit message')}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') setEditing(false)
+            if (e.key === 'Escape' && !imeOwnsKey(e.nativeEvent)) {
+              setEditing(false)
+            }
           }}
         />
         <div className='bc-u-edit-row'>

@@ -1005,4 +1005,7 @@ export const STATIC_I18N_KEYS = [
   'Browser storage is full, so the picture was not added. Delete old projects to free space.',
   "Couldn't read that picture; try another one",
   'Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.',
+  'Reply finished',
+  'Reply stopped',
+  'Reply failed',
 ] as const

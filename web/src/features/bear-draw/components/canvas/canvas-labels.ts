@@ -95,5 +95,6 @@ export function canvasLabels(t: TFunction): CanvasLabels {
     slideHint: t('Drag the line in the middle · ← → to nudge · Esc to close'),
     escClose: t('Esc to close'),
     divider: t('Compare divider'),
+    compareView: t('Compare view'),
   }
 }

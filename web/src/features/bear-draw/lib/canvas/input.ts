@@ -17,33 +17,57 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { Ctx } from './context'
-import { elOf, isTyping } from './dom'
+import { elOf, isTyping, modalOpen, nothingFocused } from './dom'
 import { local, measure, toWorld } from './query'
 
 /*
- * Keyboard shortcuts (V H M, + −, ⇧1 ⇧2 ⇧0, ⌘A, Delete, Esc, Space to pan)
- * and pictures dropped on or pasted into the canvas. Keys count while the
- * pointer is over the canvas or it has the focus, and never while typing.
+ * Keyboard shortcuts (V H M, + −, ⇧1 ⇧2 ⇧0, ⌘A, Delete, Esc, arrows and
+ * Space to pan) and pictures dropped on or pasted into the canvas.
+ *
+ * Where the keyboard is decides which keys count. The canvas itself
+ * focused: all of them. A control inside it focused (a toolbar button, a
+ * menu item): Space, Enter and the arrows stay with the control, the rest
+ * count. Nothing focused and the pointer over the canvas: only keys with a
+ * modifier or without a character (Delete, Esc, Space held to pan), since a
+ * single character must not fire a shortcut there (WCAG 2.1.4). Focus
+ * elsewhere on the page, typing, or a modal dialog open: none.
  */
+
+type Scope = 'canvas' | 'control' | 'pointer'
 
 const imageFiles = (list: FileList) =>
   [...list].filter((f) => !f.type || f.type.startsWith('image/'))
 
+/** How far one arrow press moves the view, in screen px (Shift: ×5). */
+const PAN_STEP = 48
+
+const PAN_KEYS: Record<string, [number, number]> = {
+  ArrowLeft: [1, 0],
+  ArrowRight: [-1, 0],
+  ArrowUp: [0, 1],
+  ArrowDown: [0, -1],
+}
+
 export function createInput(c: Ctx) {
   const d = c.d
-  const hot = () => c.pointerInside || d.el.contains(document.activeElement)
 
-  function compareKeys(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      c.fx.closeCompare()
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault()
-      c.fx.nudgeCompare(-0.05)
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault()
-      c.fx.nudgeCompare(0.05)
-    }
+  function scope(): Scope | null {
+    if (modalOpen(d.el)) return null
+    const a = document.activeElement
+    if (a === d.el) return 'canvas'
+    if (a && d.el.contains(a)) return 'control'
+    return nothingFocused() && c.pointerInside ? 'pointer' : null
+  }
+
+  function pan(e: KeyboardEvent, [dx, dy]: [number, number]) {
+    e.preventDefault()
+    const step = e.shiftKey ? PAN_STEP * 5 : PAN_STEP
+    c.fx.stopCam()
+    c.fitTarget = null
+    c.cam.x += dx * step
+    c.cam.y += dy * step
+    c.fx.moving()
+    c.fx.invalidate()
   }
 
   function commandKeys(e: KeyboardEvent) {
@@ -63,49 +87,8 @@ export function createInput(c: Ctx) {
     }
   }
 
-  function escape() {
-    const G = c.G
-    if (c.pick) {
-      c.fx.cancelPick()
-    } else if (G?.type === 'mark') {
-      G.path.remove()
-      G.halo.remove()
-      c.G = null
-    } else if (c.tool !== 'select') {
-      c.fx.setTool('select')
-    } else {
-      c.fx.setSel([], true)
-    }
-  }
-
-  function onKey(e: KeyboardEvent) {
-    // A hidden canvas (the page shows the chat only) leaves the keys alone.
-    if (!c.alive || d.el.closest('[hidden]')) return
-    // The comparison covers the canvas; typing elsewhere keeps its keys.
-    if (c.cmp && !isTyping(e.target)) {
-      compareKeys(e)
-      return
-    }
-    if (c.menuEl && e.key === 'Escape') {
-      e.preventDefault()
-      c.fx.closeMenu()
-      d.el.focus({ preventScroll: true })
-      return
-    }
-    if (isTyping(e.target) || !hot()) return
-    if (e.key === ' ') {
-      e.preventDefault()
-      if (!c.spaceDown) {
-        c.spaceDown = true
-        d.el.classList.add('is-space')
-      }
-      return
-    }
-    if (e.metaKey || e.ctrlKey) {
-      commandKeys(e)
-      return
-    }
-    if (e.altKey) return
+  /** Single characters: V H M, + −, ⇧1 ⇧2 ⇧0. */
+  function charKeys(e: KeyboardEvent) {
     if (e.shiftKey && e.code === 'Digit1') {
       e.preventDefault()
       c.fx.fit()
@@ -139,19 +122,78 @@ export function createInput(c: Ctx) {
       case '_':
         c.fx.zoomOut()
         break
-      case 'delete':
-      case 'backspace':
-        if (c.sel.size) {
-          e.preventDefault()
-          c.fx.act('delete', {})
-        }
-        break
-      case 'escape':
-        escape()
-        break
       default:
         break
     }
+  }
+
+  function escape() {
+    const G = c.G
+    if (c.pick) {
+      c.fx.cancelPick()
+    } else if (G?.type === 'mark') {
+      G.path.remove()
+      G.halo.remove()
+      c.G = null
+    } else if (c.tool !== 'select') {
+      c.fx.setTool('select')
+    } else {
+      c.fx.setSel([], true)
+    }
+  }
+
+  function onKey(e: KeyboardEvent) {
+    // A hidden canvas (the page shows the chat only) leaves the keys alone,
+    // and so does a key a control already handled.
+    if (!c.alive || e.defaultPrevented || d.el.closest('[hidden]')) return
+    const where = scope()
+    if (!where) return
+    // The comparison covers the canvas: Esc closes it; its slider and mode
+    // buttons handle their own keys.
+    if (c.cmp) {
+      if (e.key === 'Escape' && !isTyping(e.target)) {
+        e.preventDefault()
+        c.fx.closeCompare()
+      }
+      return
+    }
+    if (c.menuEl && e.key === 'Escape') {
+      e.preventDefault()
+      c.fx.closeMenu(true)
+      return
+    }
+    if (isTyping(e.target)) return
+    if (e.key === ' ') {
+      if (where === 'control') return
+      e.preventDefault()
+      if (!c.spaceDown) {
+        c.spaceDown = true
+        d.el.classList.add('is-space')
+      }
+      return
+    }
+    if (e.metaKey || e.ctrlKey) {
+      commandKeys(e)
+      return
+    }
+    if (e.altKey) return
+    const dir = PAN_KEYS[e.key]
+    if (dir) {
+      if (where === 'canvas') pan(e, dir)
+      return
+    }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (c.sel.size) {
+        e.preventDefault()
+        c.fx.act('delete', {})
+      }
+      return
+    }
+    if (e.key === 'Escape') {
+      escape()
+      return
+    }
+    if (where !== 'pointer') charKeys(e)
   }
 
   function onKeyUp(e: KeyboardEvent) {
@@ -176,7 +218,7 @@ export function createInput(c: Ctx) {
 
   /** Pictures pasted while the canvas is in use go onto it. */
   function onPaste(e: ClipboardEvent) {
-    if (!c.alive || isTyping(e.target) || !hot() || !e.clipboardData) return
+    if (!c.alive || isTyping(e.target) || !e.clipboardData || !scope()) return
     const files = imageFiles(e.clipboardData.files)
     if (!files.length) return
     e.preventDefault()

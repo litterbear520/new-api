@@ -26,6 +26,7 @@ import {
   textColorMap,
   type StatusBadgeProps,
 } from '@/components/status-badge'
+import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
@@ -84,6 +85,7 @@ import {
 } from '../../lib/utils'
 import type { LogOtherData } from '../../types'
 import { LogCostDisplay } from '../log-cost-display'
+import { useLogDetailOpener } from '../log-detail-opener'
 import { LogDetailsCell } from '../log-details-cell'
 import { LogUserAvatar } from '../log-user-avatar'
 import { ModelBadge } from '../model-badge'
@@ -404,19 +406,33 @@ export function useCommonLogsColumns(
       {
         accessorKey: 'created_at',
         header: t('Time'),
-        cell: ({ row }) => {
+        cell: function TimeCell({ row }) {
+          const openDetail = useLogDetailOpener()
           const log = row.original
           const timestamp = row.getValue('created_at') as number
           const config = getLogTypeConfig(log.type)
+          const time = formatLogTime(timestamp)
 
           return (
             <div className='flex min-w-0 items-center gap-1.5'>
-              <span
-                className='truncate tabular-nums'
-                title={formatTimestampToDate(timestamp)}
-              >
-                {formatLogTime(timestamp)}
-              </span>
+              {openDetail ? (
+                <Button
+                  variant='ghost'
+                  className='focus-visible:ring-ring h-auto min-w-0 justify-start truncate rounded-sm border-0 px-0 font-normal text-inherit tabular-nums hover:bg-transparent focus-visible:ring-2'
+                  title={formatTimestampToDate(timestamp)}
+                  aria-label={t('View log details: {{time}}', { time })}
+                  onClick={() => openDetail(log)}
+                >
+                  <span className='truncate'>{time}</span>
+                </Button>
+              ) : (
+                <span
+                  className='truncate tabular-nums'
+                  title={formatTimestampToDate(timestamp)}
+                >
+                  {time}
+                </span>
+              )}
               {log.type !== LOG_TYPE_ENUM.CONSUME && (
                 <StatusBadge
                   label={t(config.label)}

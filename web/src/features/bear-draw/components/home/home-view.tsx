@@ -159,6 +159,7 @@ export function HomeView() {
   )
 
   const openSkill = useCallback((skill: Skill) => setDetailId(skill.id), [])
+  const focusComposer = useCallback(() => composer.current?.focus(), [])
 
   // meteors stay above the composer while it is in view
   const meteorFloor = useCallback(() => {
@@ -233,6 +234,7 @@ export function HomeView() {
             </div>
           }
           onPick={pickSkill}
+          onProjectsGone={focusComposer}
         />
         <HomeFeed
           onUse={applyPreset}

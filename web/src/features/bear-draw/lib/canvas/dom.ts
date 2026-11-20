@@ -62,6 +62,34 @@ export const isTyping = (t: EventTarget | null): boolean =>
     'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
   ) != null
 
+/** Nothing on the page has the keyboard. */
+export const nothingFocused = (): boolean => {
+  const a = document.activeElement
+  return !a || a === document.body || a === document.documentElement
+}
+
+/**
+ * A modal dialog outside `el` is open: Base UI hides the rest of the page
+ * (aria-hidden or inert), a native one matches :modal.
+ */
+export function modalOpen(el: HTMLElement): boolean {
+  if (el.closest('[inert], [aria-hidden="true"]')) return true
+  const outside = (sel: string) =>
+    [...document.querySelectorAll(sel)].some((m) => !el.contains(m))
+  if (outside('[aria-modal="true"]')) return true
+  try {
+    return outside('dialog:modal')
+  } catch {
+    // No :modal (older browsers): their dialogs come from Base UI.
+    return false
+  }
+}
+
+/** Focus without moving the page (the canvas never scrolls into view). */
+export function focusEl(e: HTMLElement | null | undefined) {
+  e?.focus({ preventScroll: true })
+}
+
 export const reduced = (): boolean =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches

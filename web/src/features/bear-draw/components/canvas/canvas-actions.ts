@@ -17,13 +17,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { TFunction } from 'i18next'
+import { toast } from 'sonner'
 
 import { downloadImage } from '@/features/draw/lib/images'
+import { findProject } from '@/stores/bear-draw-store'
 
 import type { ActionPayload, CanvasApi, MarkInfo } from '../../lib/canvas/types'
 import { deletePicture, retryPicture } from '../../lib/engine'
 import { edit } from '../../lib/project-edit'
 import type { Project } from '../../types'
+import { deletedFrom, restoreDeleted } from './delete-undo'
 
 /* What the canvas's actions do on the drawing page. */
 
@@ -63,6 +66,33 @@ function remove(projectId: string, p: ActionPayload) {
       ? proj
       : { ...proj, groups: proj.groups.filter((g) => g.id !== gid) }
   )
+}
+
+/** Deletes, then offers 撤销 for a few seconds (no confirmation first). */
+function removeWithUndo(x: ActionContext, p: ActionPayload) {
+  const pid = x.project.id
+  const before = findProject(pid)
+  const set = p.kind === 'group' && p.group ? p.group.id : null
+  const ids = set ? p.nodes.map((n) => n.id) : p.ids
+  remove(pid, p)
+  if (!before) return
+  const del = deletedFrom(before, ids, set)
+  if (!del.nodes.length && !set) return
+  let message = x.t('Picture deleted')
+  if (set) message = x.t('Set deleted')
+  else if (del.nodes.length > 1) message = x.t('Pictures deleted')
+  let undone = false
+  toast(message, {
+    action: {
+      label: x.t('Undo'),
+      onClick: () => {
+        if (undone) return
+        undone = true
+        edit(pid, (proj) => restoreDeleted(proj, del))
+      },
+    },
+    duration: 5000,
+  })
 }
 
 function download(x: ActionContext, p: ActionPayload) {
@@ -106,7 +136,7 @@ export function runCanvasAction(
       for (const nid of p.ids) retryPicture(pid, nid)
       return false
     case 'delete':
-      remove(pid, p)
+      removeWithUndo(x, p)
       return false
     case 'download':
       download(x, p)

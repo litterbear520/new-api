@@ -56,6 +56,8 @@ export function SettingsGroup(props: {
 /** Name and one line on the left, the value, then an action on the right */
 export function SettingsRow(props: {
   label: ReactNode
+  /** Id of the label, for a control that takes its name from it */
+  labelId?: string
   description?: ReactNode
   value?: ReactNode
   children?: ReactNode
@@ -66,6 +68,7 @@ export function SettingsRow(props: {
     <div className='flex flex-col gap-2 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4'>
       <div className='min-w-0 sm:w-2/5 sm:shrink-0'>
         <div
+          id={props.labelId}
           className={cn(
             'text-sm font-medium',
             props.danger && 'text-destructive'

@@ -29,6 +29,7 @@ import {
   UsageChart,
   type ChartDay,
 } from '@/features/bear-overview/components/usage-chart'
+import { UsageChartTable } from '@/features/bear-overview/components/usage-chart-table'
 import {
   FAMILY_LABELS,
   type FamilyKey,
@@ -334,20 +335,40 @@ export function UsageStats(props: { isAdmin: boolean }) {
       </div>
     )
   } else {
+    const metricLabel = t(METRIC_LABELS[metric])
     chart = (
-      <UsageChart
-        days={chartDays}
-        families={families}
-        barWidth={32}
-        height={CHART_HEIGHT}
-        emptyMax={metric === 'quota' ? quotaPerUnit() : EMPTY_AXIS_MAX[metric]}
-        format={format[metric]}
-        axisFormat={(value) =>
-          metric === 'quota'
-            ? axisMoney(value, locale)
-            : formatCompactNumber(value, locale)
-        }
-      />
+      <>
+        <UsageChart
+          days={chartDays}
+          families={families}
+          barWidth={32}
+          height={CHART_HEIGHT}
+          emptyMax={
+            metric === 'quota' ? quotaPerUnit() : EMPTY_AXIS_MAX[metric]
+          }
+          format={format[metric]}
+          axisFormat={(value) =>
+            metric === 'quota'
+              ? axisMoney(value, locale)
+              : formatCompactNumber(value, locale)
+          }
+        />
+        <UsageChartTable
+          caption={
+            unit === 'hour'
+              ? t('{{metric}} per hour, by model family', {
+                  metric: metricLabel,
+                })
+              : t('{{metric}} per day, by model family', {
+                  metric: metricLabel,
+                })
+          }
+          days={chartDays}
+          families={families}
+          format={format[metric]}
+          labelHeader={unit === 'hour' ? t('Time') : undefined}
+        />
+      </>
     )
   }
 
@@ -387,7 +408,7 @@ export function UsageStats(props: { isAdmin: boolean }) {
                 onClick={() => setMetric(key)}
                 className={cn(
                   'relative min-w-0 border-e px-3 py-3 text-start transition-colors last:border-e-0 sm:px-5 sm:py-4',
-                  'hover:bg-muted/40 focus-visible:bg-muted/60 outline-none',
+                  'hover:bg-muted/40 focus-visible:ring-ring outline-none focus-visible:ring-2 focus-visible:ring-inset',
                   'after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent',
                   metric === key && 'after:bg-foreground'
                 )}

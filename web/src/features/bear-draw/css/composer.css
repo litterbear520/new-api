@@ -188,14 +188,37 @@ For commercial licensing, please contact support@quantumnous.com
 .bd-ph-ex {
   color: color-mix(in oklab, var(--bd-ink3) 85%, var(--bd-ink));
 }
-.bd-comp-ph .bd-kbd {
-  margin-left: 6px;
-  vertical-align: 1px;
+/* the home example and its 「使用示例」 button: the text gives way, the button stays */
+.bd-comp-ph-ex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
 }
-@media (hover: none) and (pointer: coarse) {
-  .bd-comp-ph .bd-kbd {
-    display: none;
-  }
+.bd-comp-ph-ex .bd-ph-in {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bd-ph-use {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--bd-bd);
+  border-radius: 6px;
+  background: var(--bd-s1);
+  color: var(--bd-ink2);
+  font: 500 12px/22px var(--bd-sans);
+  pointer-events: auto;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.bd-ph-use:hover {
+  border-color: var(--bd-bd2);
+  color: var(--bd-ink);
 }
 .bd-kbd {
   display: inline-grid;

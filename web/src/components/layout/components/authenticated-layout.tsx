@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { CommandMenu } from '@/components/command-menu'
 import { AnimatedOutlet } from '@/components/page-transition'
 import { useSiteBarMenu } from '@/components/site-bar/store'
-import { SkipToMain } from '@/components/skip-to-main'
 import {
   SidebarInset,
   SidebarProvider,
@@ -50,7 +49,6 @@ export function AuthenticatedLayout(props: AuthenticatedLayoutProps) {
     <LayoutProvider>
       <SearchProvider>
         <SidebarProvider defaultOpen={defaultOpen}>
-          <SkipToMain />
           <SidebarMenuForSiteBar />
           <AppSidebar />
           <SidebarInset className='@container/content h-svh min-h-0 overflow-hidden peer-data-[variant=inset]:h-[calc(100svh-(var(--spacing)*4))]'>

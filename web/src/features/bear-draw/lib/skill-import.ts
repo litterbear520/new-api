@@ -27,6 +27,9 @@ import { normalizeText, parseFrontmatter } from './skill-text'
 
 /** Skills live in localStorage, so keep them reasonably small. */
 const MAX_CHARS = 200_000
+/** A UTF-8 character takes up to 4 bytes: a bigger file is too long for sure. */
+export const MAX_FILE_BYTES = MAX_CHARS * 4
+export const TOO_LARGE = 'Not a SKILL.md: the file is larger than 200 KB'
 const NAME_MAX = 40
 const TAGLINE_MAX = 30
 const DESCRIPTION_MAX = 200
@@ -111,9 +114,7 @@ function randomPart(): string {
 export function parseSkillMd(text: string, fileName?: string): Skill {
   const src = normalizeText(text)
   if (!src.trim()) throw new Error('Not a SKILL.md: the file is empty')
-  if (src.length > MAX_CHARS) {
-    throw new Error('Not a SKILL.md: the file is larger than 200 KB')
-  }
+  if (src.length > MAX_CHARS) throw new Error(TOO_LARGE)
   if (!isText(src)) throw new Error('Not a SKILL.md: it is not a text file')
   const fm = parseFrontmatter(src)
   if (/^---[ \t]*(\n|$)/.test(src) && fm.body === src) {

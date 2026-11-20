@@ -879,8 +879,16 @@ button.dw-th.dw-pend {
 .dw-composer.lensed:focus-within {
   background-color: rgb(var(--g-tint) / 0.16);
 }
+/* the box and, while it is empty and has an example, "Use example" */
 .dw-ta-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.dw-ta-in {
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 .dw .dw-ta {
   display: block;
@@ -929,37 +937,30 @@ button.dw-th.dw-pend {
     transform: translateY(10px);
   }
 }
-/* "Tab" puts the grey example into the box; hidden on touch screens. */
-.dw-tabk {
-  position: absolute;
-  top: 5px;
-  right: 4px;
-  padding: 0 5px;
-  border-radius: 5px;
+/* "Use example" puts the grey example into the box; 24px tall for fingers. */
+.dw-useex {
+  flex: none;
+  height: 24px;
+  margin-top: 1px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
   background: rgb(0 0 0 / 0.06);
   color: var(--muted-foreground);
-  font: 11px/17px inherit;
-  pointer-events: none;
+  font-size: 12px;
+  line-height: 24px;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.dark .dw-tabk {
+.dw-useex:hover {
+  color: var(--foreground);
+}
+.dw-useex:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.dark .dw-useex {
   background: rgb(255 255 255 / 0.1);
-}
-.dw-has-tab .dw-ta {
-  padding-right: 44px;
-}
-.dw-has-tab .dw-phr {
-  right: 44px;
-}
-@media (hover: none) and (pointer: coarse) {
-  .dw-tabk {
-    display: none;
-  }
-  .dw-has-tab .dw-ta {
-    padding-right: 4px;
-  }
-  .dw-has-tab .dw-phr {
-    right: 4px;
-  }
 }
 /* When one row is too short (a 320px chat pane), price, model and send
    move to a second row on the right instead of overlapping. */

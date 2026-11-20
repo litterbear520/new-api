@@ -48,6 +48,8 @@ export function createRename(c: Ctx) {
     e.stopPropagation()
     const r = c.renaming
     if (!r) return
+    // Enter picks a candidate and Esc drops it while an input method is composing
+    if (e.isComposing || e.keyCode === 229) return
     if (e.key === 'Enter') {
       e.preventDefault()
       commitRename()

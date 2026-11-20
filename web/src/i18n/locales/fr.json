@@ -8569,6 +8569,23 @@
     "Browser storage is full, so the picture was not added. Delete old projects to free space.": "Le stockage du navigateur est plein : l’image n’a pas été ajoutée. Supprimez d’anciens projets pour libérer de l’espace.",
     "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "Certains fichiers ont été ignorés : cette page accepte les images PNG, JPEG, WebP, GIF, BMP, AVIF et HEIC.",
     "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "Le stockage du navigateur est plein : la compétence n’a pas été enregistrée. Supprimez les compétences inutiles, puis réessayez.",
-    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "Redirection vers la caisse. Après le paiement, vous revenez ici et le solde se met à jour tout seul."
+    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "Redirection vers la caisse. Après le paiement, vous revenez ici et le solde se met à jour tout seul.",
+    "Compare view": "Mode de comparaison",
+    "Picture deleted": "Image supprimée",
+    "Pictures deleted": "Images supprimées",
+    "Set deleted": "Série supprimée",
+    "Use example": "Utiliser l’exemple",
+    "Replying": "Réponse en cours",
+    "Reply finished": "Réponse terminée",
+    "Reply stopped": "Réponse arrêtée",
+    "Reply failed": "La réponse a échoué",
+    "Recent conversations: {{title}}": "Conversations récentes : {{title}}",
+    "View log details: {{time}}": "Voir le détail du journal : {{time}}",
+    "Latency test done. Fastest: {{latency}} ms": "Test de latence terminé. Le plus rapide : {{latency}} ms",
+    "Latency test done. No address can be reached": "Test de latence terminé. Aucune adresse n’est joignable",
+    "{{metric}} per day, by model family": "{{metric}} par jour, par famille de modèles",
+    "{{metric}} per hour, by model family": "{{metric}} par heure, par famille de modèles",
+    "Copy order number": "Copier le numéro de commande",
+    "Show password": "Afficher le mot de passe"
   }
 }

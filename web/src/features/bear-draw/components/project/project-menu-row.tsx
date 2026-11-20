@@ -42,12 +42,14 @@ function neighbourDelete(button: HTMLElement): HTMLElement | null {
  * end deletes it. The first press arms the button (「确认删除」), the second
  * deletes; moving to another item disarms it. The menu stays open and the
  * focus moves to the next row's delete button (or the menu's first item),
- * so several projects can go in a row.
+ * so several projects can go in a row. When the menu goes away with the
+ * last project, `onEmptied` puts the focus somewhere still on the page.
  */
 export function ProjectMenuRow(props: {
   project: Project
   icon?: ReactNode
   onOpen: (projectId: string) => void
+  onEmptied?: () => void
 }) {
   const { t } = useTranslation()
   const ago = useRelativeTime()
@@ -89,6 +91,7 @@ export function ProjectMenuRow(props: {
             const target =
               next ?? menu?.querySelector<HTMLElement>('[role="menuitem"]')
             if (target?.isConnected) target.focus()
+            else props.onEmptied?.()
           })
         }}
         onBlur={() => setArmed(false)}

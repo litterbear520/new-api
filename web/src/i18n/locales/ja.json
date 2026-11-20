@@ -8569,6 +8569,23 @@
     "Browser storage is full, so the picture was not added. Delete old projects to free space.": "ブラウザの保存容量がいっぱいのため、画像を追加できませんでした。古いプロジェクトを削除して空き容量を作ってください。",
     "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "一部のファイルをスキップしました。このページで使えるのは PNG、JPEG、WebP、GIF、BMP、AVIF、HEIC の画像です。",
     "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "ブラウザの保存容量がいっぱいのため、スキルを保存できませんでした。使わないスキルを削除してから、もう一度お試しください。",
-    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "レジに移動しています。支払いが終わるとここに戻り、残高は自動で更新されます。"
+    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "レジに移動しています。支払いが終わるとここに戻り、残高は自動で更新されます。",
+    "Compare view": "比較の表示",
+    "Picture deleted": "画像を削除しました",
+    "Pictures deleted": "画像を削除しました",
+    "Set deleted": "このセットを削除しました",
+    "Use example": "例を使う",
+    "Replying": "返信中",
+    "Reply finished": "返信が完了しました",
+    "Reply stopped": "返信を停止しました",
+    "Reply failed": "返信に失敗しました",
+    "Recent conversations: {{title}}": "最近の会話：{{title}}",
+    "View log details: {{time}}": "ログの詳細を見る：{{time}}",
+    "Latency test done. Fastest: {{latency}} ms": "速度テスト完了。最速 {{latency}} ms",
+    "Latency test done. No address can be reached": "速度テスト完了。どのアドレスにも接続できません",
+    "{{metric}} per day, by model family": "{{metric}}：1 日ごと・モデル系列別",
+    "{{metric}} per hour, by model family": "{{metric}}：1 時間ごと・モデル系列別",
+    "Copy order number": "注文番号をコピー",
+    "Show password": "パスワードを表示"
   }
 }

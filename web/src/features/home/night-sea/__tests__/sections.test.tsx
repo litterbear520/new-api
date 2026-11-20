@@ -591,4 +591,40 @@ describe('home sections copy button', () => {
     })
     expect(copyButton()).toHaveTextContent(/^请手动复制$/)
   })
+
+  const copyStatus = () =>
+    within(screen.getByRole('tabpanel')).getByRole('status')
+
+  it('reads the result out from an empty status beside the button, not from the button', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    renderSections()
+    expect(copyButton()).not.toHaveAttribute('aria-live')
+    expect(copyButton()).not.toContainElement(copyStatus())
+    expect(copyStatus()).toBeEmptyDOMElement()
+
+    await act(async () => {
+      fireEvent.click(copyButton())
+    })
+
+    expect(copyStatus()).toHaveTextContent(/^已复制$/)
+  })
+
+  it('reads out the copy-by-hand hint when every way of copying fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: () => false,
+    })
+    renderSections()
+
+    await act(async () => {
+      fireEvent.click(copyButton())
+    })
+
+    expect(copyStatus()).toHaveTextContent(/^请手动复制$/)
+  })
 })

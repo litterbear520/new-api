@@ -19,12 +19,15 @@ For commercial licensing, please contact support@quantumnous.com
 import { useRouterState } from '@tanstack/react-router'
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 
+import { MAIN_CONTENT_ID } from '@/components/skip-to-main'
+
 /**
  * The console's one scroller. It starts under the site bar, which floats
  * over it, and the page slides under the bar's glass. A page marked data-page-scroll (Main's
  * pageScroll) grows with its content; the others fit the height and scroll
  * inside themselves. Every page opens at the top, and in-page jumps stop
- * below the bar.
+ * below the bar. Its content is the console's one main, where the skip link
+ * moves focus.
  */
 export function ConsoleScroller(props: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -41,9 +44,13 @@ export function ConsoleScroller(props: { children: ReactNode }) {
       className='flex min-h-0 flex-1 scroll-pt-(--app-header-height) flex-col overflow-x-hidden overflow-y-auto'
     >
       <div aria-hidden='true' className='h-(--app-header-height) shrink-0' />
-      <div className='flex min-h-0 flex-1 flex-col has-[[data-page-scroll]]:flex-[1_0_auto]'>
+      <main
+        id={MAIN_CONTENT_ID}
+        tabIndex={-1}
+        className='flex min-h-0 flex-1 flex-col outline-none has-[[data-page-scroll]]:flex-[1_0_auto]'
+      >
         {props.children}
-      </div>
+      </main>
     </div>
   )
 }

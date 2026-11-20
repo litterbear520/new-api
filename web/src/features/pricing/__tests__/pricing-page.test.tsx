@@ -136,6 +136,17 @@ describe('pricing page', () => {
     ).toEqual(['per-call-model'])
   })
 
+  it('wraps the whole page in one main landmark', async () => {
+    await renderPricing('/pricing/')
+    const main = screen.getByRole('main')
+    expect(main).toContainElement(
+      screen.getByRole('heading', { level: 1, name: 'Model Square' })
+    )
+    expect(main).toContainElement(
+      screen.getByRole('heading', { level: 3, name: 'chat-model' })
+    )
+  })
+
   it('still applies the filters the bar shows, such as a search', async () => {
     await renderPricing('/pricing/?search=per-call', 'per-call-model')
     expect(

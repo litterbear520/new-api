@@ -25,7 +25,7 @@ import {
   Shapes,
   Wallet,
 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,7 @@ export function ThinkRow(props: { reply: Reply; text: string; live: boolean }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [now, setNow] = useState(() => Date.now())
+  const panelId = useId()
   const { live } = props
   useEffect(() => {
     if (!live) return
@@ -63,6 +64,7 @@ export function ThinkRow(props: { reply: Reply; text: string; live: boolean }) {
         type='button'
         className='bc-think'
         aria-expanded={open}
+        aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
       >
         {live ? (
@@ -77,7 +79,8 @@ export function ThinkRow(props: { reply: Reply; text: string; live: boolean }) {
         )}
         <ChevronRight className='bc-think-chev' aria-hidden='true' />
       </button>
-      <div className='bc-think-t'>
+      {/* folded, it is out of screen readers and find in page too */}
+      <div id={panelId} className='bc-think-t' inert={!open}>
         <div>
           <p>{props.text}</p>
         </div>

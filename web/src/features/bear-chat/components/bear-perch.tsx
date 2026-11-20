@@ -73,7 +73,8 @@ function StatusLine(props: { bear: BearState }) {
     else if (secs >= 10 && work === 'think') label = t('Still thinking')
   }
   return (
-    <span className='bc-stat bc-on' aria-live='polite'>
+    // not a live region: ReplyAnnouncer says when it starts and ends
+    <span className='bc-stat bc-on'>
       <span className='bc-shim'>{label}</span>
       <span aria-hidden='true'> · </span>
       <span className='tabular-nums'>{t('{{count}} s', { count: secs })}</span>

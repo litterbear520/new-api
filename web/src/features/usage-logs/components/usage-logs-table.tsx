@@ -50,6 +50,7 @@ import { fetchLogsByCategory } from '../lib/utils'
 import type { LogCategory } from '../types'
 import { CommonLogsFilterBar } from './common-logs-filter-bar'
 import { DetailsDialog } from './dialogs/details-dialog'
+import { LogDetailOpenerContext } from './log-detail-opener'
 import { LogsEmpty } from './logs-empty'
 import { TaskLogsFilterBar } from './task-logs-filter-bar'
 import { UsageLogsMobileList } from './usage-logs-mobile-card'
@@ -269,7 +270,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const isCommon = logCategory === 'common'
 
   return (
-    <>
+    <LogDetailOpenerContext.Provider value={isCommon ? openDetail : null}>
       <DataTablePage
         table={table}
         compactPagination={isMobile && isCommon}
@@ -335,20 +336,16 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
               className={cn(
                 'transition-colors',
                 tintClass,
-                isCommon &&
-                  'focus-visible:bg-muted/60 cursor-pointer outline-none'
+                isCommon && 'cursor-pointer'
               )}
               getColumnClassName={getColumnClassName}
               cellRenderColumns={table.options.columns}
+              // The time cell's button is the way in for the keyboard and
+              // screen readers; a click anywhere else on the row is a
+              // shortcut for the mouse, so the row itself takes no focus.
               {...(isCommon && {
-                tabIndex: 0,
                 onClick: (e: React.MouseEvent<HTMLTableRowElement>) => {
                   if (isRowClick(e)) openDetail(row.original as UsageLog)
-                },
-                onKeyDown: (e: React.KeyboardEvent<HTMLTableRowElement>) => {
-                  if (e.key === 'Enter' && e.target === e.currentTarget) {
-                    openDetail(row.original as UsageLog)
-                  }
                 },
               })}
             />
@@ -366,6 +363,6 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
           }
         />
       )}
-    </>
+    </LogDetailOpenerContext.Provider>
   )
 }

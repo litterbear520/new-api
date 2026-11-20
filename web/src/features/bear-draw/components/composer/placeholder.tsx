@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Mode } from '../../types'
@@ -25,18 +26,46 @@ type PlaceholderProps = {
   mode: Mode
   /** The skill in use, if any. */
   skillName: string | null
-  /** Home, Agent mode: the example shown now (Tab fills it in). */
+  /** Home, Agent mode: the example shown now (「使用示例」 fills it in). */
   example: Example | null
   /** Changes with every new example, to replay the fade. */
   exampleKey: number
+  onUseExample: () => void
+  /** The 「使用示例」 button got or lost the focus. */
+  onExampleFocus: (on: boolean) => void
 }
 
 /**
- * The hint inside the empty box. Home: 「让小熊 <example> Tab」, a new example
- * every few seconds; in a project: how "/" and "@" work.
+ * The hint inside the empty box. Home: 「让小熊 <example>」 and a 「使用示例」
+ * button, a new example every few seconds; in a project: how "/" and "@"
+ * work. It comes after the box, so Tab goes from the box to the button.
  */
 export function Placeholder(props: PlaceholderProps) {
   const { t } = useTranslation()
+  const exampleId = useId()
+  if (props.mode === 'agent' && !props.skillName && props.example) {
+    return (
+      <div className='bd-comp-ph bd-comp-ph-ex'>
+        <span key={props.exampleKey} className='bd-ph-in' aria-hidden='true'>
+          <span className='bd-ph-lead'>{t('Ask the bear:')}</span>{' '}
+          <span className='bd-ph-ex'>{props.example.text}</span>
+        </span>
+        <span id={exampleId} hidden>
+          {props.example.text}
+        </span>
+        <button
+          type='button'
+          className='bd-ph-use'
+          aria-describedby={exampleId}
+          onClick={props.onUseExample}
+          onFocus={() => props.onExampleFocus(true)}
+          onBlur={() => props.onExampleFocus(false)}
+        >
+          {t('Use example')}
+        </button>
+      </div>
+    )
+  }
   let body
   if (props.mode === 'image') {
     body = t('Say what to draw, e.g. a latte by the window at dawn, film look')
@@ -44,14 +73,6 @@ export function Placeholder(props: PlaceholderProps) {
     body = t(
       'Tell the bear about your product or what you need; it will follow “{{name}}”',
       { name: props.skillName }
-    )
-  } else if (props.example) {
-    body = (
-      <span key={props.exampleKey} className='bd-ph-in'>
-        <span className='bd-ph-lead'>{t('Ask the bear:')}</span>{' '}
-        <span className='bd-ph-ex'>{props.example.text}</span>
-        <kbd className='bd-kbd'>Tab</kbd>
-      </span>
     )
   } else {
     body = t(

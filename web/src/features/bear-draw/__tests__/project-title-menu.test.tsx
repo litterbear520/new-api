@@ -23,7 +23,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -166,4 +166,26 @@ describe('project title menu', () => {
     await user.keyboard('{ArrowDown}')
     expect(menu).toContainElement(document.activeElement as HTMLElement)
   })
+
+  it.each([
+    ['Enter', { isComposing: true }],
+    ['Enter', { keyCode: 229 }],
+    ['Escape', { isComposing: true }],
+  ])(
+    'rename: %s while an input method composes (%o) keeps the field open',
+    async (key, ime) => {
+      const user = userEvent.setup()
+      renderMenu(1)
+      await user.click(await screen.findByRole('button', { name: /项目 1/ }))
+      await user.click(screen.getByRole('menuitem', { name: 'Rename' }))
+      const field = await screen.findByRole('textbox', { name: 'Project name' })
+      fireEvent.change(field, { target: { value: '新名字' } })
+
+      fireEvent.keyDown(field, { key, ...ime })
+      expect(screen.getByRole('textbox', { name: 'Project name' })).toBe(field)
+
+      fireEvent.keyDown(field, { key: 'Enter', keyCode: 13 })
+      expect(useBearDrawStore.getState().projects[0].title).toBe('新名字')
+    }
+  )
 })

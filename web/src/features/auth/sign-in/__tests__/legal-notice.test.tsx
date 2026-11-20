@@ -99,3 +99,20 @@ it('shows no legal notice when no document is published', async () => {
     screen.queryByText(/By continuing, you agree to the/)
   ).not.toBeInTheDocument()
 })
+
+it('opens the documents in a new tab, so the dialog keeps what was typed', async () => {
+  renderAuthRoute({
+    url: '/sign-in',
+    status: {
+      ...github,
+      user_agreement_enabled: true,
+      privacy_policy_enabled: true,
+    },
+  })
+
+  for (const name of ['User Agreement', 'Privacy Policy']) {
+    const link = await screen.findByRole('link', { name })
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  }
+})

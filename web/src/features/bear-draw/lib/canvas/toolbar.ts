@@ -17,11 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { Ctx } from './context'
-import { esc, translate } from './dom'
+import { esc, focusEl, translate } from './dom'
 import { BARS_BOTTOM, clamp } from './geometry'
 import { ICONS } from './icons'
 import type { CanvasLabels } from './labels'
 import { gRect, selNode } from './query'
+import { setTabStop } from './roving'
 import type { ActionSpec, Rect, SelectionKind } from './types'
 
 /* The floating glass toolbar above the selection. */
@@ -112,13 +113,47 @@ function buttonHtml(list: ActionSpec[], a: ActionSpec, i: number): string {
   return `${sep}<button type="button" class="${cls}" data-act="${esc(a.id)}" title="${esc(a.title || a.label)}" aria-label="${esc(a.label)}">${a.icon ?? ''}${text}</button>`
 }
 
+const actOf = (b: Element | null | undefined) =>
+  b instanceof HTMLElement ? (b.dataset.act ?? null) : null
+
+const actButton = (tb: HTMLElement, act: string | null) =>
+  act
+    ? ([...tb.querySelectorAll<HTMLElement>('[data-act]')].find(
+        (b) => b.dataset.act === act
+      ) ?? null)
+    : null
+
 function buildToolbar(c: Ctx, kind: SelectionKind): boolean {
   const list = toolbarList(c, kind)
   const tb = c.d.tb
+  // A rebuild keeps the Tab stop (and the focus) on the same action.
+  const focused = tb.contains(document.activeElement)
+  const keep = actOf(
+    focused ? document.activeElement : tb.querySelector('[tabindex="0"]')
+  )
   tb.innerHTML = list.map((a, i) => buttonHtml(list, a, i)).join('')
+  const same = actButton(tb, keep)
+  setTabStop(tb, same)
+  if (focused) focusEl(same ?? tb.querySelector('button') ?? c.d.el)
   c.tbW = tb.offsetWidth
   c.tbH = tb.offsetHeight
   return list.length > 0
+}
+
+/** The toolbar goes away: focus on it goes to the canvas, not the page. */
+function hideToolbar(c: Ctx) {
+  const tb = c.d.tb
+  tb.classList.remove('is-on')
+  if (tb.contains(document.activeElement)) focusEl(c.d.el)
+}
+
+/** After 对比 closes, the button that opened it takes the focus back. */
+function refocus(c: Ctx) {
+  const act = c.tbFocus
+  c.tbFocus = null
+  const a = document.activeElement
+  if (!act || (a && a !== c.d.el && a !== document.body)) return
+  focusEl(actButton(c.d.tb, act))
 }
 
 function busy(c: Ctx): boolean {
@@ -141,7 +176,8 @@ export function placeToolbar(
     !bb || bb.x >= c.W || bb.y >= c.H || bb.x + bb.w <= 0 || bb.y + bb.h <= 0
   const quiet = busy(c) || settling || c.tool === 'mark' || !!c.cmp || !!c.pick
   if (!kind || !bb || offScreen || quiet) {
-    tb.classList.remove('is-on')
+    hideToolbar(c)
+    if (!quiet) c.tbFocus = null
     return
   }
   const statuses = [...c.sel].map(
@@ -153,7 +189,8 @@ export function placeToolbar(
     tb.dataset.has = buildToolbar(c, kind) ? '1' : ''
   }
   if (!tb.dataset.has) {
-    tb.classList.remove('is-on')
+    hideToolbar(c)
+    c.tbFocus = null
     return
   }
   const W = c.W
@@ -184,4 +221,5 @@ export function placeToolbar(
   }
   tb.style.transform = translate(Math.round(x), Math.round(y))
   tb.classList.add('is-on')
+  if (c.tbFocus) refocus(c)
 }

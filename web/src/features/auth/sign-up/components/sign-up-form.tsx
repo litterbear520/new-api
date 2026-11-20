@@ -99,7 +99,6 @@ export function SignUpForm({
       username: '',
       email: '',
       password: '',
-      confirmPassword: '',
     },
   })
 
@@ -263,7 +262,14 @@ export function SignUpForm({
             <FormItem>
               <FormLabel>{t('Username')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('Enter your username')} {...field} />
+                <Input
+                  placeholder={t('Enter your username')}
+                  autoComplete='username'
+                  autoCapitalize='none'
+                  autoCorrect='off'
+                  spellCheck={false}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -280,23 +286,9 @@ export function SignUpForm({
               <FormControl>
                 <PasswordInput
                   placeholder={t('Enter password (8–128 characters)')}
+                  autoComplete='new-password'
                   {...field}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Confirm Password Field */}
-        <FormField
-          control={form.control}
-          name='confirmPassword'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('Confirm password')}</FormLabel>
-              <FormControl>
-                <PasswordInput placeholder={t('Confirm password')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -319,6 +311,7 @@ export function SignUpForm({
                     <Input
                       placeholder={t('name@example.com')}
                       type='email'
+                      autoComplete='email'
                       {...field}
                     />
                   </FormControl>
@@ -330,8 +323,19 @@ export function SignUpForm({
             {/* Verification Code Field */}
             <div className='flex items-end gap-2'>
               <div className='flex-1'>
+                <Label htmlFor='sign-up-verification-code' className='sr-only'>
+                  {t('Verification code')}
+                </Label>
+                {/* The emailed code is six hex characters, letters included:
+                    a numeric keypad could not type it. */}
                 <Input
+                  id='sign-up-verification-code'
+                  name='verification-code'
                   placeholder={t('Verification code')}
+                  autoComplete='one-time-code'
+                  autoCapitalize='none'
+                  autoCorrect='off'
+                  spellCheck={false}
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
                 />

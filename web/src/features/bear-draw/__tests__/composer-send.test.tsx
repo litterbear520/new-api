@@ -113,6 +113,31 @@ describe('Composer sending', () => {
     expect(box).toHaveValue('第一行\n')
   })
 
+  it('on a touch screen Enter adds a new line and the send button sends', async () => {
+    const realMatchMedia = window.matchMedia
+    const setMatchMedia = (value: typeof window.matchMedia) =>
+      Object.defineProperty(window, 'matchMedia', { configurable: true, value })
+    setMatchMedia((query) => ({
+      ...realMatchMedia(query),
+      matches: query === '(pointer: coarse)',
+    }))
+    try {
+      const { onSend, box, user } = setup('home')
+      await user.type(box, '第一行{Enter}第二行')
+      expect(onSend).not.toHaveBeenCalled()
+      expect(box).toHaveValue('第一行\n第二行')
+
+      await user.click(screen.getByRole('button', { name: 'Send' }))
+      expect(onSend).toHaveBeenCalledWith({
+        text: '第一行\n第二行',
+        mode: 'agent',
+        refs: [],
+      })
+    } finally {
+      setMatchMedia(realMatchMedia)
+    }
+  })
+
   it('does not send on the Enter that ends an IME composition', () => {
     const { onSend, box } = setup()
     fireEvent.change(box, { target: { value: 'baowenbei' } })

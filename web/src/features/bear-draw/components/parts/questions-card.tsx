@@ -190,7 +190,9 @@ function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
                 setOthers((all) => all.map((x, i) => (i === page ? v : x)))
               }}
               onKeyDown={(e) => {
-                if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+                // Enter picks a candidate while an input method is composing
+                if (e.key !== 'Enter') return
+                if (e.nativeEvent.isComposing || e.keyCode === 229) return
                 e.preventDefault()
                 next()
               }}

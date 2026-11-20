@@ -31,7 +31,7 @@ function renderPage(props: {
       <SectionPageLayout.Content>Records</SectionPageLayout.Content>
     </SectionPageLayout>
   )
-  return container.querySelector('main')
+  return container.querySelector('[data-slot="main"]')
 }
 
 // The console scroller grows around pages marked data-page-scroll, so they

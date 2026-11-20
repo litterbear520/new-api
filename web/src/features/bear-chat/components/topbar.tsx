@@ -55,6 +55,7 @@ import {
 } from '@/components/ui/popover'
 import { useRelativeTime } from '@/features/draw/components/relative-time'
 import { Tip } from '@/features/draw/components/tip'
+import { imeOwnsKey } from '@/features/draw/lib/ime'
 import { cn } from '@/lib/utils'
 import { currentConversation, useBearChatStore } from '@/stores/bear-chat-store'
 
@@ -117,7 +118,9 @@ function HistoryMenu(props: { title: string }) {
           <button
             type='button'
             className='bc-ttl'
-            aria-label={t('Recent conversations')}
+            aria-label={t('Recent conversations: {{title}}', {
+              title: props.title,
+            })}
           >
             <span>{props.title}</span>
             <ChevronDown className='bc-chev' aria-hidden='true' />
@@ -205,6 +208,7 @@ export const Topbar = memo(function Topbar(props: TopbarProps) {
           onChange={(e) => setName(e.target.value)}
           onBlur={() => finishRename(true)}
           onKeyDown={(e) => {
+            if (imeOwnsKey(e.nativeEvent)) return
             if (e.key === 'Enter') finishRename(true)
             if (e.key === 'Escape') finishRename(false)
           }}

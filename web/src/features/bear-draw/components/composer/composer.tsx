@@ -58,10 +58,12 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
     const nightOn = useNightSeaStore((s) => s.on)
     const night = dark && nightOn
     const [focused, setFocused] = useState(false)
+    // the examples hold still while the box or 「使用示例」 has the focus
+    const [onExample, setOnExample] = useState(false)
     const [drop, setDrop] = useState(false)
     const wrapRef = useRef<HTMLDivElement>(null)
     const listId = useId()
-    const c = useComposer(props, ref, focused)
+    const c = useComposer(props, ref, focused || onExample)
     const bear = useDrawBear({ projectId: props.projectId, dark: night })
     const glass = useGlass<HTMLDivElement>(
       night ? { ...GLASS, tint: [0.3, 0.55], tone: 'sea' } : GLASS
@@ -142,14 +144,6 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
             }}
           />
           <div className='bd-comp-field'>
-            {!c.text && (
-              <Placeholder
-                mode={c.mode}
-                skillName={c.skill?.name ?? null}
-                example={c.example}
-                exampleKey={c.turn}
-              />
-            )}
             <textarea
               ref={ta}
               className='bd-comp-ta'
@@ -190,6 +184,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
                 picker.close()
               }}
             />
+            {!c.text && (
+              <Placeholder
+                mode={c.mode}
+                skillName={c.skill?.name ?? null}
+                example={c.example}
+                exampleKey={c.turn}
+                onUseExample={() => {
+                  // the button goes away without a blur event
+                  setOnExample(false)
+                  c.fillExample()
+                }}
+                onExampleFocus={setOnExample}
+              />
+            )}
           </div>
           <ComposerBar
             variant={props.variant}

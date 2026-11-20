@@ -28,7 +28,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
-import { parseSkillMd } from '../../lib/skill-import'
+import { MAX_FILE_BYTES, parseSkillMd, TOO_LARGE } from '../../lib/skill-import'
 import type { Skill } from '../../types'
 
 type DialogProps = { open: boolean; onOpenChange: (open: boolean) => void }
@@ -51,8 +51,17 @@ function ImportForm(props: { formId: string; onDone: () => void }) {
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState<string | undefined>()
   const [over, setOver] = useState(false)
+  // A parse error shows once the text is in (the box left, a file, 导入),
+  // not on every key while it is still being typed or pasted.
+  const [checked, setChecked] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const dropRef = useRef<HTMLButtonElement>(null)
+  const taRef = useRef<HTMLTextAreaElement>(null)
+  const errorId = useId()
   const parsed = useMemo(() => tryParse(text, fileName), [text, fileName])
+  const parseError = checked && parsed && !parsed.ok ? parsed.reason : null
+  const error = fileError ?? parseError
 
   const take = async (file: File | undefined) => {
     if (!file) return
@@ -60,9 +69,16 @@ function ImportForm(props: { formId: string; onDone: () => void }) {
       toast(t('ZIP files are not supported yet; pick the SKILL.md inside'))
       return
     }
+    // too big to be a skill: not read into memory at all
+    if (file.size > MAX_FILE_BYTES) {
+      setFileError(TOO_LARGE)
+      return
+    }
     try {
       setText(await file.text())
       setFileName(file.name)
+      setFileError(null)
+      setChecked(true)
     } catch {
       toast.error(t('This file could not be read'))
     }
@@ -70,11 +86,20 @@ function ImportForm(props: { formId: string; onDone: () => void }) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    if (fileError) {
+      dropRef.current?.focus()
+      return
+    }
     if (!parsed) {
       toast(t('Put a SKILL.md in first'))
       return
     }
-    if (!parsed.ok) return
+    if (!parsed.ok) {
+      // the box is described by the error, so focus reads it out
+      setChecked(true)
+      taRef.current?.focus()
+      return
+    }
     const skill = parsed.skill
     if (!putMySkill(skill)) {
       toast.error(
@@ -100,8 +125,10 @@ function ImportForm(props: { formId: string; onDone: () => void }) {
   return (
     <form id={props.formId} className='bd-imp' onSubmit={submit}>
       <button
+        ref={dropRef}
         type='button'
         className={cn('bd-imp-drop', over && 'bd-on')}
+        aria-describedby={fileError ? errorId : undefined}
         onClick={() => fileRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault()
@@ -130,19 +157,25 @@ function ImportForm(props: { formId: string; onDone: () => void }) {
       />
       <div className='bd-imp-or'>{t('Or paste it here')}</div>
       <Textarea
+        ref={taRef}
         className='bd-imp-ta'
         rows={8}
         value={text}
         aria-label={t('SKILL.md text')}
+        aria-invalid={parseError != null}
+        aria-describedby={parseError ? errorId : undefined}
         placeholder={t(
           '---\nname: my-poster-skill\ndescription: when to use it\n---\n\n# How to do it\n…'
         )}
         onChange={(e) => {
           setText(e.target.value)
           setFileName(undefined)
+          setChecked(false)
+          setFileError(null)
         }}
+        onBlur={() => setChecked(true)}
       />
-      {parsed?.ok && (
+      {parsed?.ok && !fileError && (
         <div className='bd-imp-prev' role='status'>
           <CircleCheck aria-hidden='true' />
           <div>
@@ -154,13 +187,13 @@ function ImportForm(props: { formId: string; onDone: () => void }) {
           </div>
         </div>
       )}
-      {parsed && !parsed.ok && (
-        <div className='bd-imp-prev bd-bad' role='alert'>
+      {error && (
+        <div id={errorId} className='bd-imp-prev bd-bad' role='status'>
           <CircleAlert aria-hidden='true' />
           <div>
             <b>{t('This does not read as a SKILL.md')}</b>
             {/* parseSkillMd's messages are i18n keys */}
-            <span>{t(parsed.reason)}</span>
+            <span>{t(error)}</span>
           </div>
         </div>
       )}

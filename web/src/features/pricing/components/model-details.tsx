@@ -945,52 +945,67 @@ function PriceSection(props: {
     )
   }
 
+  // On phones the table is wider than the screen: the wrapper scrolls, takes
+  // focus so the keyboard can scroll it too, and the price names stay put.
   return (
     <section className='-mx-1 px-1'>
-      <Table className='min-w-[520px] [&_td]:font-normal [&_thead_th]:text-xs'>
-        <TableHeader>
-          <TableRow className='hover:[background-color:transparent]'>
-            <TableHead
-              scope='col'
-              className='text-muted-foreground h-auto py-2.5 ps-0 pe-3 text-start whitespace-normal'
-            >
-              {t('Per {{unit}} tokens', { unit: tokenUnitLabel })}
-            </TableHead>
-            {columns.map((column) => (
+      <div
+        role='region'
+        aria-label={t('Base Price')}
+        tabIndex={0}
+        className='focus-visible:ring-ring relative w-full overflow-x-auto overflow-y-hidden rounded-sm outline-none focus-visible:ring-2'
+      >
+        <Table
+          withContainer={false}
+          className='min-w-[520px] [&_td]:font-normal [&_thead_th]:text-xs'
+        >
+          <TableHeader>
+            <TableRow className='hover:[background-color:transparent]'>
               <TableHead
-                key={column.type}
                 scope='col'
-                className='text-muted-foreground h-auto px-3 py-2.5 text-end'
+                className='text-muted-foreground bg-background sticky start-0 z-10 h-auto py-2.5 ps-0 pe-3 text-start whitespace-normal'
               >
-                {column.label}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody className='[&>tr]:h-auto'>
-          {rows.map((row) => (
-            <TableRow
-              key={row.key}
-              className='hover:[background-color:transparent]'
-            >
-              <TableHead
-                scope='row'
-                className='h-auto py-3 ps-0 pe-3 text-start whitespace-normal'
-              >
-                {row.label}
+                {t('Per {{unit}} tokens', { unit: tokenUnitLabel })}
               </TableHead>
               {columns.map((column) => (
-                <TableCell
+                <TableHead
                   key={column.type}
-                  className={cn('px-3 py-3 text-end font-mono', row.className)}
+                  scope='col'
+                  className='text-muted-foreground h-auto px-3 py-2.5 text-end'
                 >
-                  {row.cell(column.type)}
-                </TableCell>
+                  {column.label}
+                </TableHead>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody className='[&>tr]:h-auto'>
+            {rows.map((row) => (
+              <TableRow
+                key={row.key}
+                className='hover:[background-color:transparent]'
+              >
+                <TableHead
+                  scope='row'
+                  className='bg-background sticky start-0 z-10 h-auto py-3 ps-0 pe-3 text-start whitespace-normal'
+                >
+                  {row.label}
+                </TableHead>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.type}
+                    className={cn(
+                      'px-3 py-3 text-end font-mono',
+                      row.className
+                    )}
+                  >
+                    {row.cell(column.type)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </section>
   )
 }

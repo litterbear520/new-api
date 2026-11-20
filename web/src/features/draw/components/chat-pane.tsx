@@ -66,7 +66,8 @@ function roomSignature(room: DrawRoom) {
 function JumpButton(props: {
   show: boolean
   fresh: boolean
-  onClick: () => void
+  /** keyboard: activated by a key, not a pointer */
+  onClick: (keyboard: boolean) => void
 }) {
   const { t } = useTranslation()
   const glass = useGlass<HTMLButtonElement>({
@@ -86,9 +87,11 @@ function JumpButton(props: {
           props.fresh && 'dw-new'
         )}
         aria-label={t('Back to the newest')}
-        onClick={props.onClick}
+        // faded out, it is out of the Tab order and screen readers
+        inert={!props.show}
+        onClick={(e) => props.onClick(e.detail === 0)}
       >
-        <ArrowDown />
+        <ArrowDown aria-hidden='true' />
         <span className='dw-dot' />
       </button>
     </Tip>
@@ -235,7 +238,11 @@ export function ChatPane(props: { room: DrawRoom }) {
         <JumpButton
           show={farFromEnd}
           fresh={unseen}
-          onClick={() => toEnd(true)}
+          onClick={(keyboard) => {
+            toEnd(true)
+            // the button fades out; the focus goes on to the message box
+            if (keyboard) dockRef.current?.querySelector('textarea')?.focus()
+          }}
         />
         <Composer room={room} />
         <p className='dw-foot'>

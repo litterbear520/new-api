@@ -29,6 +29,7 @@ import { useEffect } from 'react'
 
 import { NavigationProgress } from '@/components/navigation-progress'
 import { SiteBar } from '@/components/site-bar/site-bar'
+import { SkipToMain } from '@/components/skip-to-main'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeCustomizationProvider } from '@/context/theme-customization-provider'
 import { saveAffiliateCode } from '@/features/auth/lib/storage'
@@ -99,6 +100,8 @@ function RootComponent() {
   return (
     <ThemeCustomizationProvider>
       <NavigationProgress />
+      {/* first, so the keyboard can skip the bar (shown on console pages) */}
+      <SkipToMain />
       <SiteBar />
       <Outlet />
       <Toaster closeButton duration={5000} position='top-center' richColors />

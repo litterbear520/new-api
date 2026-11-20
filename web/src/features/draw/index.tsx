@@ -65,6 +65,7 @@ import { useTabAlerts } from './hooks/use-tab-alerts'
 import { addFiles, selectItem } from './lib/actions'
 import { refreshBalance } from './lib/generate'
 import { disposeGlass } from './lib/glass'
+import { imeOwnsKey } from './lib/ime'
 
 import './draw.css'
 
@@ -253,6 +254,8 @@ export function Draw() {
     const onKey = (e: KeyboardEvent) => {
       if (lightbox) return
       if (e.key === 'Escape') {
+        // it closes the IME's candidate list instead
+        if (imeOwnsKey(e)) return
         if (mode) setMode(null)
         else setShowCanvas(false)
         return

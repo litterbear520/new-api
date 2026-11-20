@@ -21,17 +21,21 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
-/** The ⓘ next to a title; the text shows on hover or keyboard focus. */
+/**
+ * The ⓘ next to a title. Hover shows the text, and so do a click, a tap
+ * and Enter: phones have no hover, and iOS does not focus a tapped button.
+ */
 export function InfoTip(props: { text: string }) {
   const { t } = useTranslation()
   return (
-    <Tooltip>
-      <TooltipTrigger
+    <Popover>
+      <PopoverTrigger
+        openOnHover
         render={
           <Button
             variant='ghost'
@@ -42,10 +46,14 @@ export function InfoTip(props: { text: string }) {
         }
       >
         <Info aria-hidden='true' />
-      </TooltipTrigger>
-      <TooltipContent className='max-w-64 leading-relaxed'>
+      </PopoverTrigger>
+      <PopoverContent
+        side='top'
+        aria-label={t('Tip')}
+        className='w-auto max-w-64 p-2.5 text-xs leading-relaxed'
+      >
         {props.text}
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   )
 }

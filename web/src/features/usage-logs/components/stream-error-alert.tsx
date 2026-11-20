@@ -20,19 +20,19 @@ import { CircleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+  Popover,
+  PopoverContent,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
 import type { LogOtherData } from '../types'
 
 /**
- * The red alert of a stream that did not end cleanly. Hover or focus shows
- * why it ended and how many soft errors it had. It sits in clickable log
- * rows, so its own clicks and keys stop here.
+ * The red alert of a stream that did not end cleanly. Hover, a click, a tap
+ * or Enter shows why it ended and how many soft errors it had. It sits in
+ * clickable log rows, so its own clicks and keys stop here.
  */
 export function StreamErrorAlert(props: {
   streamStatus: NonNullable<LogOtherData['stream_status']>
@@ -42,36 +42,35 @@ export function StreamErrorAlert(props: {
   const label = `${t('Stream Status')}: ${t('Error')}`
   const errorCount = props.streamStatus.error_count ?? 0
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <button
-              type='button'
-              aria-label={label}
-              className='focus-visible:ring-ring/50 inline-flex rounded-full outline-none focus-visible:ring-2'
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-            />
-          }
-        >
-          <CircleAlert
-            aria-hidden='true'
-            className={cn('text-destructive', props.iconClassName)}
+    <Popover>
+      <PopoverTrigger
+        openOnHover
+        render={
+          <button
+            type='button'
+            aria-label={label}
+            className='focus-visible:ring-ring inline-flex rounded-full outline-none focus-visible:ring-2'
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           />
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className='space-y-0.5 text-xs'>
-            <p>{label}</p>
-            <p>{props.streamStatus.end_reason || 'unknown'}</p>
-            {errorCount > 0 && (
-              <p>
-                {t('Soft Errors')}: {errorCount}
-              </p>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        }
+      >
+        <CircleAlert
+          aria-hidden='true'
+          className={cn('text-destructive', props.iconClassName)}
+        />
+      </PopoverTrigger>
+      <PopoverContent side='top' className='w-auto max-w-64 gap-0.5 p-2.5'>
+        <PopoverTitle className='text-xs'>{label}</PopoverTitle>
+        <p className='text-xs break-words'>
+          {props.streamStatus.end_reason || 'unknown'}
+        </p>
+        {errorCount > 0 && (
+          <p className='text-xs'>
+            {t('Soft Errors')}: {errorCount}
+          </p>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }

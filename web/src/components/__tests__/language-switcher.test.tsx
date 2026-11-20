@@ -27,7 +27,7 @@ test('opening the language menu shows a marker beside each language', async () =
   render(<LanguageSwitcher />)
   await userEvent.click(screen.getByRole('button', { name: 'Change language' }))
 
-  const items = await screen.findAllByRole('menuitem')
+  const items = await screen.findAllByRole('menuitemradio')
   expect(
     items.map((item) => [
       item.querySelector('[data-flag]')?.getAttribute('data-flag'),
@@ -40,9 +40,34 @@ test('繁體中文 gets a neutral 繁 text badge instead of a regional flag', as
   render(<LanguageSwitcher />)
   await userEvent.click(screen.getByRole('button', { name: 'Change language' }))
 
-  const item = await screen.findByRole('menuitem', { name: '繁體中文' })
+  const item = await screen.findByRole('menuitemradio', { name: '繁體中文' })
   const badge = item.querySelector('[data-flag="zhTW"]')
   expect(badge).toHaveTextContent('繁')
   expect(badge).toHaveAttribute('aria-hidden', 'true')
   expect(badge?.querySelector('svg')).toBeNull()
+})
+
+test('the language menu says which language is on, one of a set', async () => {
+  render(<LanguageSwitcher />)
+  await userEvent.click(screen.getByRole('button', { name: 'Change language' }))
+
+  const items = await screen.findAllByRole('menuitemradio')
+  // The test setup runs in English.
+  expect(
+    items
+      .filter((item) => item.getAttribute('aria-checked') === 'true')
+      .map((item) => item.textContent)
+  ).toEqual(['English'])
+})
+
+test('each language name is marked with its own language', async () => {
+  render(<LanguageSwitcher />)
+  await userEvent.click(screen.getByRole('button', { name: 'Change language' }))
+
+  await screen.findAllByRole('menuitemradio')
+  expect(
+    INTERFACE_LANGUAGE_OPTIONS.map((lang) =>
+      screen.getByText(lang.label).getAttribute('lang')
+    )
+  ).toEqual(['zh-CN', 'en', 'fr', 'ru', 'ja', 'vi', 'zh-TW'])
 })

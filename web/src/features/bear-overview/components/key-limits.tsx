@@ -150,6 +150,8 @@ export function KeyLimits(props: {
           size='icon-xs'
           onClick={props.onRefresh}
           disabled={props.refreshing}
+          focusableWhenDisabled
+          className='aria-disabled:opacity-50'
           aria-label={t('Refresh')}
           title={t('Refresh')}
         >

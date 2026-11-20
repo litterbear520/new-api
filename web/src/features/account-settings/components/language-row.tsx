@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -42,7 +42,11 @@ export function LanguageRow(props: {
 }) {
   const { t, i18n } = useTranslation()
   const { auth } = useAuthStore()
+  const labelId = useId()
   const [saving, setSaving] = useState(false)
+  // A pick while one is saving is ignored. The box is not disabled for it:
+  // a disabled box drops the keyboard focus.
+  const savingRef = useRef(false)
   const saved = useMemo(() => {
     const settings = parseUserSettings(props.profile.setting)
     return normalizeInterfaceLanguage(settings.language || i18n.language)
@@ -51,11 +55,12 @@ export function LanguageRow(props: {
   useEffect(() => setCurrent(saved), [saved])
 
   const change = async (language: string | null) => {
-    if (!language) return
+    if (!language || savingRef.current) return
     const next = normalizeInterfaceLanguage(language)
     if (next === current) return
     const previous = current
     setCurrent(next)
+    savingRef.current = true
     setSaving(true)
     await i18n.changeLanguage(next)
     try {
@@ -80,6 +85,7 @@ export function LanguageRow(props: {
       await i18n.changeLanguage(previous)
       handleServerError(error, t('Failed to update settings'))
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }
@@ -87,6 +93,7 @@ export function LanguageRow(props: {
   return (
     <SettingsRow
       label={t('Interface Language')}
+      labelId={labelId}
       description={t(
         'Language preferences sync across your signed-in devices and affect API error messages.'
       )}
@@ -101,7 +108,7 @@ export function LanguageRow(props: {
         }))}
         value={current}
         onValueChange={(value) => void change(value)}
-        disabled={saving}
+        aria-labelledby={labelId}
         className='w-44'
         placeholder={t('Select language')}
       />

@@ -8569,6 +8569,23 @@
     "Browser storage is full, so the picture was not added. Delete old projects to free space.": "Хранилище браузера заполнено, поэтому картинка не добавлена. Удалите старые проекты, чтобы освободить место.",
     "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "Некоторые файлы пропущены: здесь можно использовать картинки PNG, JPEG, WebP, GIF, BMP, AVIF и HEIC.",
     "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "Хранилище браузера заполнено, поэтому навык не сохранён. Удалите ненужные навыки и попробуйте ещё раз.",
-    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "Переходим к кассе. После оплаты вы вернётесь сюда, и баланс обновится сам."
+    "Taking you to the cashier. After paying you come back here and the balance updates by itself.": "Переходим к кассе. После оплаты вы вернётесь сюда, и баланс обновится сам.",
+    "Compare view": "Вид сравнения",
+    "Picture deleted": "Изображение удалено",
+    "Pictures deleted": "Изображения удалены",
+    "Set deleted": "Набор удалён",
+    "Use example": "Взять пример",
+    "Replying": "Пишет ответ",
+    "Reply finished": "Ответ готов",
+    "Reply stopped": "Ответ остановлен",
+    "Reply failed": "Ошибка ответа",
+    "Recent conversations: {{title}}": "Недавние диалоги: {{title}}",
+    "View log details: {{time}}": "Подробности записи: {{time}}",
+    "Latency test done. Fastest: {{latency}} ms": "Проверка задержки завершена. Самый быстрый: {{latency}} мс",
+    "Latency test done. No address can be reached": "Проверка задержки завершена. Ни один адрес недоступен",
+    "{{metric}} per day, by model family": "{{metric}} по дням, по семействам моделей",
+    "{{metric}} per hour, by model family": "{{metric}} по часам, по семействам моделей",
+    "Copy order number": "Скопировать номер заказа",
+    "Show password": "Показать пароль"
   }
 }

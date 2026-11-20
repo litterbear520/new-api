@@ -281,6 +281,9 @@ function Meteor(props: {
       type='button'
       className='bc-meteor'
       aria-label={props.label}
+      // a treat for the pointer only: it flies off and unmounts, and a
+      // focused meteor would drop the focus to the top of the page
+      tabIndex={-1}
       style={
         {
           left: flight.x,

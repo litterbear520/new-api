@@ -25,6 +25,7 @@ import {
   type ForwardedRef,
   type KeyboardEvent,
 } from 'react'
+import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -52,6 +53,10 @@ export type ComposerProps = {
 }
 
 const MAX_HEIGHT = { home: 200, dock: 180 }
+
+/** A touch screen: its keyboard has no Shift+Enter, so Enter is a new line. */
+const touchFirst = () =>
+  window.matchMedia?.('(pointer: coarse)').matches ?? false
 
 /**
  * What the composer holds and does: the text, skill, 玩法 and pictures of
@@ -182,18 +187,26 @@ export function useComposer(
     picker.evaluate(next.value, next.caret)
   }
 
+  /** 「使用示例」: the example and its skill go in; back to the box, caret at the end. */
+  const fillExample = () => {
+    if (!example) return
+    const value = example.text
+    const s = findSkill(example.skillId, mySkills)
+    flushSync(() => {
+      setText(value)
+      if (s) setSkillId(s.id)
+    })
+    const ta = taRef.current
+    if (!ta) return
+    ta.focus({ preventScroll: true })
+    ta.setSelectionRange(value.length, value.length)
+  }
+
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // the Enter that ends an IME composition is not a send
     if (e.nativeEvent.isComposing || e.keyCode === 229) return
     if (picker.onKey(e)) return
-    if (e.key === 'Tab' && !e.shiftKey && !text && example) {
-      e.preventDefault()
-      write(example.text, example.text.length)
-      const s = findSkill(example.skillId, mySkills)
-      if (s) setSkillId(s.id)
-      return
-    }
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !touchFirst()) {
       e.preventDefault()
       send()
     }
@@ -222,6 +235,7 @@ export function useComposer(
     fileRef,
     send,
     startPicker,
+    fillExample,
     onKeyDown,
   }
 }

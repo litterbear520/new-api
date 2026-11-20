@@ -47,6 +47,8 @@ type NightSeaAuthDialogProps = DialogState & {
   redirectTo?: string
   onOpenChange: (open: boolean) => void
   onViewChange: (view: NightSeaAuthView) => void
+  /** Where focus goes on close (useNightSeaAuth: back to the opener). */
+  finalFocus?: () => boolean
 }
 
 const PHONE = '(max-width: 640px)'
@@ -208,6 +210,7 @@ export function NightSeaAuthDialog(props: NightSeaAuthDialogProps) {
         <Dialog.Popup
           ref={setCard}
           initialFocus={initialFocus}
+          finalFocus={props.finalFocus}
           className={cn(
             'ns-auth auth-cosmos dark',
             frosted && 'ns-auth-frosted'

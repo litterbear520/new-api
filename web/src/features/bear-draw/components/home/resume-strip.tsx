@@ -69,7 +69,7 @@ function ResumeItem(props: { project: Project }) {
  * Every project, newest first, in a menu; each row can be deleted. Shown
  * with any number of projects, so the ones on the strip can be deleted too.
  */
-function AllProjects(props: { projects: Project[] }) {
+function AllProjects(props: { projects: Project[]; onEmptied?: () => void }) {
   const { t } = useTranslation()
   const nav = useProjectNav()
   return (
@@ -83,15 +83,23 @@ function AllProjects(props: { projects: Project[] }) {
         className='bd-pmenu max-h-[min(60vh,420px)] w-80'
       >
         {props.projects.map((p) => (
-          <ProjectMenuRow key={p.id} project={p} onOpen={nav.open} />
+          <ProjectMenuRow
+            key={p.id}
+            project={p}
+            onOpen={nav.open}
+            onEmptied={props.onEmptied}
+          />
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-/** 「继续上次」: the latest projects in one line under the composer. */
-export function ResumeStrip() {
+/**
+ * 「继续上次」: the latest projects in one line under the composer. The strip
+ * goes away with the last project; `onEmptied` then takes the focus.
+ */
+export function ResumeStrip(props: { onEmptied?: () => void }) {
   const { t } = useTranslation()
   const projects = useBearDrawStore((s) => s.projects)
   const ref = useRef<HTMLElement>(null)
@@ -104,7 +112,7 @@ export function ResumeStrip() {
         {projects.slice(0, RECENT).map((p) => (
           <ResumeItem key={p.id} project={p} />
         ))}
-        <AllProjects projects={projects} />
+        <AllProjects projects={projects} onEmptied={props.onEmptied} />
       </div>
     </nav>
   )

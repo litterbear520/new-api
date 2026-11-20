@@ -188,6 +188,8 @@ export type CompareState = {
   same: boolean
   mode: 'slide' | 'side'
   p: number
+  /** Gets the focus back when the comparison closes. */
+  opener: HTMLElement | null
 }
 
 export type MenuAt = {
@@ -280,12 +282,13 @@ export type Fx = {
   act: (id: string, extra?: Partial<ActionPayload>) => void
   startPick: (id: string) => void
   cancelPick: () => void
-  closeMenu: () => void
+  closeMenu: (restore?: boolean, ring?: boolean) => void
   openMenu: (
     items: MenuItem[],
     at: MenuAt,
     head?: HTMLElement | null,
-    key?: string
+    key?: string,
+    trigger?: HTMLElement | null
   ) => void
   openMore: (p: ActionPayload) => void
   onContextMenu: (e: MouseEvent) => void
@@ -294,7 +297,6 @@ export type Fx = {
   compare: (a: string, b: string) => void
   closeCompare: (instant?: boolean) => void
   renderCompare: () => void
-  nudgeCompare: (delta: number) => void
   setMini: (on: boolean) => void
   drawMini: () => void
   readColors: () => void
@@ -350,10 +352,14 @@ export type Ctx = {
   miniMap: { b: Rect; k: number; ox: number; oy: number } | null
   miniDrag: { b: Rect | null; sx: number; sy: number; moved: boolean } | null
   menuEl: HTMLDivElement | null
+  /** Gets the focus back when the menu closes. */
+  menuOpener: HTMLElement | null
   cmp: CompareState | null
   renaming: { g: GroupRec; nm: HTMLElement; old: string } | null
   /** Selection the toolbar was built for. */
   tbKey: string
+  /** A toolbar action to focus once the toolbar shows again. */
+  tbFocus: string | null
   tbW: number
   tbH: number
   zoomTxt: string

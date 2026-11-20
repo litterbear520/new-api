@@ -30,23 +30,32 @@ import {
 import { useTheme } from '@/context/theme-provider'
 import { useNightSeaStore } from '@/stores/night-sea-store'
 
+/** Light or dark, as the system asks for right now. */
+function systemLook(): 'light' | 'dark' {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+}
+
 /**
  * The theme switch in the site bar: click it or drag its knob. Light and
  * dark, then 夜海 once a meteor on the chat page was caught in this browser.
- * The knob and everything that moves with it are in theme-switch.ts; until
- * the first switch the page follows the system.
+ * The knob and everything that moves with it are in theme-switch.ts. The
+ * page follows the system until a switch away from it, and again once the
+ * switch comes back to what the system asks for.
  */
 export function ThemeToggle() {
   const { t } = useTranslation()
-  const { theme, resolvedTheme, setTheme } = useTheme()
+  const { theme, setTheme, resetTheme } = useTheme()
   const nightFound = useNightSeaStore((s) => s.found)
   const nightOn = useNightSeaStore((s) => s.on)
   const setNight = useNightSeaStore((s) => s.setOn)
   const pinned = useSiteBarStore((s) => s.darkPages > 0)
 
-  // resolvedTheme catches up one render after a choice: reading it alone, the
-  // switch would see the old theme and take the knob out of the reader's hand
-  const chosen = theme === 'system' ? resolvedTheme : theme
+  // Not resolvedTheme: it catches up one render after a choice, and the
+  // switch would see the old theme and take the knob out of the reader's hand.
+  // The provider re-renders this when the system changes.
+  const chosen = theme === 'system' ? systemLook() : theme
   const look: ThemeLook = nightOn && chosen === 'dark' ? 'night' : chosen
   const labels = {
     light: t('Switch to light theme'),
@@ -55,11 +64,14 @@ export function ThemeToggle() {
   }
   const name = labels[nextLook(look, nightFound)]
 
+  // Back to the system's own theme undoes the choice: nothing stays stored
+  // to pin it when the system changes later. 夜海 is always stored.
   // flushSync: the page has to change in the frame the veil is thickest
   const show = (next: ThemeLook) =>
     flushSync(() => {
       setNight(next === 'night')
-      setTheme(next === 'light' ? 'light' : 'dark')
+      if (next !== 'night' && next === systemLook()) resetTheme()
+      else setTheme(next === 'light' ? 'light' : 'dark')
     })
 
   const state: ThemeSwitchState = { look, pinned, nightFound, labels }

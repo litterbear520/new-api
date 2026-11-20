@@ -57,4 +57,13 @@ describe('wallet stylesheet', () => {
     expect(outlines.length).toBeGreaterThan(0)
     for (const { layer } of outlines) expect(layer).toBe('components')
   })
+
+  it('keeps an outline on the focused amount field, which forced colours paint when they drop the shadow', () => {
+    const focused = styleRules().find(
+      ({ rule }) => rule.selectorText === '.bw-cin:focus-within'
+    )
+    const outline = focused?.rule.style.getPropertyValue('outline') ?? ''
+    expect(outline).toContain('solid')
+    expect(outline).toContain('transparent')
+  })
 })

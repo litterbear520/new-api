@@ -119,6 +119,16 @@ describe('model details page', () => {
     )
   })
 
+  it('lets the keyboard reach the price table when it scrolls sideways on a phone', () => {
+    renderDetails(opus)
+
+    const prices = screen.getByRole('region', { name: 'Base Price' })
+    expect(prices).toHaveAttribute('tabindex', '0')
+    expect(
+      within(prices).getByRole('rowheader', { name: 'From your balance' })
+    ).toBeInTheDocument()
+  })
+
   it('offers chat with this model, an API key and the coding tool guide', () => {
     renderDetails(opus)
     expect(screen.getByRole('link', { name: 'Try in chat' })).toHaveAttribute(

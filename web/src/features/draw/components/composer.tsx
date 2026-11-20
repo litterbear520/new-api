@@ -20,6 +20,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { ArrowUp, Wallet } from 'lucide-react'
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -54,6 +55,7 @@ import {
 } from '../lib/actions'
 import { ensureAudio } from '../lib/alerts'
 import { estimateCost } from '../lib/cost'
+import { imeOwnsKey } from '../lib/ime'
 import { fillableExample, suggestionOptions } from '../lib/prompt'
 import type { DrawRatio, DrawRoom } from '../types'
 import { ComposerAttachments } from './composer-attachments'
@@ -202,7 +204,8 @@ export function Composer(props: { room: DrawRoom }) {
   const phrases = getPhrases(t)
   const rotating = Boolean(room.fresh) && !draft.text && !list.length
   const phraseIndex = useRotatingIndex(rotating, phrases.length)
-  // Tab puts the grey example into the box, ready to edit.
+  // "Use example" puts the grey example into the box, ready to edit.
+  const exampleId = useId()
   let example = ''
   if (rotating) example = fillableExample(phrases[phraseIndex])
   else if (!draft.text && /[”」»"]\s*$/.test(placeholder)) {
@@ -266,21 +269,23 @@ export function Composer(props: { room: DrawRoom }) {
     else go()
   }
 
-  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Safari sends the Enter that picks an IME candidate after composition
-    // ends; keyCode 229 still marks it.
-    const typing = e.nativeEvent.isComposing || e.keyCode === 229
-    if (e.key === 'Tab' && !e.shiftKey && !typing && example && !draft.text) {
-      e.preventDefault()
-      const opts = suggestionOptions(example)
+  const fillExample = () => {
+    const opts = suggestionOptions(example)
+    flushSync(() =>
       setDraft({
         text: example,
         ...(opts.ratio ? { ratio: opts.ratio } : {}),
         ...(opts.clear ? { clear: true } : {}),
       })
-      return
-    }
-    if (e.key === 'Enter' && !e.shiftKey && !typing) {
+    )
+    const el = textRef.current
+    if (!el) return
+    el.focus()
+    el.setSelectionRange(example.length, example.length)
+  }
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !imeOwnsKey(e.nativeEvent)) {
       e.preventDefault()
       send()
     }
@@ -372,28 +377,40 @@ export function Composer(props: { room: DrawRoom }) {
             onInsert={insertText}
             onFocus={focus}
           />
-          <div className={cn('dw-ta-wrap', example && 'dw-has-tab')}>
-            <Textarea
-              ref={textRef}
-              rows={1}
-              value={draft.text}
-              placeholder={placeholder}
-              aria-label={t('Describe the picture you want')}
-              className='dw-ta'
-              onChange={(e) => setDraft({ text: e.target.value })}
-              onKeyDown={onKeyDown}
-              onPaste={onPaste}
-            />
-            {rotating && (
-              <RotatingPhrase
-                index={phraseIndex}
-                phrase={phrases[phraseIndex]}
+          <div className='dw-ta-wrap'>
+            <div className='dw-ta-in'>
+              <Textarea
+                ref={textRef}
+                rows={1}
+                value={draft.text}
+                placeholder={placeholder}
+                aria-label={t('Describe the picture you want')}
+                className='dw-ta'
+                onChange={(e) => setDraft({ text: e.target.value })}
+                onKeyDown={onKeyDown}
+                onPaste={onPaste}
               />
-            )}
+              {rotating && (
+                <RotatingPhrase
+                  index={phraseIndex}
+                  phrase={phrases[phraseIndex]}
+                />
+              )}
+            </div>
             {example && (
-              <kbd className='dw-tabk' aria-hidden='true'>
-                Tab
-              </kbd>
+              <>
+                <button
+                  type='button'
+                  className='dw-useex'
+                  aria-describedby={exampleId}
+                  onClick={fillExample}
+                >
+                  {t('Use example')}
+                </button>
+                <span id={exampleId} hidden>
+                  {example}
+                </span>
+              </>
             )}
           </div>
           <div className='dw-crow'>

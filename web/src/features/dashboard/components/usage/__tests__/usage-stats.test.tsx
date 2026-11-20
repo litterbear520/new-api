@@ -124,6 +124,21 @@ describe('usage statistics', () => {
     ).toBeInTheDocument()
   })
 
+  it('lists the numbers of the chart in a table for screen readers, by the chosen metric', async () => {
+    const user = userEvent.setup()
+    await renderStats()
+    await user.click(await screen.findByRole('button', { name: /^Requests/ }))
+
+    const table = await screen.findByRole('table', {
+      name: 'Requests per day, by model family',
+    })
+    const cells = within(table)
+      .getAllByRole('cell')
+      .map((cell) => cell.textContent)
+    expect(cells).toContain('4')
+    expect(within(table).getAllByRole('row').length).toBeGreaterThan(1)
+  })
+
   it('with no usage, says so and offers the last 30 days', async () => {
     const user = userEvent.setup()
     usageRows = []

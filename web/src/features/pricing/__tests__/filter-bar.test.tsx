@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   PricingFilterBar,
@@ -73,7 +73,41 @@ function barProps(
   }
 }
 
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+/** Lays the provider row out 200px wide, with each provider 100px wide. */
+function layOutProviderRow() {
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
+    function (this: Element) {
+      const parent = this.parentElement
+      if (this.getAttribute('role') === 'group') {
+        return DOMRect.fromRect({ x: 0, y: 0, width: 200, height: 36 })
+      }
+      if (parent?.getAttribute('role') === 'group') {
+        const index = [...parent.children].indexOf(this)
+        return DOMRect.fromRect({
+          x: index * 100,
+          y: 0,
+          width: 100,
+          height: 36,
+        })
+      }
+      return DOMRect.fromRect()
+    }
+  )
+}
+
 describe('pricing filter bar', () => {
+  it('scrolls the provider row to the picked provider when it starts out of view', () => {
+    layOutProviderRow()
+    render(<PricingFilterBar {...barProps({ vendor: 'Vendor B' })} />)
+
+    // Vendor B spans 200–300px in a 200px row: 100px, plus the 24px fade.
+    expect(screen.getByRole('group', { name: 'Provider' }).scrollLeft).toBe(124)
+  })
+
   it('lists providers with models, most models first, and counts them', () => {
     render(<PricingFilterBar {...barProps()} />)
     const providers = screen.getByRole('group', { name: 'Provider' })

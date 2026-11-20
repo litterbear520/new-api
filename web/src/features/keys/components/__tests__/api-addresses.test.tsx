@@ -289,3 +289,89 @@ it('probes again when refresh is clicked', async () => {
   await within(dialog).findByText(/^Excellent/)
   expect(vi.mocked(fetch).mock.calls.length).toBe(callsAfterOpen * 2)
 })
+
+it('says in a status region how the test went once every address is tested', async () => {
+  const user = userEvent.setup()
+  vi.mocked(fetch).mockImplementation(async (input) => {
+    if (String(input).startsWith('https://blocked.example.com')) {
+      throw new TypeError('Failed to fetch')
+    }
+    return relayUnauthorized()
+  })
+  renderAddresses({
+    api_info: [
+      {
+        route: 'Main',
+        description: 'Direct',
+        url: 'https://api.example.com',
+        color: 'green',
+      },
+      {
+        route: 'Blocked',
+        description: 'Reset by the network',
+        url: 'https://blocked.example.com',
+        color: 'red',
+      },
+    ],
+  })
+
+  await user.click(screen.getByRole('button', { name: 'API Addresses' }))
+  const dialog = await screen.findByRole('dialog', { name: 'API Addresses' })
+
+  const summary = await within(dialog).findByText(
+    /^Latency test done\. Fastest: \d+ ms$/
+  )
+  expect(summary).toHaveAttribute('role', 'status')
+})
+
+it('says so in the status region when no address can be reached', async () => {
+  const user = userEvent.setup()
+  vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
+  renderAddresses({
+    api_info: [
+      {
+        route: 'Blocked',
+        description: 'Reset by the network',
+        url: 'https://blocked.example.com',
+        color: 'red',
+      },
+    ],
+  })
+
+  await user.click(screen.getByRole('button', { name: 'API Addresses' }))
+  const dialog = await screen.findByRole('dialog', { name: 'API Addresses' })
+
+  expect(
+    await within(dialog).findByText(
+      'Latency test done. No address can be reached'
+    )
+  ).toHaveAttribute('role', 'status')
+})
+
+it('keeps refresh focused while the addresses are tested again', async () => {
+  const user = userEvent.setup()
+  renderAddresses({
+    api_info: [
+      {
+        route: 'Main',
+        description: 'Direct',
+        url: 'https://api.example.com',
+        color: 'green',
+      },
+    ],
+  })
+  await user.click(screen.getByRole('button', { name: 'API Addresses' }))
+  const dialog = await screen.findByRole('dialog', { name: 'API Addresses' })
+  await within(dialog).findByText(/^Excellent/)
+  // The next test hangs until the test ends.
+  vi.mocked(fetch).mockImplementation(() => new Promise(() => undefined))
+  const refresh = within(dialog).getByRole('button', { name: 'Refresh' })
+
+  refresh.focus()
+  await user.keyboard('{Enter}')
+
+  expect(await within(dialog).findByText('Testing...')).toBeVisible()
+  expect(refresh).toHaveAttribute('aria-disabled', 'true')
+  expect(refresh).not.toBeDisabled()
+  expect(refresh).toHaveFocus()
+})

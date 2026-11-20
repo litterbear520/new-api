@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -35,6 +36,32 @@ export type DialogState = {
   origin: Point | null
   /** Opened by a tap: no field takes focus, so no keyboard comes up. */
   byTouch: boolean
+}
+
+/** How long a closed dialog waits for its opener to take focus again. */
+const RETURN_FOCUS_WAIT_MS = 1000
+
+/**
+ * Give focus back to the control that opened the dialog, once it can take
+ * it: the site bar stays inert for a moment after the dialog has gone. If
+ * the reader has already put focus somewhere else, leave it there.
+ */
+function returnFocusWhenReady(opener: HTMLElement) {
+  const since = performance.now()
+  const attempt = () => {
+    if (!opener.isConnected) return
+    const active = document.activeElement
+    if (active && active !== document.body && active.isConnected) return
+    if (!opener.closest('[inert]')) {
+      opener.focus({ preventScroll: true })
+      if (document.activeElement === opener) return
+    }
+    if (performance.now() - since < RETURN_FOCUS_WAIT_MS) {
+      requestAnimationFrame(attempt)
+    }
+  }
+  // after the dialog has left the page, as Base UI's own return does
+  queueMicrotask(attempt)
 }
 
 /**
@@ -61,6 +88,15 @@ export function useNightSeaAuth(opened?: NightSeaAuthView) {
       window.removeEventListener('pointerdown', press, { capture: true })
   }, [])
 
+  // The control that opened the dialog: focus goes back to it on close.
+  // Base UI would only find the page's body, as the site bar's 登录 is inert
+  // by the time the dialog has loaded and mounted.
+  const opener = useRef<HTMLElement | null>(null)
+  const openRef = useRef(state.open)
+  useLayoutEffect(() => {
+    openRef.current = state.open
+  })
+
   const trigger = useCallback(
     (view: NightSeaAuthView) => (e: MouseEvent<HTMLElement>) => {
       // Modified clicks still open the full page, e.g. in a new tab.
@@ -68,6 +104,7 @@ export function useNightSeaAuth(opened?: NightSeaAuthView) {
         return
       }
       e.preventDefault()
+      opener.current = e.currentTarget
       const box = e.currentTarget.getBoundingClientRect()
       setState({
         open: true,
@@ -87,9 +124,20 @@ export function useNightSeaAuth(opened?: NightSeaAuthView) {
     setState((s) => ({ ...s, view }))
   }, [])
 
+  // Base UI's finalFocus, asked as the dialog goes: false tells it to leave
+  // focus alone, true (no opener, as on the /sign-in page) to do its default.
+  const finalFocus = useCallback(() => {
+    const el = opener.current
+    if (!el) return true
+    if (openRef.current) return false
+    opener.current = null
+    returnFocusWhenReady(el)
+    return false
+  }, [])
+
   return {
     open: state.open,
     trigger,
-    dialogProps: { ...state, onOpenChange, onViewChange },
+    dialogProps: { ...state, onOpenChange, onViewChange, finalFocus },
   }
 }

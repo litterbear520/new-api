@@ -28,9 +28,10 @@ import {
 } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useRef } from 'react'
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
+import { useQuietSiteBar, useSiteBarStore } from '@/components/site-bar/store'
 import { api } from '@/lib/api'
 import { STATUS_QUERY_KEY, type StatusData } from '@/lib/status-query'
 import { useAuthStore } from '@/stores/auth-store'
@@ -46,11 +47,39 @@ const status = {
   privacy_policy_enabled: true,
 }
 
+/** Stands in for the site bar: inert while the dialog is up, as the real one. */
+function Bar(props: { children: ReactNode }) {
+  const quiet = useSiteBarStore((s) => s.quietPages > 0)
+  const ref = useRef<HTMLElement>(null)
+  // A browser drops focus out of a subtree that turns inert; jsdom does not.
+  useLayoutEffect(() => {
+    const active = document.activeElement
+    if (
+      quiet &&
+      active instanceof HTMLElement &&
+      ref.current?.contains(active)
+    ) {
+      active.blur()
+    }
+  }, [quiet])
+  return (
+    <header ref={ref} inert={quiet}>
+      {props.children}
+    </header>
+  )
+}
+
 function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const auth = useNightSeaAuth()
+  useQuietSiteBar(auth.open)
   return (
     <>
+      <Bar>
+        <Link to='/sign-in' onClick={auth.trigger('sign-in')}>
+          Bar sign-in
+        </Link>
+      </Bar>
       <canvas ref={canvasRef} />
       <Link to='/sign-in' onClick={auth.trigger('sign-in')}>
         Open sign-in
@@ -149,7 +178,6 @@ it('returns to sign-in in the dialog after an account is created', async () => {
   await user.click(await screen.findByRole('link', { name: 'Open sign-up' }))
   await user.type(await screen.findByLabelText('Username'), 'little-bear')
   await user.type(screen.getByLabelText('Password'), 'Bear-pass-2026')
-  await user.type(screen.getByLabelText('Confirm password'), 'Bear-pass-2026')
   await user.click(screen.getByRole('button', { name: 'Create account' }))
 
   expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeVisible()
@@ -284,4 +312,51 @@ it('a mouse click after a tap still focuses the first field', async () => {
 
   await screen.findByRole('dialog')
   await waitFor(() => expect(document.activeElement?.tagName).toBe('INPUT'))
+})
+
+it('closing gives focus back to the page link that opened it', async () => {
+  renderHome()
+  const user = userEvent.setup()
+  const opener = await screen.findByRole('link', { name: 'Open sign-up' })
+  opener.focus()
+
+  await user.keyboard('{Enter}')
+  await screen.findByRole('dialog')
+  await waitFor(() => expect(document.activeElement?.tagName).toBe('INPUT'))
+  await user.keyboard('{Escape}')
+
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  )
+  await waitFor(() => expect(opener).toHaveFocus())
+})
+
+it('closing gives focus back to the site bar sign-in once the bar is no longer inert', async () => {
+  renderHome()
+  const user = userEvent.setup()
+  const opener = await screen.findByRole('link', { name: 'Bar sign-in' })
+  opener.focus()
+
+  await user.keyboard('{Enter}')
+  await screen.findByRole('dialog')
+  expect(opener.closest('header')).toHaveAttribute('inert')
+  await user.click(screen.getByRole('button', { name: 'Close' }))
+
+  await waitFor(() => expect(opener).toHaveFocus())
+  expect(opener.closest('[inert]')).toBeNull()
+})
+
+it('after a tap open, closing still gives focus back to the opener', async () => {
+  renderHome()
+  const user = userEvent.setup()
+  const trigger = await screen.findByRole('link', { name: 'Open sign-in' })
+
+  await user.pointer([
+    { keys: '[TouchA>]', target: trigger },
+    { keys: '[/TouchA]' },
+  ])
+  await screen.findByRole('dialog')
+  await user.keyboard('{Escape}')
+
+  await waitFor(() => expect(trigger).toHaveFocus())
 })

@@ -29,6 +29,10 @@ import { markNode, pub } from './query'
 export function createMarkPanel(c: Ctx) {
   const panel = c.d.panel
   let html = ''
+  // A redraw replaces the note inputs and would cut off an input method's
+  // composition, so it waits until the composition ends.
+  let composing = false
+  let redrawLater = false
 
   function header(n: NodeRec | null): string {
     const L = c.L
@@ -62,6 +66,10 @@ export function createMarkPanel(c: Ctx) {
     panel.hidden = !show
     if (!show) {
       html = ''
+      return
+    }
+    if (composing && panel.contains(document.activeElement)) {
+      redrawLater = true
       return
     }
     const n = markNode(c)
@@ -113,6 +121,22 @@ export function createMarkPanel(c: Ctx) {
     c.fx.setTool('select')
   }
 
+  panel.addEventListener('compositionstart', () => {
+    composing = true
+  })
+  const endComposition = () => {
+    composing = false
+    if (!redrawLater) return
+    redrawLater = false
+    // after the input event that carries the composed text
+    requestAnimationFrame(renderPanel)
+  }
+  panel.addEventListener('compositionend', endComposition)
+  // leaving the note mid-composition may not end it with an event
+  panel.addEventListener('focusout', () => {
+    if (composing) endComposition()
+  })
+
   panel.addEventListener('input', (e) => {
     const inp = elOf(e.target)
     const n = markNode(c)
@@ -124,6 +148,9 @@ export function createMarkPanel(c: Ctx) {
   })
 
   panel.addEventListener('keydown', (e) => {
+    // Enter picks a candidate and Esc drops it while an input method is composing
+    // oxlint-disable-next-line unicorn/prefer-keyboard-event-key -- Safari's composing Enter is keyCode 229
+    if (e.isComposing || e.keyCode === 229) return
     const t = elOf(e.target)
     if (e.key === 'Enter' && t instanceof HTMLInputElement && t.dataset.mk) {
       e.preventDefault()

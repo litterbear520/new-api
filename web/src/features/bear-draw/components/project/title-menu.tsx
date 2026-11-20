@@ -70,7 +70,9 @@ function RenameField(props: {
       onChange={(e) => setValue(e.target.value)}
       onBlur={() => finish(value)}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+        // Enter picks a candidate and Esc drops it while an input method is composing
+        if (e.nativeEvent.isComposing || e.keyCode === 229) return
+        if (e.key === 'Enter') {
           e.preventDefault()
           finish(value)
         } else if (e.key === 'Escape') {

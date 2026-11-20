@@ -20,6 +20,7 @@ import type { Corner, Dom } from './context'
 import { h, mkPool } from './dom'
 import { ICONS } from './icons'
 import type { CanvasLabels } from './labels'
+import { rovingToolbar, setTabStop } from './roving'
 import type { Tool } from './types'
 
 /*
@@ -69,6 +70,7 @@ export function buildDom(root: HTMLElement): Dom {
   const sizeL = h('div', 'bd-cv-size')
   const tb = h('div', 'bd-cv-tb')
   tb.setAttribute('role', 'toolbar')
+  rovingToolbar(tb)
   const unionBox = h('div', 'bd-cv-sel is-union')
   const handles = CORNERS.map((k) => {
     const e = h('div', `bd-cv-hd is-${k}`)
@@ -89,6 +91,8 @@ export function buildDom(root: HTMLElement): Dom {
   const uploadBtn = button('', `${ICONS.upload}<span></span>`)
   uploadBtn.dataset.ui = 'upload'
   tools.append(...toolBtns, h('i', 'bd-cv-bar-sep'), uploadBtn)
+  rovingToolbar(tools)
+  setTabStop(tools)
 
   const zoomBar = h('div', 'bd-cv-bar bd-cv-zoom')
   const miniBtn = button('is-icon', ICONS.map)
@@ -97,6 +101,7 @@ export function buildDom(root: HTMLElement): Dom {
   const zoomBtn = button('bd-cv-zoom-pct', '')
   zoomBtn.dataset.ui = 'zoom'
   zoomBtn.setAttribute('aria-haspopup', 'menu')
+  zoomBtn.setAttribute('aria-expanded', 'false')
   const zoomPct = h('span')
   zoomPct.textContent = '100%'
   zoomBtn.append(zoomPct)

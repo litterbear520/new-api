@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -80,6 +80,20 @@ describe('QuestionsCard', () => {
       'aria-pressed',
       'true'
     )
+  })
+
+  it('Enter in 「其他」 while Safari composes (keyCode 229) does not submit', async () => {
+    vi.mocked(answer).mockClear()
+    const user = userEvent.setup()
+    render(<QuestionsCard projectId='p1' part={card()} status='waiting' />)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    const other = screen.getByRole('textbox', { name: 'Something else' })
+
+    fireEvent.keyDown(other, { key: 'Enter', keyCode: 229 })
+    expect(answer).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(other, { key: 'Enter', keyCode: 13 })
+    expect(answer).toHaveBeenCalledTimes(1)
   })
 
   it('skips the questions when 跳过 is clicked', async () => {

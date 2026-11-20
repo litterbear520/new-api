@@ -29,6 +29,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { ProbeSummary } from '@/features/keys/components/probe-summary'
 import { useApiAddressProbes } from '@/features/keys/hooks/use-api-address-probes'
 import type { ApiAddressProbe } from '@/features/keys/lib/api-address-probe'
 import { cn } from '@/lib/utils'
@@ -64,7 +65,9 @@ export function AccessPanel(props: {
   const [open, setOpen] = useState(false)
   const urls = useMemo(() => props.lines.map((line) => line.url), [props.lines])
   const { probes, start } = useApiAddressProbes(urls)
-  const { copy, copiedId, busyId } = useKeyCopy()
+  // The first test runs by itself; only one the user asks for is read out.
+  const [announceProbes, setAnnounceProbes] = useState(false)
+  const { copy, copiedId, announcement } = useKeyCopy()
   const checking = Object.values(probes).some(
     (probe) => probe.state === 'checking'
   )
@@ -127,7 +130,6 @@ export function AccessPanel(props: {
               variant='ghost'
               size='icon'
               className='size-7'
-              disabled={busyId === 'key'}
               onClick={() =>
                 void copy('key', props.apiKey?.id ?? null, (key) => key)
               }
@@ -147,6 +149,9 @@ export function AccessPanel(props: {
             </span>
           </div>
         )}
+        <p role='status' className='sr-only'>
+          {announcement}
+        </p>
       </div>
 
       <div className='bo-kv'>
@@ -157,8 +162,13 @@ export function AccessPanel(props: {
             <Button
               variant='ghost'
               size='icon-xs'
-              onClick={start}
+              onClick={() => {
+                setAnnounceProbes(true)
+                start()
+              }}
               disabled={checking}
+              focusableWhenDisabled
+              className='aria-disabled:opacity-50'
               aria-label={t('Refresh')}
               title={t('Refresh')}
             >
@@ -189,6 +199,7 @@ export function AccessPanel(props: {
             )
           })}
         </RadioGroup>
+        <ProbeSummary probes={probes} announce={announceProbes} />
         {selected?.description && (
           <div className='bo-hint'>{selected.description}</div>
         )}

@@ -1,0 +1,112 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/*
+ * A fade at each end of a row that scrolls sideways with its scrollbar
+ * hidden (useScrollFade). The fade grows from 0 as the row is scrolled away
+ * from that end, so a row that fits has none. One gradient instead of the
+ * two subtracted bands: these rows never take focus themselves, so there is
+ * no outline of their own to keep out of the mask, and Safari 17 does not
+ * need to know mask-clip: no-clip.
+ */
+@property --sf-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sf-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.scroll-fade {
+  --sf-size: 1.5rem;
+  --sf-dir: right;
+  /* A focused item never stops inside a fade */
+  scroll-padding-inline: var(--sf-size);
+  -webkit-mask-image: linear-gradient(
+    to var(--sf-dir),
+    transparent,
+    #000 var(--sf-start),
+    #000 calc(100% - var(--sf-end)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to var(--sf-dir),
+    transparent,
+    #000 var(--sf-start),
+    #000 calc(100% - var(--sf-end)),
+    transparent
+  );
+}
+.scroll-fade:dir(rtl) {
+  --sf-dir: left;
+}
+
+/* Chrome 115+, Safari 26+, Firefox 159+: the row's own scroll drives it */
+@supports (animation-timeline: scroll()) {
+  .scroll-fade {
+    animation:
+      sf-reveal-start linear both,
+      sf-hide-end linear both;
+    animation-timeline: scroll(self inline);
+    animation-range:
+      0 var(--sf-size),
+      calc(100% - var(--sf-size)) 100%;
+  }
+}
+
+/* Older Safari: the hook marks the ends that have more, from an observer */
+@supports not (animation-timeline: scroll()) {
+  .scroll-fade {
+    transition:
+      --sf-start 0.2s,
+      --sf-end 0.2s;
+  }
+  .scroll-fade[data-more-start] {
+    --sf-start: var(--sf-size);
+  }
+  .scroll-fade[data-more-end] {
+    --sf-end: var(--sf-size);
+  }
+}
+
+@keyframes sf-reveal-start {
+  to {
+    --sf-start: var(--sf-size);
+  }
+}
+@keyframes sf-hide-end {
+  from {
+    --sf-end: var(--sf-size);
+  }
+}
+
+/*
+ * For a row that turns into a column from md up (the account settings
+ * sections): no mask there, which would clip the links' focus rings.
+ */
+@media (min-width: 48rem) {
+  .scroll-fade-mobile {
+    -webkit-mask-image: none;
+    mask-image: none;
+    animation: none;
+  }
+}

@@ -32,7 +32,9 @@ function pageScrollFor(search: Record<string, string>) {
   const Page = Route.options.component
   if (!Page) throw new Error('no page')
   const { container, unmount } = render(<Page />)
-  const on = container.querySelector('main')?.hasAttribute('data-page-scroll')
+  const on = container
+    .querySelector('[data-slot="main"]')
+    ?.hasAttribute('data-page-scroll')
   unmount()
   return on
 }

@@ -114,10 +114,14 @@ describe('AccountQuotaCard', () => {
     ).toBeInTheDocument()
   })
 
-  it('holds the refresh button until the next read is allowed and says why in visible text', () => {
-    renderCard(quota({ nextRefreshAt: S + 200 }))
+  it('holds the refresh button until the next read is allowed and says why in visible text', async () => {
+    const onRefresh = renderCard(quota({ nextRefreshAt: S + 200 }))
     const button = screen.getByRole('button', { name: 'Refresh quota' })
-    expect(button).toBeDisabled()
+    // Marked, not disabled: a disabled button would drop the keyboard focus.
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(button).not.toBeDisabled()
+    await userEvent.click(button)
+    expect(onRefresh).not.toHaveBeenCalled()
     const reason = 'One refresh every 5 minutes. Try again in 4 min.'
     // A title alone never shows on touch screens
     expect(screen.getByText(reason)).toBeVisible()

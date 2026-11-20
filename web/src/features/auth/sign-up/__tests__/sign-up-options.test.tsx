@@ -86,7 +86,6 @@ it('creates the account and opens sign-in when the form is submitted without con
 
   await user.type(await screen.findByLabelText('Username'), 'little-bear')
   await user.type(screen.getByLabelText('Password'), 'Bear-pass-2026')
-  await user.type(screen.getByLabelText('Confirm password'), 'Bear-pass-2026')
   await user.click(screen.getByRole('button', { name: 'Create account' }))
 
   // /sign-up is the home page dialog, which turns to sign-in in place.
