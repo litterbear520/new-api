@@ -23,14 +23,14 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { useBearDrawPersistence } from '../hooks/use-persistence'
-import { loadProjects, saveProject } from '../lib/storage'
+import { loadProjectRecords, saveProject } from '../lib/storage'
 import type { Project } from '../types'
 
 vi.mock('sonner', () => ({ toast: { warning: vi.fn() } }))
 vi.mock('../lib/storage', async (original) => ({
   ...(await original<typeof import('../lib/storage')>()),
-  loadProjects: vi.fn(async () => []),
-  saveProject: vi.fn(async () => {}),
+  loadProjectRecords: vi.fn(async () => []),
+  saveProject: vi.fn(async () => ({ ok: true, rev: 1 })),
 }))
 vi.mock('@/features/draw/lib/storage', async (original) => ({
   ...(await original<typeof import('@/features/draw/lib/storage')>()),
@@ -56,7 +56,7 @@ afterEach(() => vi.useRealTimers())
 
 describe('saving projects', () => {
   test('a failed save is told once and retried after a save that works', async () => {
-    vi.mocked(loadProjects).mockResolvedValue([])
+    vi.mocked(loadProjectRecords).mockResolvedValue([])
     const { result } = renderHook(() => useBearDrawPersistence(1))
     await waitFor(() => expect(result.current).toBe('ready'))
     vi.useFakeTimers()
@@ -70,7 +70,7 @@ describe('saving projects', () => {
     expect(toast.warning).toHaveBeenCalledTimes(1)
 
     // Space again (old projects deleted): the next save retries x.
-    vi.mocked(saveProject).mockResolvedValue(undefined)
+    vi.mocked(saveProject).mockResolvedValue({ ok: true, rev: 1 })
     act(() => useBearDrawStore.getState().putProject(project('y')))
     await vi.advanceTimersByTimeAsync(1200)
     const saved = vi.mocked(saveProject).mock.calls.map(([, p]) => p.id)

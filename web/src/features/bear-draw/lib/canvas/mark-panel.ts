@@ -101,7 +101,7 @@ export function createMarkPanel(c: Ctx) {
   async function marksDone(n: NodeRec, btn: HTMLButtonElement | null) {
     if (!n.marks.length) return
     if (btn) btn.disabled = true
-    let res: Burned = { dataUrl: null, marksOnly: true }
+    let res: Burned = { blob: null, marksOnly: true }
     try {
       res = await burnMarks(n.src, n.w, n.h, n.marks)
     } catch (err) {
@@ -115,7 +115,7 @@ export function createMarkPanel(c: Ctx) {
       node: p,
       nodes: [p],
       marks: p.marks,
-      dataUrl: res.dataUrl,
+      png: res.blob,
       marksOnly: res.marksOnly,
     })
     c.fx.setTool('select')

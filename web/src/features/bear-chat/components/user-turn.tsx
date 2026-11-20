@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Check, Copy, Pencil } from 'lucide-react'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -35,7 +35,10 @@ type UserTurnViewProps = {
   onCopied: () => void
 }
 
-export function UserTurnView(props: UserTurnViewProps) {
+/** Memoized: a streaming reply re-renders the thread every flush. */
+export const UserTurnView = memo(function UserTurnView(
+  props: UserTurnViewProps
+) {
   const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
@@ -134,4 +137,4 @@ export function UserTurnView(props: UserTurnViewProps) {
       </div>
     </div>
   )
-}
+})

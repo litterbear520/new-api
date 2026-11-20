@@ -17,18 +17,30 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { CanvasNode, Message, Part, Project } from '../types'
+import { announce } from './tab-sync'
 
 /*
  * Projects live only in this browser (IndexedDB `xiaoxiong-design`, one
  * record per project, tagged with the user id). Pictures stay in the
  * classic page's image store (features/draw/lib/storage.ts), so projects
  * copied from the classic page share them instead of duplicating blobs.
+ * Each record carries a version (`rev`), raised by every save, so a tab
+ * never overwrites what another tab stored after it last read the project.
  */
 
 const DB_NAME = 'xiaoxiong-design'
 const PROJECTS = 'projects'
 
-type StoredProject = Project & { uid: number }
+/** `rev` is missing on records stored before versions were kept (0). */
+type StoredProject = Project & { uid: number; rev?: number }
+
+/** A project as stored (not settled), with its version. */
+export type ProjectRecord = { project: Project; rev: number; uid: number }
+
+export type SaveResult =
+  | { ok: true; rev: number }
+  /** Stored by another tab since: its copy (null when deleted) and version. */
+  | { ok: false; stored: Project | null; rev: number | null }
 
 let dbPromise: Promise<IDBDatabase> | null = null
 
@@ -159,22 +171,92 @@ export function settleProject(p: Project): Project {
   return changed ? { ...p, messages, nodes } : p
 }
 
-export async function loadProjects(uid: number): Promise<Project[]> {
+function toRecord(row: StoredProject): ProjectRecord {
+  const { uid, rev, ...project } = row
+  return { project, rev: rev ?? 0, uid }
+}
+
+/** This user's projects as stored, newest first. */
+export async function loadProjectRecords(
+  uid: number
+): Promise<ProjectRecord[]> {
   const db = await openDb()
   const tx = db.transaction(PROJECTS, 'readonly')
   const rows = (await done(
     tx.objectStore(PROJECTS).index('uid').getAll(uid)
   )) as StoredProject[]
   return rows
-    .map(({ uid: _uid, ...p }) => settleProject(p))
-    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map(toRecord)
+    .sort((a, b) => b.project.updatedAt - a.project.updatedAt)
 }
 
-export async function saveProject(uid: number, p: Project): Promise<void> {
+export async function loadProjects(uid: number): Promise<Project[]> {
+  return (await loadProjectRecords(uid)).map((r) => settleProject(r.project))
+}
+
+/** One stored project, or null when there is none. */
+export async function loadProjectRecord(
+  id: string
+): Promise<ProjectRecord | null> {
+  const db = await openDb()
+  const tx = db.transaction(PROJECTS, 'readonly')
+  const row = (await done(tx.objectStore(PROJECTS).get(id))) as
+    | StoredProject
+    | undefined
+  return row ? toRecord(row) : null
+}
+
+/** Every stored project of every account on this browser, as stored. */
+export async function allProjectRecords(): Promise<unknown[]> {
+  const db = await openDb()
+  const tx = db.transaction(PROJECTS, 'readonly')
+  return (await done(tx.objectStore(PROJECTS).getAll())) as unknown[]
+}
+
+/**
+ * The version a save based on `expected` gets, or null when the stored
+ * record is not the one that save was based on (`expected` null: a project
+ * never stored before).
+ */
+export function nextRev(
+  stored: { rev?: number } | undefined,
+  expected: number | null
+): number | null {
+  if (!stored) return expected === null ? 1 : null
+  const rev = stored.rev ?? 0
+  return expected === rev ? rev + 1 : null
+}
+
+/**
+ * Stores `p` if the stored record is still version `expected`; otherwise
+ * changes nothing and hands back the stored copy. Reading and writing
+ * happen in one transaction, so two tabs can't both pass the check.
+ */
+export async function saveProject(
+  uid: number,
+  p: Project,
+  expected: number | null
+): Promise<SaveResult> {
   const db = await openDb()
   const tx = db.transaction(PROJECTS, 'readwrite')
-  tx.objectStore(PROJECTS).put({ ...p, uid } satisfies StoredProject)
+  const store = tx.objectStore(PROJECTS)
+  let result = null as SaveResult | null
+  const read = store.get(p.id)
+  read.addEventListener('success', () => {
+    const row = read.result as StoredProject | undefined
+    const rev = nextRev(row, expected)
+    if (rev != null) {
+      store.put({ ...p, uid, rev } satisfies StoredProject)
+      result = { ok: true, rev }
+      return
+    }
+    result = row
+      ? { ok: false, stored: toRecord(row).project, rev: row.rev ?? 0 }
+      : { ok: false, stored: null, rev: null }
+  })
   await committed(tx)
+  if (!result) throw new Error('IndexedDB read failed')
+  return result
 }
 
 /** Rejects only when a stored record could not be deleted. */
@@ -185,6 +267,7 @@ export async function removeProjectRecord(id: string): Promise<void> {
   const tx = db.transaction(PROJECTS, 'readwrite')
   tx.objectStore(PROJECTS).delete(id)
   await committed(tx)
+  announce({ id, rev: null })
 }
 
 /** Every stored picture a project refers to. */
@@ -198,8 +281,16 @@ export function imageIdsOf(p: Project): Set<string> {
     }
     for (const part of m.parts) {
       if (part.type !== 'progress') continue
-      for (const it of part.items) if (it.img) ids.add(it.img.id)
+      for (const it of part.items) {
+        if (it.img) ids.add(it.img.id)
+        // Drawing a failed picture again sends these.
+        for (const id of it.job?.inputs ?? []) ids.add(id)
+      }
     }
+  }
+  // The planner's own conversation is sent again on the next turn.
+  for (const m of p.transcript ?? []) {
+    if (m.role === 'user') for (const id of m.images ?? []) ids.add(id)
   }
   return ids
 }

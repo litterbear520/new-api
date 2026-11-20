@@ -121,7 +121,7 @@ export function CanvasPane(props: {
   canvasRef: (handle: CanvasHandle | null) => void
   onShowChat: () => void
   onEdit: (nodeId: string) => void
-  onMarked: (nodeId: string, dataUrl: string, marks?: MarkInfo[]) => void
+  onMarked: (nodeId: string, png: Blob, marks?: MarkInfo[]) => void
   onUpload: (files: File[]) => void
   onExport: (groupId: string) => void
   onNothingToExport: () => void

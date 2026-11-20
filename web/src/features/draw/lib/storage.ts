@@ -29,7 +29,14 @@ const ROOMS = 'rooms'
 const IMAGES = 'images'
 
 type StoredRoom = DrawRoom & { uid: number }
-type StoredImage = { id: string; uid: number; blob: Blob; thumb?: Blob }
+/** `at`: when it was stored (missing on pictures stored before it was kept). */
+type StoredImage = {
+  id: string
+  uid: number
+  blob: Blob
+  thumb?: Blob
+  at?: number
+}
 
 let dbPromise: Promise<IDBDatabase> | null = null
 
@@ -170,8 +177,33 @@ export async function putImage(
 ): Promise<void> {
   const db = await openDb()
   const tx = db.transaction(IMAGES, 'readwrite')
-  tx.objectStore(IMAGES).put({ id, uid, blob, thumb } satisfies StoredImage)
+  tx.objectStore(IMAGES).put({
+    id,
+    uid,
+    blob,
+    thumb,
+    at: Date.now(),
+  } satisfies StoredImage)
   await committed(tx)
+}
+
+/** Every stored conversation of every account on this browser, as stored. */
+export async function allStoredRooms(): Promise<unknown[]> {
+  const db = await openDb()
+  const tx = db.transaction(ROOMS, 'readonly')
+  return (await done(tx.objectStore(ROOMS).getAll())) as unknown[]
+}
+
+/** This user's stored pictures and when each was stored. */
+export async function storedImageTimes(
+  uid: number
+): Promise<{ id: string; at?: number }[]> {
+  const db = await openDb()
+  const tx = db.transaction(IMAGES, 'readonly')
+  const rows = (await done(
+    tx.objectStore(IMAGES).index('uid').getAll(uid)
+  )) as StoredImage[]
+  return rows.map((r) => ({ id: r.id, at: r.at }))
 }
 
 /** Deletes stored pictures by id (the design agent's projects use this store too). */

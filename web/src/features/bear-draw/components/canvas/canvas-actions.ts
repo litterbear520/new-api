@@ -19,14 +19,15 @@ For commercial licensing, please contact support@quantumnous.com
 import type { TFunction } from 'i18next'
 import { toast } from 'sonner'
 
-import { downloadImage } from '@/features/draw/lib/images'
 import { findProject } from '@/stores/bear-draw-store'
 
 import type { ActionPayload, CanvasApi, MarkInfo } from '../../lib/canvas/types'
 import { deletePicture, retryPicture } from '../../lib/engine'
+import { downloadPictures } from '../../lib/export'
 import { edit } from '../../lib/project-edit'
 import type { Project } from '../../types'
 import { deletedFrom, restoreDeleted } from './delete-undo'
+import { blocksDownloads, openSaveSheet } from './save-sheet-state'
 
 /* What the canvas's actions do on the drawing page. */
 
@@ -34,10 +35,10 @@ export type CanvasCallbacks = {
   /** 接着改: the page puts "@label" into the composer. */
   onEdit: (nodeId: string) => void
   /**
-   * 完成圈选: the picture with the marks drawn on (PNG data URL), and the
+   * 完成圈选: the picture with the marks drawn on (PNG), and the
    * marks with their numbers and notes (for "① 换成红色").
    */
-  onMarked: (nodeId: string, dataUrl: string, marks: MarkInfo[]) => void
+  onMarked: (nodeId: string, png: Blob, marks: MarkInfo[]) => void
   /** Dropped, pasted or picked pictures. */
   onUpload: (files: File[]) => void
   /** 导出这一组 */
@@ -95,13 +96,26 @@ function removeWithUndo(x: ActionContext, p: ActionPayload) {
   })
 }
 
+/** One picture as itself, several as one ZIP; WeChat and QQ: long press. */
 function download(x: ActionContext, p: ActionPayload) {
   const nodes = new Map(x.project.nodes.map((n) => [n.id, n]))
-  for (const pn of p.nodes) {
-    const img = pn.status === 'ready' ? nodes.get(pn.id)?.img : undefined
-    if (!img) continue
-    downloadImage(img.id).catch(() => x.cv.toast(x.t('Download failed')))
+  const ready = p.nodes.flatMap((pn) => {
+    const n = pn.status === 'ready' ? nodes.get(pn.id) : undefined
+    return n?.img
+      ? [{ id: n.img.id, label: n.label, w: n.img.w, h: n.img.h }]
+      : []
+  })
+  if (!ready.length) return
+  if (blocksDownloads(navigator.userAgent)) {
+    openSaveSheet(ready)
+    return
   }
+  const failed = () => x.cv.toast(x.t('Download failed'))
+  downloadPictures(ready.map((r) => r.id))
+    .then((n) => {
+      if (n) failed()
+    })
+    .catch(failed)
 }
 
 function rename(projectId: string, groupId: string, title: string) {
@@ -123,8 +137,8 @@ export function runCanvasAction(
       if (p.node) x.cb.onEdit(p.node.id)
       return false
     case 'mark-done':
-      if (p.node && p.dataUrl) {
-        x.cb.onMarked(p.node.id, p.dataUrl, p.marks ?? [])
+      if (p.node && p.png) {
+        x.cb.onMarked(p.node.id, p.png, p.marks ?? [])
       }
       return false
     case 'export': {

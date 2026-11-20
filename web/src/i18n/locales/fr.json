@@ -8586,6 +8586,10 @@
     "{{metric}} per day, by model family": "{{metric}} par jour, par famille de modèles",
     "{{metric}} per hour, by model family": "{{metric}} par heure, par famille de modèles",
     "Copy order number": "Copier le numéro de commande",
-    "Show password": "Afficher le mot de passe"
+    "Show password": "Afficher le mot de passe",
+    "Save pictures": "Enregistrer les images",
+    "Press and hold a picture to save it.": "Appuyez longuement sur une image pour l’enregistrer.",
+    "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Ce projet a été modifié dans un autre onglet et vient d’être rechargé. Votre dernière modification n’a pas été enregistrée.",
+    "This project was deleted in another tab.": "Ce projet a été supprimé dans un autre onglet."
   }
 }

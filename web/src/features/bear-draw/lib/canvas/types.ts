@@ -188,8 +188,8 @@ export type ActionPayload = {
   files?: File[]
   /** mark-done: the marks and the picture with them drawn on (PNG). */
   marks?: MarkInfo[]
-  dataUrl?: string | null
-  /** The picture could not be read; dataUrl holds only the marks. */
+  png?: Blob | null
+  /** The picture could not be read; png holds only the marks. */
   marksOnly?: boolean
   /** rename: the new frame title. */
   title?: string

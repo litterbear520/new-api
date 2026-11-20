@@ -18,13 +18,15 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import type { MarkRec } from './context'
 import { clamp, MARK_RED } from './geometry'
+import { encodePng } from './png-encode'
 
 /*
  * 完成圈选: the picture with its red marks and numbered badges drawn on,
- * at most 2048 px on the long side, as a PNG data URL for the model.
+ * at most 2048 px on the long side, as a PNG for the model. Drawn here, as
+ * before; only the encoding moves off the main thread.
  */
 
-export type Burned = { dataUrl: string | null; marksOnly: boolean }
+export type Burned = { blob: Blob | null; marksOnly: boolean }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -98,7 +100,7 @@ export async function burnMarks(
   canvas.width = cw
   canvas.height = ch
   const x = canvas.getContext('2d')
-  if (!x) return { dataUrl: null, marksOnly: true }
+  if (!x) return { blob: null, marksOnly: true }
   let marksOnly = false
   try {
     const img = await loadImage(src ?? '')
@@ -110,5 +112,5 @@ export async function burnMarks(
     x.clearRect(0, 0, cw, ch)
   }
   drawMarks(x, marks, cw, ch)
-  return { dataUrl: canvas.toDataURL('image/png'), marksOnly }
+  return { blob: await encodePng(canvas), marksOnly }
 }

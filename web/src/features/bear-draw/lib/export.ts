@@ -16,7 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { canvasBlob, fullImageBlob } from '@/features/draw/lib/images'
+import {
+  canvasBlob,
+  downloadImage,
+  fullImageBlob,
+  stamp,
+} from '@/features/draw/lib/images'
 
 import type { CanvasNode, ImageRef, Project } from '../types'
 import { makeZip, type ZipFile } from './zip'
@@ -203,4 +208,46 @@ export async function exportGroup(
   if (!files.length) return 0
   download(makeZip(files), `${safeName(group.title, FALLBACK_NAME)}.zip`)
   return files.length
+}
+
+/** The file type part of a downloaded picture's name, as downloadImage has it. */
+function pictureExt(blob: Blob): string {
+  return blob.type.includes('jpeg') ? 'jpg' : 'png'
+}
+
+/**
+ * 下载 on the canvas. One picture downloads as itself
+ * (小熊画图-20261120-191224.jpg). Two or more go into one ZIP of the same
+ * name, numbered in selection order (小熊画图-20261120-191224-1.jpg …):
+ * browsers block a burst of separate downloads after the first. Original
+ * bytes, unchanged. Returns how many pictures could not be read.
+ */
+export async function downloadPictures(
+  imageIds: string[],
+  now = new Date()
+): Promise<number> {
+  if (imageIds.length === 1) {
+    await downloadImage(imageIds[0])
+    return 0
+  }
+  const base = `${FALLBACK_NAME}-${stamp(now)}`
+  const blobs: Blob[] = []
+  for (const id of imageIds) {
+    const blob = await fullImageBlob(id).catch(() => null)
+    if (blob) blobs.push(blob)
+  }
+  const failed = imageIds.length - blobs.length
+  if (blobs.length === 1) {
+    download(blobs[0], `${base}.${pictureExt(blobs[0])}`)
+  } else if (blobs.length > 1) {
+    const files: ZipFile[] = []
+    for (const [i, blob] of blobs.entries()) {
+      files.push({
+        name: `${base}-${i + 1}.${pictureExt(blob)}`,
+        data: new Uint8Array(await blob.arrayBuffer()),
+      })
+    }
+    download(makeZip(files, now), `${base}.zip`)
+  }
+  return failed
 }

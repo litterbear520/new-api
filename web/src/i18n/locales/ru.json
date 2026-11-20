@@ -8586,6 +8586,10 @@
     "{{metric}} per day, by model family": "{{metric}} по дням, по семействам моделей",
     "{{metric}} per hour, by model family": "{{metric}} по часам, по семействам моделей",
     "Copy order number": "Скопировать номер заказа",
-    "Show password": "Показать пароль"
+    "Show password": "Показать пароль",
+    "Save pictures": "Сохранить изображения",
+    "Press and hold a picture to save it.": "Нажмите и удерживайте изображение, чтобы сохранить его.",
+    "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Этот проект изменили в другой вкладке, поэтому он обновлён. Последнее изменение не сохранено.",
+    "This project was deleted in another tab.": "Этот проект удалили в другой вкладке."
   }
 }

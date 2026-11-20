@@ -457,6 +457,40 @@ For commercial licensing, please contact support@quantumnous.com
   color: var(--bc-ink);
   overflow-wrap: anywhere;
 }
+/* Turns before the last 12 (six rounds) are laid out and painted only when
+   they come near the view, so opening a long conversation lays out its end.
+   The auto keyword keeps a turn's real height once it has been shown, so it
+   does not change again on the next scroll past.
+   content-visibility also clips paint to the turn, which would cut the
+   focus rings and the -6px hover backgrounds at its edges: padding gives
+   them room and equal negative margins keep every gap as it was
+   (margins of the turns collapse as before, 14 + 8 + 8 = 30, 6 + 8 + 8 = 22).
+   Containment also stops a first artifact card's top margin from merging
+   with the gap above, so it is dropped where it would have merged. */
+@supports (content-visibility: auto) {
+  .bc-col > .bc-u:nth-last-child(n + 13),
+  .bc-col > .bc-a:nth-last-child(n + 13) {
+    content-visibility: auto;
+    padding: 8px 8px 8px 12px;
+  }
+  .bc-col > .bc-u:nth-last-child(n + 13) {
+    contain-intrinsic-size: auto none auto 100px;
+    margin: 22px -8px 14px -12px;
+  }
+  .bc-col > .bc-u:first-child:nth-last-child(n + 13) {
+    margin-top: -4px;
+  }
+  .bc-col > .bc-a:nth-last-child(n + 13) {
+    contain-intrinsic-size: auto none auto 500px;
+    margin: -8px -8px -8px -12px;
+  }
+  .bc-col
+    > .bc-a:nth-last-child(n + 13)
+    > .bc-body:first-child
+    > .bc-artc:first-child {
+    margin-top: 0;
+  }
+}
 .bc-md {
   font: 16px/1.7 var(--bc-reply);
 }

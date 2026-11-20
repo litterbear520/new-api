@@ -74,6 +74,41 @@ describe('deleteProject', () => {
     expect([...vi.mocked(deleteImages).mock.calls[0][0]]).toEqual(['img-a'])
   })
 
+  test('keeps pictures another project needs to draw again or to plan', async () => {
+    const other: Project = {
+      ...project('p2', 'img-own'),
+      messages: [
+        {
+          role: 'agent',
+          parts: [
+            {
+              type: 'progress',
+              items: [{ job: { inputs: ['img-a'] } }],
+            },
+          ],
+        },
+      ] as unknown as Project['messages'],
+      transcript: [{ role: 'user', content: 'x', images: ['img-b'] }],
+    }
+    useBearDrawStore.setState({ uid: null, loaded: false, projects: [] })
+    useBearDrawStore.getState().init(1, [
+      {
+        ...project('p1', 'img-a'),
+        nodes: [
+          { id: 'n1', img: { id: 'img-a' } },
+          { id: 'n2', img: { id: 'img-b' } },
+        ] as unknown as CanvasNode[],
+      },
+      other,
+    ])
+    await deleteProject('p1')
+    expect(findProject('p1')).toBeNull()
+    const dropped = vi
+      .mocked(deleteImages)
+      .mock.calls.flatMap(([ids]) => [...ids])
+    expect(dropped).toEqual([])
+  })
+
   test('stays deleted when cleaning the pictures fails', async () => {
     vi.mocked(deleteImages).mockRejectedValueOnce(new Error('aborted'))
     await deleteProject('p1')

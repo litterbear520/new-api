@@ -23,14 +23,18 @@ import { loadRooms } from '@/features/draw/lib/storage'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { useBearDrawPersistence } from '../hooks/use-persistence'
-import { loadProjects, removeProjectRecord, saveProject } from '../lib/storage'
+import {
+  loadProjectRecords,
+  removeProjectRecord,
+  saveProject,
+} from '../lib/storage'
 import type { Project } from '../types'
 
 vi.mock('../lib/storage', async (original) => ({
   ...(await original<typeof import('../lib/storage')>()),
-  loadProjects: vi.fn(),
+  loadProjectRecords: vi.fn(),
   removeProjectRecord: vi.fn(async () => {}),
-  saveProject: vi.fn(async () => {}),
+  saveProject: vi.fn(async () => ({ ok: true, rev: 1 })),
 }))
 vi.mock('@/features/draw/lib/storage', async (original) => ({
   ...(await original<typeof import('@/features/draw/lib/storage')>()),
@@ -62,7 +66,9 @@ beforeEach(() => {
 
 describe('copying the classic page’s conversations', () => {
   test('a copy that cannot be written deletes nothing already saved', async () => {
-    vi.mocked(loadProjects).mockResolvedValue([project('existing-project')])
+    vi.mocked(loadProjectRecords).mockResolvedValue([
+      { project: project('existing-project'), rev: 1, uid: 1 },
+    ])
     vi.mocked(loadRooms).mockResolvedValue([
       {
         id: 'classic',

@@ -130,10 +130,8 @@ export function useProjectActions(o: Options) {
   )
 
   const onMarked = useCallback(
-    async (nodeId: string, dataUrl: string, marks?: MarkInfo[]) => {
-      const att = await storeMarked(o.projectId, nodeId, dataUrl).catch(
-        () => null
-      )
+    async (nodeId: string, png: Blob, marks?: MarkInfo[]) => {
+      const att = await storeMarked(o.projectId, nodeId, png).catch(() => null)
       if (!att) {
         toast.error(t('Could not keep the circled picture. Try again.'))
         return

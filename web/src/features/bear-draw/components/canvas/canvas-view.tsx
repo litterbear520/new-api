@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { forwardRef, useImperativeHandle, type ChangeEvent } from 'react'
 
+import { SaveSheet } from './save-sheet'
 import { type CanvasViewProps, useCanvasView } from './use-canvas-view'
 
 export type { CanvasViewProps } from './use-canvas-view'
@@ -68,6 +69,7 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(
           tabIndex={-1}
           onChange={onFiles}
         />
+        <SaveSheet />
       </div>
     )
   }

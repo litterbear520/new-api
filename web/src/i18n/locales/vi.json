@@ -8586,6 +8586,10 @@
     "{{metric}} per day, by model family": "{{metric}} theo ngày, theo dòng mô hình",
     "{{metric}} per hour, by model family": "{{metric}} theo giờ, theo dòng mô hình",
     "Copy order number": "Sao chép mã đơn hàng",
-    "Show password": "Hiện mật khẩu"
+    "Show password": "Hiện mật khẩu",
+    "Save pictures": "Lưu ảnh",
+    "Press and hold a picture to save it.": "Nhấn giữ ảnh để lưu.",
+    "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Dự án này đã được thay đổi ở một tab khác nên đã được tải lại. Thay đổi vừa rồi của bạn chưa được lưu.",
+    "This project was deleted in another tab.": "Dự án này đã bị xóa ở một tab khác."
   }
 }

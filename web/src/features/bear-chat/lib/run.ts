@@ -39,11 +39,23 @@ import { ChatRequestError, streamChat, type StreamEvent } from './stream'
  * Sending, retrying and stopping replies. Streams live at module level, so a
  * reply keeps arriving (and is saved) if the user leaves the page; the
  * server bills it either way. Text is batched and written to the store at
- * most every FLUSH_MS.
+ * most every flushDelay(length) ms.
  */
 
 const FLUSH_MS = 50
+const MAX_FLUSH_MS = 250
+/** Past 5,000 characters, writes are 1 ms further apart per this many. */
+const CHARS_PER_MS = 100
 const TITLE_CHARS = 30
+
+/**
+ * Each store write re-parses the reply's Markdown and re-highlights its code
+ * in full, so a write costs about its length. Spacing writes in proportion to
+ * the length keeps the work per second flat for long replies.
+ */
+function flushDelay(length: number): number {
+  return Math.min(MAX_FLUSH_MS, Math.max(FLUSH_MS, length / CHARS_PER_MS))
+}
 
 type Env = { prices: Map<string, PricingModel>; groupRatio: number }
 let env: Env = { prices: new Map(), groupRatio: 1 }
@@ -231,6 +243,7 @@ async function run(convId: string, turnId: string, kind: LiveReply['kind']) {
   let pendThink = ''
   let timer: ReturnType<typeof setTimeout> | undefined
   let gotAny = false
+  let written = 0
   const update = (fn: (r: Reply) => Reply) =>
     patchReply(convId, turnId, reply.id, fn)
   const flush = () => {
@@ -241,6 +254,7 @@ async function run(convId: string, turnId: string, kind: LiveReply['kind']) {
     const think = pendThink
     pendText = ''
     pendThink = ''
+    written += text.length + think.length
     update((r) => {
       const now = Date.now()
       return {
@@ -258,7 +272,7 @@ async function run(convId: string, turnId: string, kind: LiveReply['kind']) {
       gotAny = true
       if (e.type === 'content') pendText += e.text
       else pendThink += e.text
-      timer ??= setTimeout(flush, FLUSH_MS)
+      timer ??= setTimeout(flush, flushDelay(written))
       return
     }
     flush()

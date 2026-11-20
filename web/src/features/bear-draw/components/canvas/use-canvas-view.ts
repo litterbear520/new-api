@@ -68,7 +68,7 @@ const thumbOf = (n: CanvasNode) =>
  * Keeps one canvas in step with a project: shows its frames and pictures,
  * loads picture files, runs the dot screens, saves moves back.
  */
-function createProjectSync(
+export function createProjectSync(
   cv: CanvasApi,
   halftones: Halftones,
   current: () => Project,
@@ -97,14 +97,26 @@ function createProjectSync(
         .then((url) => {
           loading.delete(id)
           if (!url) missing.add(id)
-          else if (alive) apply(current())
+          else if (alive) apply(current(), true)
         })
         .catch(() => loading.delete(id))
     }
   }
 
-  function apply(next: Project) {
+  /** `force`: a picture file came in, though the project did not change. */
+  function apply(next: Project, force = false) {
     if (!alive) return
+    const same =
+      prev?.id === next.id &&
+      prev.nodes === next.nodes &&
+      prev.groups === next.groups
+    // The chat changed (the agent writing): nothing on the canvas did.
+    // A file that failed to load is still tried again, as on every edit.
+    if (same && !force) {
+      prev = next
+      loadFiles(next)
+      return
+    }
     if (!prev || prev.id !== next.id) {
       // Another project in the same view: save the old one's moves first.
       if (prev) beforeSwitch()

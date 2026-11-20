@@ -31,6 +31,13 @@ const KEEP_TYPES = new Set([
   'image/gif',
 ])
 
+/** Types whose pictures can have transparent pixels. */
+const ALPHA_TYPES = new Set(['image/png', 'image/webp', 'image/gif'])
+const WEBP_QUALITY = 0.9
+const JPEG_QUALITY = 0.85
+/** Side of the grid read back to look for transparent pixels. */
+const ALPHA_SAMPLE = 64
+
 let seq = 0
 const newImageId = () => `i${Date.now().toString(36)}${(++seq).toString(36)}`
 
@@ -64,6 +71,73 @@ async function decode(blob: Blob): Promise<ImageBitmap | HTMLImageElement> {
   }
 }
 
+let webpEncodes: boolean | undefined
+
+/** Safari cannot encode WebP; asked for it, canvas hands back PNG instead. */
+function canEncodeWebp(): boolean {
+  if (webpEncodes === undefined) {
+    const probe = document.createElement('canvas')
+    probe.width = 1
+    probe.height = 1
+    const url: string | null = probe.toDataURL('image/webp')
+    webpEncodes = Boolean(url?.startsWith('data:image/webp'))
+  }
+  return webpEncodes
+}
+
+/** Looks for a transparent pixel on a 64 × 64 grid over the picture. */
+function hasTransparency(canvas: HTMLCanvasElement): boolean {
+  const grid = document.createElement('canvas')
+  grid.width = Math.min(ALPHA_SAMPLE, canvas.width)
+  grid.height = Math.min(ALPHA_SAMPLE, canvas.height)
+  const ctx = grid.getContext('2d', { willReadFrequently: true })
+  // cannot tell: keep the format that holds transparency
+  if (!ctx) return true
+  ctx.drawImage(canvas, 0, 0, grid.width, grid.height)
+  const px = ctx.getImageData(0, 0, grid.width, grid.height).data
+  for (let i = 3; i < px.length; i += 4) {
+    if (px[i] < 255) return true
+  }
+  return false
+}
+
+/** toBlob encodes off the main thread in Chrome; toDataURL never does. */
+async function encode(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality?: number
+): Promise<{ url: string; type: string }> {
+  const blob =
+    typeof canvas.toBlob === 'function'
+      ? await new Promise<Blob | null>((done) =>
+          canvas.toBlob(done, type, quality)
+        )
+      : null
+  if (blob) return { url: await readAsDataUrl(blob), type: blob.type }
+  const url = canvas.toDataURL(type, quality)
+  return { url, type: url.slice(5, url.indexOf(';')) }
+}
+
+/**
+ * WebP where the browser can encode it. Elsewhere (Safari) PNG is several MB
+ * per photo, so photos go as JPEG and only pictures with transparent pixels
+ * stay PNG.
+ */
+async function encodePicture(
+  canvas: HTMLCanvasElement,
+  sourceType: string
+): Promise<string> {
+  if (canEncodeWebp()) {
+    const webp = await encode(canvas, 'image/webp', WEBP_QUALITY)
+    if (webp.type === 'image/webp') return webp.url
+    webpEncodes = false
+  }
+  if (ALPHA_TYPES.has(sourceType) && hasTransparency(canvas)) {
+    return (await encode(canvas, 'image/png')).url
+  }
+  return (await encode(canvas, 'image/jpeg', JPEG_QUALITY)).url
+}
+
 export function isImageFile(file: File): boolean {
   return file.type.startsWith('image/')
 }
@@ -76,16 +150,17 @@ export async function readImage(file: File): Promise<ChatImage> {
   const k = Math.min(1, MAX_SIDE / Math.max(w, h))
   let url: string
   if (k === 1 && file.size <= KEEP_BYTES && KEEP_TYPES.has(file.type)) {
+    if ('close' in src) src.close()
     url = await readAsDataUrl(file)
   } else {
     const canvas = document.createElement('canvas')
     canvas.width = Math.max(1, Math.round(w * k))
     canvas.height = Math.max(1, Math.round(h * k))
     canvas.getContext('2d')?.drawImage(src, 0, 0, canvas.width, canvas.height)
-    // Safari cannot encode WebP and hands back PNG, which is still fine
-    url = canvas.toDataURL('image/webp', 0.9)
+    // the canvas holds the pixels now; free the bitmap while encoding
+    if ('close' in src) src.close()
+    url = await encodePicture(canvas, file.type)
   }
-  if ('close' in src) src.close()
   return {
     id: newImageId(),
     url,

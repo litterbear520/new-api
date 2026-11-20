@@ -20,10 +20,24 @@ import { t } from 'i18next'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-import { useBearDrawStore } from '@/stores/bear-draw-store'
+import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { classicRooms, markMigrated } from '../lib/migrate'
-import { loadProjects, saveProject } from '../lib/storage'
+import { scheduleImageSweep } from '../lib/orphan-images'
+import {
+  mergeProjects,
+  ownChanges,
+  rebase,
+  sameValue,
+  shownAfterMerge,
+} from '../lib/project-merge'
+import {
+  loadProjectRecord,
+  loadProjectRecords,
+  saveProject,
+  settleProject,
+} from '../lib/storage'
+import { announce, listenToOtherTabs, type ProjectNews } from '../lib/tab-sync'
 import type { Project } from '../types'
 
 /*
@@ -33,6 +47,12 @@ import type { Project } from '../types'
  * that finishes after the user left the page is still kept. A failed save
  * (usually a full browser storage) is told once and retried after the next
  * save that works.
+ *
+ * Several tabs can have the page open. A save only lands on the stored
+ * version this tab read; when another tab stored a newer one, both sides'
+ * changes are merged, or, when they changed the same thing, this tab drops
+ * its change and shows the stored project. After every save the other tabs
+ * are told, and an idle tab reads the project again.
  */
 
 const SAVE_DELAY = 500
@@ -45,6 +65,15 @@ let unsubscribe: (() => void) | null = null
 /** Projects whose last save failed, by id. */
 const unsaved = new Set<string>()
 let warned = false
+
+/**
+ * What this tab last read or stored of each project: the version, the
+ * record as stored, and the object it put in the store for it.
+ */
+type Base = { rev: number; raw: Project; view: Project }
+const bases = new Map<string, Base>()
+/** Saves in progress per project; each waits for the one before. */
+const writes = new Map<string, Promise<void>>()
 
 function saveFailed(id: string) {
   unsaved.add(id)
@@ -70,10 +99,132 @@ function savedOk(uid: number, id: string) {
   if (!unsaved.size) warned = false
 }
 
-function save(uid: number, p: Project) {
-  void saveProject(uid, p)
-    .then(() => savedOk(uid, p.id))
-    .catch(() => saveFailed(p.id))
+/** The agent or pictures of this tab are working on it (not waiting for you). */
+function busyHere(id: string): boolean {
+  const live = useBearDrawStore.getState().live[id]
+  return Boolean(live && live.phase !== 'wait')
+}
+
+/** A question card left waiting shows the bear waiting, in any tab. */
+function syncWaiting(p: Project) {
+  const s = useBearDrawStore.getState()
+  const waiting = p.messages.some(
+    (m) => m.role === 'agent' && m.status === 'waiting'
+  )
+  const live = s.live[p.id]
+  if (waiting && !live) s.setLive(p.id, { phase: 'wait', since: Date.now() })
+  if (!waiting && live?.phase === 'wait') s.setLive(p.id, null)
+}
+
+/** Shows the stored copy of a project in this tab, without saving it again. */
+function show(id: string, rev: number, raw: Project): Project {
+  const view = settleProject(raw)
+  bases.set(id, { rev, raw, view })
+  const s = useBearDrawStore.getState()
+  if (findProject(id)) s.updateProject(id, () => view)
+  else s.putProject(view)
+  syncWaiting(view)
+  return view
+}
+
+/** Another tab deleted it; a tab still working on it finishes first. */
+function deletedElsewhere(id: string, tell: boolean) {
+  if (!findProject(id) || busyHere(id)) return
+  bases.delete(id)
+  useBearDrawStore.getState().removeProject(id)
+  if (tell) toast.warning(t('This project was deleted in another tab.'))
+}
+
+/** A merged record was stored: show the other tab's changes here too. */
+function adoptMerged(
+  id: string,
+  cur: Project,
+  base: Base | undefined,
+  record: Project,
+  rev: number
+) {
+  const view = base ? shownAfterMerge(base.raw, base.view, record) : record
+  bases.set(id, { rev, raw: record, view })
+  const latest = findProject(id)
+  if (!latest) return
+  // Edits made while saving stay; the next save stores them.
+  const next = latest === cur ? view : rebase(cur, latest, view)
+  useBearDrawStore.getState().updateProject(id, () => next)
+}
+
+/** `mine` and the stored copy as one project, or null when they can't be merged. */
+function mergeWithStored(
+  base: Base | undefined,
+  mine: Project,
+  stored: Project
+): Project | null {
+  if (base) return mergeProjects(base.raw, mine, stored)
+  // Never read here (e.g. two tabs copying the same classic conversation).
+  return sameValue(mine, stored) ? mine : null
+}
+
+async function write(uid: number, id: string): Promise<void> {
+  const cur = findProject(id)
+  if (!cur || !worthSaving(cur)) return
+  const base = bases.get(id)
+  if (base?.view === cur) return
+  const mine = base ? ownChanges(base.raw, base.view, cur) : cur
+  let record = mine
+  let expected = base ? base.rev : null
+  // Another tab may save in between again; after a few rounds it wins.
+  for (let round = 0; round < 3; round++) {
+    const res = await saveProject(uid, record, expected)
+    if (res.ok) {
+      if (record === mine) {
+        bases.set(id, { rev: res.rev, raw: record, view: cur })
+      } else adoptMerged(id, cur, base, record, res.rev)
+      announce({ id, rev: res.rev, uid, busy: busyHere(id) })
+      return
+    }
+    if (!res.stored || res.rev == null) {
+      deletedElsewhere(id, true)
+      return
+    }
+    const merged = mergeWithStored(base, mine, res.stored)
+    if (!merged) break
+    if (sameValue(merged, res.stored)) {
+      // Already stored like this: nothing to write.
+      adoptMerged(id, cur, base, merged, res.rev)
+      return
+    }
+    record = merged
+    expected = res.rev
+  }
+  const stored = await loadProjectRecord(id)
+  if (!stored) {
+    deletedElsewhere(id, true)
+    return
+  }
+  show(id, stored.rev, stored.project)
+  toast.warning(
+    t(
+      'This project was changed in another tab and has been reloaded. Your last change was not saved.'
+    )
+  )
+}
+
+/** Writes the latest copy of `id` once the save of it still running is done. */
+function queueWrite(uid: number, id: string): Promise<void> {
+  const next = (writes.get(id) ?? Promise.resolve())
+    .catch(() => undefined)
+    .then(() => write(uid, id))
+  writes.set(id, next)
+  const forget = () => {
+    if (writes.get(id) === next) writes.delete(id)
+  }
+  next.then(forget, forget).catch(() => undefined)
+  return next
+}
+
+function save(uid: number, id: string) {
+  queueWrite(uid, id)
+    .then(() => savedOk(uid, id))
+    .catch(() => saveFailed(id))
 }
 
 /** An empty project (opened, nothing sent) is not worth storing. */
@@ -91,10 +242,7 @@ function scheduleSave(uid: number, p: Project) {
     since,
     t: setTimeout(() => {
       timers.delete(p.id)
-      const latest = useBearDrawStore
-        .getState()
-        .projects.find((x) => x.id === p.id)
-      if (latest && worthSaving(latest)) save(uid, latest)
+      save(uid, p.id)
     }, wait),
   })
 }
@@ -105,10 +253,40 @@ function flush() {
   if (s.uid == null) return
   for (const [id, timer] of timers) {
     clearTimeout(timer.t)
-    const p = s.projects.find((x) => x.id === id)
-    if (p && worthSaving(p)) save(s.uid, p)
+    save(s.uid, id)
   }
   timers.clear()
+}
+
+/** Reads a project another tab stored, unless this tab has its own change coming. */
+async function reload(uid: number, id: string) {
+  const record = await loadProjectRecord(id)
+  const s = useBearDrawStore.getState()
+  if (s.uid !== uid || timers.has(id) || writes.has(id) || busyHere(id)) return
+  if (!record) {
+    deletedElsewhere(id, false)
+    return
+  }
+  if (record.uid !== uid || bases.get(id)?.rev === record.rev) return
+  show(id, record.rev, record.project)
+}
+
+function onOtherTab(news: ProjectNews) {
+  const s = useBearDrawStore.getState()
+  if (!s.loaded || s.uid == null) return
+  if (news.uid != null && news.uid !== s.uid) return
+  if (news.rev != null && bases.get(news.id)?.rev === news.rev) return
+  // A change of ours still to be saved merges with theirs then, and a
+  // reply being written here is not cut off.
+  if (timers.has(news.id) || writes.has(news.id) || busyHere(news.id)) return
+  if (news.rev == null) {
+    deletedElsewhere(news.id, false)
+    return
+  }
+  // Still working there: its pictures would show as lost here. Its last
+  // save is announced as not busy.
+  if (news.busy) return
+  void reload(s.uid, news.id).catch(() => undefined)
 }
 
 function watch() {
@@ -119,7 +297,9 @@ function watch() {
     if (!prev.loaded || state.uid !== prev.uid) return
     const before = new Map(prev.projects.map((p) => [p.id, p]))
     for (const p of state.projects) {
-      if (before.get(p.id) !== p) scheduleSave(state.uid, p)
+      // a stored copy just shown is not an edit either
+      const edited = before.get(p.id) !== p && bases.get(p.id)?.view !== p
+      if (edited) scheduleSave(state.uid, p)
       before.delete(p.id)
     }
     // whatever is left was deleted; deleteProject removes its record
@@ -134,6 +314,7 @@ function watch() {
     if (document.visibilityState === 'hidden') flush()
   })
   window.addEventListener('pagehide', flush)
+  listenToOtherTabs(onOtherTab)
 }
 
 export type LoadState = 'loading' | 'ready' | 'unavailable'
@@ -149,10 +330,16 @@ export function useBearDrawPersistence(uid: number | undefined): LoadState {
     if (s.loaded && s.uid === uid) return
     let cancelled = false
     const load = async () => {
-      const projects = await loadProjects(uid)
-      const have = new Set(projects.map((p) => p.id))
+      const records = await loadProjectRecords(uid)
+      const have = new Set(records.map((r) => r.project.id))
       const copies = (await classicRooms(uid)).filter((p) => !have.has(p.id))
       if (cancelled) return
+      bases.clear()
+      const projects = records.map((r) => {
+        const view = settleProject(r.project)
+        bases.set(view.id, { rev: r.rev, raw: r.project, view })
+        return view
+      })
       const store = useBearDrawStore.getState()
       store.init(uid, [...projects, ...copies])
       // A card left waiting before the reload still waits for the user.
@@ -165,7 +352,7 @@ export function useBearDrawPersistence(uid: number | undefined): LoadState {
       // A copy that can't be written (full storage) stays for this visit and
       // is copied again next time; the projects already loaded are kept.
       const saved = await Promise.allSettled(
-        copies.map((p) => saveProject(uid, p))
+        copies.map((p) => queueWrite(uid, p.id))
       )
       if (saved.every((r) => r.status === 'fulfilled')) markMigrated(uid)
     }
@@ -179,6 +366,12 @@ export function useBearDrawPersistence(uid: number | undefined): LoadState {
       cancelled = true
     }
   }, [uid])
+
+  const ready = loadedUid === uid && !failed
+  useEffect(() => {
+    if (!ready || !uid) return
+    return scheduleImageSweep(uid)
+  }, [ready, uid])
 
   if (failed) return 'unavailable'
   return loadedUid === uid ? 'ready' : 'loading'

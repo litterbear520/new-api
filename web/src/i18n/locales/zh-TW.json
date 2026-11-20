@@ -8586,6 +8586,10 @@
     "{{metric}} per day, by model family": "{{metric}}：每天 · 按模型系列",
     "{{metric}} per hour, by model family": "{{metric}}：每小時 · 按模型系列",
     "Copy order number": "複製訂單號",
-    "Show password": "顯示密碼"
+    "Show password": "顯示密碼",
+    "Save pictures": "儲存圖片",
+    "Press and hold a picture to save it.": "長按圖片儲存。",
+    "This project was changed in another tab and has been reloaded. Your last change was not saved.": "這個專案在另一個分頁改過，已經重新整理成最新的內容。剛才的改動沒有儲存。",
+    "This project was deleted in another tab.": "這個專案已經在另一個分頁刪除。"
   }
 }

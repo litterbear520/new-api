@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { BookOpen, CircleDashed, ImagePlus, SwatchBook } from 'lucide-react'
+import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useImageUrl } from '@/features/draw/hooks/use-image-url'
@@ -81,7 +82,9 @@ function ModeLine(props: { message: UserMessageData }) {
 }
 
 /** What the user sent: pictures above, then the bubble. */
-export function UserMessage(props: { message: UserMessageData }) {
+export const UserMessage = memo(function UserMessage(props: {
+  message: UserMessageData
+}) {
   const m = props.message
   const skill = useSkillName(m.skillId)
   const hasBubble = Boolean(m.text || skill || m.image || m.brand || m.presetId)
@@ -108,4 +111,4 @@ export function UserMessage(props: { message: UserMessageData }) {
       )}
     </div>
   )
-}
+})

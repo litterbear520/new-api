@@ -20,7 +20,7 @@ import { costOfUsage } from '@/features/bear-chat/lib/cost'
 import { classifyError } from '@/features/bear-chat/lib/errors'
 import { ChatRequestError } from '@/features/bear-chat/lib/stream'
 import { useAuthStore } from '@/stores/auth-store'
-import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
+import { findProject, newId, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { BRAIN_FALLBACKS, MAX_STEPS } from '../../constants'
 import { SKILLS } from '../../data/skills'
@@ -35,6 +35,7 @@ import {
   editPart,
 } from '../project-edit'
 import { finishTurn, refreshResult } from './finish'
+import { frameBatch } from './frame-batch'
 import { drawPlan, makePlan, needsConfirm, setPlanState } from './plan'
 import { buildSystemPrompt } from './prompt'
 import { loadSkillForModel } from './skills'
@@ -186,6 +187,27 @@ async function step(run: Run): Promise<StepOutcome> {
         ...m,
         parts: m.parts.filter((x) => x.id !== thinking.id),
       }))
+    // Deltas come dozens a second; each edit re-renders the chat and
+    // re-saves the project, so the text goes in once per frame.
+    const textBatch = frameBatch(() => {
+      if (!textPartId) {
+        // 「Thinking…」 gives way to the text in the same edit.
+        const part: Part = {
+          id: newId('pt'),
+          type: 'text',
+          text: shown,
+          streaming: true,
+        }
+        textPartId = part.id
+        editMessage(run.projectId, run.messageId, (m) => ({
+          ...m,
+          parts: [...m.parts.filter((x) => x.id !== thinking.id), part],
+        }))
+      } else {
+        const id = textPartId
+        editPart(run.projectId, id, 'text', (x) => ({ ...x, text: shown }))
+      }
+    })
     try {
       const result = await streamStep(
         {
@@ -202,20 +224,7 @@ async function step(run: Run): Promise<StepOutcome> {
           onEvent: (ev) => {
             if (ev.type === 'text') {
               shown += ev.text
-              if (!textPartId) {
-                dropThinking()
-                textPartId = addPart(run.projectId, run.messageId, {
-                  type: 'text',
-                  text: shown,
-                  streaming: true,
-                }).id
-              } else {
-                const id = textPartId
-                editPart(run.projectId, id, 'text', (x) => ({
-                  ...x,
-                  text: shown,
-                }))
-              }
+              textBatch.request()
               setLive(run.projectId, 'write', model)
             } else if (ev.name === 'load_skill') {
               setLive(run.projectId, 'skill', model)
@@ -227,6 +236,7 @@ async function step(run: Run): Promise<StepOutcome> {
           },
         }
       )
+      textBatch.flush()
       dropThinking()
       if (textPartId) {
         const id = textPartId
@@ -253,6 +263,7 @@ async function step(run: Run): Promise<StepOutcome> {
         model,
       }
     } catch (error) {
+      textBatch.flush()
       dropThinking()
       if (
         run.stopped ||

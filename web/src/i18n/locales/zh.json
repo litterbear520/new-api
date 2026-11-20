@@ -8586,6 +8586,10 @@
     "{{metric}} per day, by model family": "{{metric}}：每天 · 按模型系列",
     "{{metric}} per hour, by model family": "{{metric}}：每小时 · 按模型系列",
     "Copy order number": "复制订单号",
-    "Show password": "显示密码"
+    "Show password": "显示密码",
+    "Save pictures": "保存图片",
+    "Press and hold a picture to save it.": "长按图片保存。",
+    "This project was changed in another tab and has been reloaded. Your last change was not saved.": "这个项目在另一个标签页改过，已经刷新成最新的内容。刚才的改动没有保存。",
+    "This project was deleted in another tab.": "这个项目已经在另一个标签页删除。"
   }
 }

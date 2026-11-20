@@ -8586,6 +8586,10 @@
     "{{metric}} per day, by model family": "{{metric}}：1 日ごと・モデル系列別",
     "{{metric}} per hour, by model family": "{{metric}}：1 時間ごと・モデル系列別",
     "Copy order number": "注文番号をコピー",
-    "Show password": "パスワードを表示"
+    "Show password": "パスワードを表示",
+    "Save pictures": "画像を保存",
+    "Press and hold a picture to save it.": "画像を長押しして保存してください。",
+    "This project was changed in another tab and has been reloaded. Your last change was not saved.": "このプロジェクトは別のタブで変更されたため、最新の内容に更新しました。直前の変更は保存されていません。",
+    "This project was deleted in another tab.": "このプロジェクトは別のタブで削除されました。"
   }
 }

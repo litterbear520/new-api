@@ -94,8 +94,7 @@ export function storeFailedText(error: unknown): string {
 export const SKIPPED_PICTURES_TEXT =
   'Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.'
 
-/** Stores a PNG data URL (e.g. a picture with red marks drawn on it). */
-export async function storeDataUrl(dataUrl: string): Promise<Attachment> {
-  const blob = await (await fetch(dataUrl)).blob()
+/** Stores a picture made on the page (e.g. one with red marks drawn on). */
+export function storePicture(blob: Blob): Promise<Attachment> {
   return storeBlob(blob)
 }

@@ -674,12 +674,14 @@ export function startBlackHole(
     bakingSize = [w, h]
   }
   function loop(now: number) {
+    raf = 0
     if (stopped) return
-    raf = requestAnimationFrame(loop)
+    // nothing to draw: ask for no frames until wake() sees it shown again
     if (!visible || !inView) {
       last = 0
       return
     }
+    raf = requestAnimationFrame(loop)
     if (ticks.length < 14) {
       if (tickAt) ticks.push(now - tickAt)
       tickAt = now
@@ -766,18 +768,27 @@ export function startBlackHole(
     }
   }
 
+  // last = 0: the time it was away is no frame, for the pace or the gas.
+  // Only a stopped loop starts again, so there is never a second one.
+  function wake() {
+    last = 0
+    if (stopped || raf || !visible || !inView) return
+    // still timing the screen: the pause is no tick either
+    if (ticks.length < 14) tickAt = 0
+    raf = requestAnimationFrame(loop)
+  }
   const onVisibility = () => {
     visible = !document.hidden
-    last = 0
     if (ticks.length < 14) {
       ticks.length = 0
       tickAt = 0
     }
+    wake()
   }
   document.addEventListener('visibilitychange', onVisibility)
   const seen = new IntersectionObserver((entries) => {
     inView = entries.at(-1)?.isIntersecting ?? inView
-    last = 0
+    wake()
   })
   seen.observe(canvas)
   // the window settled on a new size: work it out, swap when done; until then

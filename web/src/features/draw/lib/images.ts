@@ -207,7 +207,8 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-function stamp(d = new Date()) {
+/** 20261120-191224: the time part of a downloaded picture's name. */
+export function stamp(d = new Date()) {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
 }

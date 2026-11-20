@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Check, Copy, Square, Unplug } from 'lucide-react'
+import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -103,7 +104,7 @@ function EndNote(props: { message: AgentMessageData }) {
  * The agent's turn: its parts in order (status lines, text, question card,
  * plan, pictures, result, error), then the cost of the turn once it ends.
  */
-export function AgentMessage(props: {
+export const AgentMessage = memo(function AgentMessage(props: {
   projectId: string
   message: AgentMessageData
 }) {
@@ -127,4 +128,4 @@ export function AgentMessage(props: {
       {!working && <AgentFooter message={m} />}
     </div>
   )
-}
+})

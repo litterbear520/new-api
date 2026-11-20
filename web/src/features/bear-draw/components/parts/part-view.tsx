@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { memo } from 'react'
+
 import type { AgentStatus, Part } from '../../types'
 import { ErrorPart } from './error-part'
 import { PlanCard } from './plan-card'
@@ -26,7 +28,7 @@ import { StatusPart } from './status-part'
 import { TextPart } from './text-part'
 
 /** One part of an agent message, in the order the engine wrote them. */
-export function PartView(props: {
+export const PartView = memo(function PartView(props: {
   projectId: string
   messageId: string
   /** Status of the agent message: cards only take answers while it waits. */
@@ -70,4 +72,4 @@ export function PartView(props: {
     default:
       return null
   }
-}
+})

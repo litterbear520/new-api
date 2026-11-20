@@ -48,7 +48,7 @@ import {
 } from './agent/run'
 import { findSkill, loadSkillForModel } from './agent/skills'
 import { userTurnText } from './agent/transcript'
-import { storeFiles, storeDataUrl } from './attachments'
+import { storeFiles, storePicture } from './attachments'
 import { imageTurns, runImageTurn, titleFrom } from './image-turn'
 import { drawPicture, estimatePicture as estimate } from './pictures'
 import {
@@ -646,11 +646,11 @@ export function storeAttachments(files: File[]): Promise<Attachment[]> {
 export async function storeMarked(
   projectId: string,
   nodeId: string,
-  dataUrl: string
+  png: Blob
 ): Promise<Attachment | null> {
   const node = findProject(projectId)?.nodes.find((n) => n.id === nodeId)
   if (!node) return null
-  const stored = await storeDataUrl(dataUrl).catch(() => null)
+  const stored = await storePicture(png).catch(() => null)
   if (!stored) return null
   return { ...stored, nodeId, label: node.label, marked: true }
 }
