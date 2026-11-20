@@ -16,7 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { t } from 'i18next'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
@@ -28,7 +30,9 @@ import type { Project } from '../types'
  * Loads this user's projects (copying the classic page's conversations
  * once) and writes every changed project back a moment later, at least
  * every 2 s while the agent works. Saving lives at module level, so work
- * that finishes after the user left the page is still kept.
+ * that finishes after the user left the page is still kept. A failed save
+ * (usually a full browser storage) is told once and retried after the next
+ * save that works.
  */
 
 const SAVE_DELAY = 500
@@ -38,6 +42,39 @@ const timers = new Map<
   { t: ReturnType<typeof setTimeout>; since: number }
 >()
 let unsubscribe: (() => void) | null = null
+/** Projects whose last save failed, by id. */
+const unsaved = new Set<string>()
+let warned = false
+
+function saveFailed(id: string) {
+  unsaved.add(id)
+  if (warned) return
+  warned = true
+  toast.warning(
+    t(
+      'This browser could not save your latest changes, so they last only until you close the page. Delete old projects to free space.'
+    )
+  )
+}
+
+/** `id` saved: retry the projects whose save failed. */
+function savedOk(uid: number, id: string) {
+  unsaved.delete(id)
+  const s = useBearDrawStore.getState()
+  for (const failed of unsaved) {
+    const p = s.uid === uid && s.projects.find((x) => x.id === failed)
+    // Gone, or another account's: nothing left to save.
+    if (!p) unsaved.delete(failed)
+    else if (!timers.has(failed)) scheduleSave(uid, p)
+  }
+  if (!unsaved.size) warned = false
+}
+
+function save(uid: number, p: Project) {
+  void saveProject(uid, p)
+    .then(() => savedOk(uid, p.id))
+    .catch(() => saveFailed(p.id))
+}
 
 /** An empty project (opened, nothing sent) is not worth storing. */
 const worthSaving = (p: Project) => p.messages.length > 0 || p.nodes.length > 0
@@ -57,9 +94,7 @@ function scheduleSave(uid: number, p: Project) {
       const latest = useBearDrawStore
         .getState()
         .projects.find((x) => x.id === p.id)
-      if (latest && worthSaving(latest)) {
-        void saveProject(uid, latest).catch(() => undefined)
-      }
+      if (latest && worthSaving(latest)) save(uid, latest)
     }, wait),
   })
 }
@@ -71,7 +106,7 @@ function flush() {
   for (const [id, timer] of timers) {
     clearTimeout(timer.t)
     const p = s.projects.find((x) => x.id === id)
-    if (p && worthSaving(p)) void saveProject(s.uid, p).catch(() => undefined)
+    if (p && worthSaving(p)) save(s.uid, p)
   }
   timers.clear()
 }
@@ -92,6 +127,7 @@ function watch() {
       const pending = timers.get(id)
       if (pending) clearTimeout(pending.t)
       timers.delete(id)
+      unsaved.delete(id)
     }
   })
   document.addEventListener('visibilitychange', () => {

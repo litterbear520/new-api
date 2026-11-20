@@ -68,11 +68,20 @@ function NewSkillForm(props: {
       return
     }
     const text = buildSkillMd({ name, description, instructions })
+    let saved: boolean
     try {
-      putMySkill(parseSkillMd(text))
+      saved = putMySkill(parseSkillMd(text))
     } catch (err) {
       // parseSkillMd's messages are i18n keys
       setError(t(err instanceof Error ? err.message : String(err)))
+      return
+    }
+    if (!saved) {
+      setError(
+        t(
+          'Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.'
+        )
+      )
       return
     }
     toast.success(t('Saved to My skills'), {

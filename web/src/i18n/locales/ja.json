@@ -8564,6 +8564,10 @@
     "Select Refresh quota for the latest": "「クォータを更新」で最新の状態を確認できます",
     "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "ブラウザに最新の変更を保存できませんでした。ページを閉じると消えます。古い会話を削除して空き容量を作ってください。",
     "Delete project “{{title}}”": "「{{title}}」を削除",
-    "Confirm deleting “{{title}}”": "「{{title}}」の削除を確認"
+    "Confirm deleting “{{title}}”": "「{{title}}」の削除を確認",
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old projects to free space.": "ブラウザに最新の変更を保存できませんでした。ページを閉じると消えます。古いプロジェクトを削除して空き容量を作ってください。",
+    "Browser storage is full, so the picture was not added. Delete old projects to free space.": "ブラウザの保存容量がいっぱいのため、画像を追加できませんでした。古いプロジェクトを削除して空き容量を作ってください。",
+    "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "一部のファイルをスキップしました。このページで使えるのは PNG、JPEG、WebP、GIF、BMP、AVIF、HEIC の画像です。",
+    "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "ブラウザの保存容量がいっぱいのため、スキルを保存できませんでした。使わないスキルを削除してから、もう一度お試しください。"
   }
 }

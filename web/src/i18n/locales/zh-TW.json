@@ -8564,6 +8564,10 @@
     "Select Refresh quota for the latest": "點「重新整理額度」查看最新",
     "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "瀏覽器沒能儲存最近的改動，關掉頁面就沒了。刪掉一些舊對話，騰出空間。",
     "Delete project “{{title}}”": "刪除「{{title}}」",
-    "Confirm deleting “{{title}}”": "確認刪除「{{title}}」"
+    "Confirm deleting “{{title}}”": "確認刪除「{{title}}」",
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old projects to free space.": "瀏覽器沒能儲存最近的改動，關掉頁面就沒了。刪掉一些舊專案，騰出空間。",
+    "Browser storage is full, so the picture was not added. Delete old projects to free space.": "瀏覽器儲存空間滿了，這張圖沒有加上。刪掉一些舊專案，騰出空間。",
+    "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "有些檔案跳過了：這裡只能用 PNG、JPEG、WebP、GIF、BMP、AVIF 和 HEIC 圖片。",
+    "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "瀏覽器儲存空間滿了，這個技能沒有儲存。刪掉不再用的技能，再試一次。"
   }
 }

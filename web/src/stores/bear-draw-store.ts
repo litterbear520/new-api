@@ -72,7 +72,8 @@ type Actions = {
   setLive: (id: string, live: LiveState | null) => void
   setPrefs: (patch: Partial<Prefs>) => void
   setBrandKit: (kit: BrandKit | null) => void
-  putMySkill: (skill: Skill) => void
+  /** False when the browser could not keep it; nothing changes then. */
+  putMySkill: (skill: Skill) => boolean
   removeMySkill: (id: string) => void
   toggleFavorite: (skillId: string) => void
   setDraft: (draft: Draft | null) => void
@@ -87,12 +88,14 @@ function readJson(key: string): unknown {
   }
 }
 
-function writeJson(key: string, value: unknown) {
+/** False when the browser refused (private mode, full storage). */
+function writeJson(key: string, value: unknown): boolean {
   try {
     if (value == null) localStorage.removeItem(key)
     else localStorage.setItem(key, JSON.stringify(value))
+    return true
   } catch {
-    // Private mode or full storage: lasts for this visit.
+    return false
   }
 }
 
@@ -186,8 +189,13 @@ export const useBearDrawStore = create<State & Actions>()((set, get) => ({
 
   putMySkill: (skill) => {
     const mySkills = [skill, ...get().mySkills.filter((s) => s.id !== skill.id)]
-    writeJson(userKey(STORAGE_KEYS.skills, get().uid), mySkills)
+    // A skill can be 200 KB: without this the import looks done and is
+    // gone after a reload.
+    if (!writeJson(userKey(STORAGE_KEYS.skills, get().uid), mySkills)) {
+      return false
+    }
     set({ mySkills })
+    return true
   },
 
   removeMySkill: (id) => {

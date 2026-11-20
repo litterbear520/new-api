@@ -76,7 +76,14 @@ function ImportForm(props: { formId: string; onDone: () => void }) {
     }
     if (!parsed.ok) return
     const skill = parsed.skill
-    putMySkill(skill)
+    if (!putMySkill(skill)) {
+      toast.error(
+        t(
+          'Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.'
+        )
+      )
+      return
+    }
     toast.success(t('Imported “{{name}}”', { name: skill.name }), {
       action: {
         label: t('Take a look'),

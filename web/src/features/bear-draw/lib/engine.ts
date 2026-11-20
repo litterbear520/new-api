@@ -587,13 +587,16 @@ export async function deleteProject(projectId: string): Promise<void> {
   await deleteImages(drop).catch(() => undefined)
 }
 
-/** Puts uploaded pictures on the canvas, in the 「你的图」 frame. */
+/**
+ * Puts uploaded pictures on the canvas, in the 「你的图」 frame; returns how
+ * many were placed (files of other types are skipped).
+ */
 export async function uploadToCanvas(
   projectId: string,
   files: File[]
-): Promise<void> {
+): Promise<number> {
   const stored = await storeFiles(files)
-  if (!stored.length) return
+  if (!stored.length) return 0
   edit(projectId, (p) => {
     let group = p.groups.find((g) => g.platform === '__uploads')
     const groups = [...p.groups]
@@ -628,6 +631,7 @@ export async function uploadToCanvas(
       ),
     }
   })
+  return stored.length
 }
 
 /**

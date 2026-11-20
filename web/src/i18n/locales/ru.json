@@ -8564,6 +8564,10 @@
     "Select Refresh quota for the latest": "Выберите «Обновить квоту», чтобы увидеть актуальные данные",
     "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Браузер не смог сохранить последние изменения, поэтому они пропадут, как только вы закроете страницу. Удалите старые диалоги, чтобы освободить место.",
     "Delete project “{{title}}”": "Удалить проект «{{title}}»",
-    "Confirm deleting “{{title}}”": "Подтвердить удаление «{{title}}»"
+    "Confirm deleting “{{title}}”": "Подтвердить удаление «{{title}}»",
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old projects to free space.": "Браузер не смог сохранить последние изменения, поэтому они пропадут, как только вы закроете страницу. Удалите старые проекты, чтобы освободить место.",
+    "Browser storage is full, so the picture was not added. Delete old projects to free space.": "Хранилище браузера заполнено, поэтому картинка не добавлена. Удалите старые проекты, чтобы освободить место.",
+    "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "Некоторые файлы пропущены: здесь можно использовать картинки PNG, JPEG, WebP, GIF, BMP, AVIF и HEIC.",
+    "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "Хранилище браузера заполнено, поэтому навык не сохранён. Удалите ненужные навыки и попробуйте ещё раз."
   }
 }

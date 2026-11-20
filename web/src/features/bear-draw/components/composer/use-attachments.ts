@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { MAX_REFS } from '../../constants'
+import { SKIPPED_PICTURES_TEXT, storeFailedText } from '../../lib/attachments'
 import { storeAttachments } from '../../lib/engine'
 import type { Attachment } from '../../types'
 
@@ -73,13 +74,15 @@ export function useAttachments() {
         return
       }
       if (pictures.length > room) tooMany()
+      const tried = pictures.slice(0, room)
       let stored: Attachment[]
       try {
-        stored = await storeAttachments(pictures.slice(0, room))
-      } catch {
-        toast.error(t("Couldn't read that picture; try another one"))
+        stored = await storeAttachments(tried)
+      } catch (error) {
+        toast.error(t(storeFailedText(error)))
         return
       }
+      if (stored.length < tried.length) toast(t(SKIPPED_PICTURES_TEXT))
       add(stored)
     },
     [add, t, tooMany]

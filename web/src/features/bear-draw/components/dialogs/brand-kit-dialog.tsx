@@ -26,8 +26,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { isQuotaError } from '@/features/draw/lib/storage'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
+import { SKIPPED_PICTURES_TEXT, storeFailedText } from '../../lib/attachments'
 import { storeAttachments } from '../../lib/engine'
 import { BrandColors } from './brand-colors'
 import {
@@ -78,8 +80,15 @@ function BrandKitEditor(props: { formId: string; onSaved: () => void }) {
     try {
       const [att] = await storeAttachments([file])
       if (att) patch({ logo: { id: att.id, w: att.w, h: att.h } })
-    } catch {
-      toast.error(t('This picture could not be read'))
+      else toast(t(SKIPPED_PICTURES_TEXT))
+    } catch (error) {
+      toast.error(
+        t(
+          isQuotaError(error)
+            ? storeFailedText(error)
+            : 'This picture could not be read'
+        )
+      )
     } finally {
       setUploading(false)
     }

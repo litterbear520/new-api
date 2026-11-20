@@ -1002,4 +1002,7 @@ export const STATIC_I18N_KEYS = [
   'User Analytics',
   'Common Logs',
   '1 hour',
+  'Browser storage is full, so the picture was not added. Delete old projects to free space.',
+  "Couldn't read that picture; try another one",
+  'Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.',
 ] as const

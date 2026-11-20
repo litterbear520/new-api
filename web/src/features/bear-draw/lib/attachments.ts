@@ -21,7 +21,11 @@ import {
   prepareImage,
   primeImageUrls,
 } from '@/features/draw/lib/images'
-import { putImage, requestPersistence } from '@/features/draw/lib/storage'
+import {
+  isQuotaError,
+  putImage,
+  requestPersistence,
+} from '@/features/draw/lib/storage'
 import { useAuthStore } from '@/stores/auth-store'
 import { newId, useBearDrawStore } from '@/stores/bear-draw-store'
 
@@ -61,19 +65,34 @@ async function storeBlob(blob: Blob, name?: string): Promise<Attachment> {
   return { id, w: prepared.w, h: prepared.h, ...(name ? { name } : {}) }
 }
 
-/** Stores image files; throws UnreadablePictureError on the first bad one. */
+/**
+ * Stores image files, skipping types the page cannot use (fewer come back
+ * than went in). Throws UnreadablePictureError on the first bad one, and the
+ * storage's QuotaExceededError when the browser is full.
+ */
 export async function storeFiles(files: File[]): Promise<Attachment[]> {
   const out: Attachment[] = []
   for (const file of files) {
     if (!IMAGE_TYPES.test(file.type)) continue
     try {
       out.push(await storeBlob(file, file.name))
-    } catch {
+    } catch (error) {
+      if (isQuotaError(error)) throw error
       throw new UnreadablePictureError(file.name)
     }
   }
   return out
 }
+
+/** What to tell the user when storing pictures failed. */
+export function storeFailedText(error: unknown): string {
+  return isQuotaError(error)
+    ? 'Browser storage is full, so the picture was not added. Delete old projects to free space.'
+    : "Couldn't read that picture; try another one"
+}
+
+export const SKIPPED_PICTURES_TEXT =
+  'Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.'
 
 /** Stores a PNG data URL (e.g. a picture with red marks drawn on it). */
 export async function storeDataUrl(dataUrl: string): Promise<Attachment> {

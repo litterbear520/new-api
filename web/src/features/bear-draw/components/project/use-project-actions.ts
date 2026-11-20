@@ -21,8 +21,10 @@ import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { isQuotaError } from '@/features/draw/lib/storage'
 import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
+import { SKIPPED_PICTURES_TEXT, storeFailedText } from '../../lib/attachments'
 import type { MarkInfo } from '../../lib/canvas/types'
 import { storeMarked, uploadToCanvas } from '../../lib/engine'
 import { exportGroup } from '../../lib/export'
@@ -151,9 +153,16 @@ export function useProjectActions(o: Options) {
   const onUpload = useCallback(
     async (files: File[]) => {
       try {
-        await uploadToCanvas(o.projectId, files)
-      } catch {
-        toast.error(t('Could not add these pictures'))
+        const placed = await uploadToCanvas(o.projectId, files)
+        if (placed < files.length) toast(t(SKIPPED_PICTURES_TEXT))
+      } catch (error) {
+        toast.error(
+          t(
+            isQuotaError(error)
+              ? storeFailedText(error)
+              : 'Could not add these pictures'
+          )
+        )
       }
     },
     [o.projectId, t]

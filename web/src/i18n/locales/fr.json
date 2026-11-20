@@ -8564,6 +8564,10 @@
     "Select Refresh quota for the latest": "Sélectionnez Actualiser le quota pour voir le dernier relevé",
     "This browser could not save your latest changes, so they last only until you close the page. Delete old conversations to free space.": "Le navigateur n’a pas pu enregistrer vos dernières modifications : elles disparaîtront à la fermeture de la page. Supprimez d’anciennes conversations pour libérer de l’espace.",
     "Delete project “{{title}}”": "Supprimer le projet « {{title}} »",
-    "Confirm deleting “{{title}}”": "Confirmer la suppression de « {{title}} »"
+    "Confirm deleting “{{title}}”": "Confirmer la suppression de « {{title}} »",
+    "This browser could not save your latest changes, so they last only until you close the page. Delete old projects to free space.": "Le navigateur n’a pas pu enregistrer vos dernières modifications : elles disparaîtront à la fermeture de la page. Supprimez d’anciens projets pour libérer de l’espace.",
+    "Browser storage is full, so the picture was not added. Delete old projects to free space.": "Le stockage du navigateur est plein : l’image n’a pas été ajoutée. Supprimez d’anciens projets pour libérer de l’espace.",
+    "Some files were skipped: this page takes PNG, JPEG, WebP, GIF, BMP, AVIF and HEIC pictures.": "Certains fichiers ont été ignorés : cette page accepte les images PNG, JPEG, WebP, GIF, BMP, AVIF et HEIC.",
+    "Browser storage is full, so the skill was not saved. Delete skills you no longer use, then try again.": "Le stockage du navigateur est plein : la compétence n’a pas été enregistrée. Supprimez les compétences inutiles, puis réessayez."
   }
 }
