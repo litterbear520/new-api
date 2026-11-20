@@ -267,7 +267,9 @@ export function Composer(props: { room: DrawRoom }) {
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    const typing = e.nativeEvent.isComposing
+    // Safari sends the Enter that picks an IME candidate after composition
+    // ends; keyCode 229 still marks it.
+    const typing = e.nativeEvent.isComposing || e.keyCode === 229
     if (e.key === 'Tab' && !e.shiftKey && !typing && example && !draft.text) {
       e.preventDefault()
       const opts = suggestionOptions(example)
