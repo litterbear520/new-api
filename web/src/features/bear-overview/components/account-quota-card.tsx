@@ -409,6 +409,9 @@ export function AccountQuotaCard(props: {
 
       {resets && <ResetExpiry resets={resets} now={now} locale={locale} />}
 
+      {/* Takes the spare height when a taller card sits beside this one */}
+      <div className='bo-qx-fill' aria-hidden='true' />
+
       <div className={cn('bo-qx-foot', props.quota.stale && 'bo-qx-old')}>
         <span>
           {props.quota.fetchedAt !== null &&

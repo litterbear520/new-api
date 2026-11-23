@@ -1234,6 +1234,23 @@ For commercial licensing, please contact support@quantumnous.com
 .dark .bo-qx {
   --bo-qx-warn-ink: #f2b65c;
 }
+/* Two accounts sit side by side; below about 900px they stack */
+.bo-qx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: var(--bo-gap);
+  margin-bottom: var(--bo-gap);
+}
+.bo-qx-grid > .bo-qx {
+  display: flex;
+  flex-direction: column;
+  /* The old two-column rule below gives .bo-qx grid-area: qx; here it would stack both cards in one cell */
+  grid-area: auto;
+  margin-bottom: 0;
+}
+.bo-qx-fill {
+  flex: 1;
+}
 .bo-qx-h {
   display: flex;
   align-items: center;

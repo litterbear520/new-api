@@ -243,20 +243,25 @@ export function BearOverview() {
 
           {stats}
 
-          {accountQuota.data?.map((quota) => (
-            <AccountQuotaCard
-              key={quota.provider}
-              quota={quota}
-              refreshing={refreshQuota.isPending}
-              onRefresh={() =>
-                refreshQuota.mutate(undefined, {
-                  onError: () =>
-                    toast.error(t("Can't read the quota right now.")),
-                })
-              }
-              onReset={(id) => resetQuota.mutateAsync(id)}
-            />
-          ))}
+          {accountQuota.data?.length ? (
+            // Side by side when there is room; one account fills the row.
+            <div className='bo-qx-grid'>
+              {accountQuota.data.map((quota) => (
+                <AccountQuotaCard
+                  key={quota.provider}
+                  quota={quota}
+                  refreshing={refreshQuota.isPending}
+                  onRefresh={() =>
+                    refreshQuota.mutate(undefined, {
+                      onError: () =>
+                        toast.error(t("Can't read the quota right now.")),
+                    })
+                  }
+                  onReset={(id) => resetQuota.mutateAsync(id)}
+                />
+              ))}
+            </div>
+          ) : null}
 
           {kind === 'new' ? (
             <EmptyUsage
