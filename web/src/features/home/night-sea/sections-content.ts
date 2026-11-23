@@ -312,7 +312,6 @@ export const MODEL_LOGOS: Logo[] = [
   { icon: 'Gemini', name: 'Gemini', vendor: 'Google' },
   { icon: 'DeepSeek', name: 'DeepSeek', vendor: 'DeepSeek' },
   { icon: 'Qwen', name: 'Qwen', vendor: '阿里巴巴' },
-  { icon: 'Kimi', name: 'Kimi', vendor: 'Moonshot' },
   { icon: 'Zhipu', name: 'GLM', vendor: '智谱' },
   { icon: 'Minimax', name: 'MiniMax', vendor: 'MiniMax' },
 ]
@@ -435,7 +434,7 @@ export function faqs(deal: Deal | null): Faq[] {
     },
     {
       q: '支持 Claude、Gemini 和国产模型吗？',
-      a: '支持。Claude、GPT、Gemini、DeepSeek、Qwen、Kimi、GLM、MiniMax 用同一个密钥，都能用 OpenAI 格式调用。Claude 和 Gemini 也能用自己的格式，国产几家也能用 Claude 格式。',
+      a: '支持。Claude、GPT、Gemini、DeepSeek、Qwen、GLM、MiniMax 用同一个密钥，都能用 OpenAI 格式调用。Claude 和 Gemini 也能用自己的格式，国产几家也能用 Claude 格式。',
       href: '/pricing',
       link: '看看有哪些模型',
     },

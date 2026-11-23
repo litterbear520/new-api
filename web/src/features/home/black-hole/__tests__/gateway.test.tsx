@@ -59,7 +59,7 @@ afterEach(() => {
 })
 
 describe('the gateway', () => {
-  it('lists the eight model makers we sell, each opening the model square on its vendor', () => {
+  it('lists the seven model makers we sell, each opening the model square on its vendor', () => {
     render(<Gateway />)
 
     const links = within(
@@ -71,7 +71,6 @@ describe('the gateway', () => {
       ['Gemini', '/pricing?vendor=Google'],
       ['DeepSeek', '/pricing?vendor=DeepSeek'],
       ['Qwen', '/pricing?vendor=阿里巴巴'],
-      ['Kimi', '/pricing?vendor=Moonshot'],
       ['GLM', '/pricing?vendor=智谱'],
       ['MiniMax', '/pricing?vendor=MiniMax'],
     ]
@@ -217,7 +216,7 @@ describe('the routes', () => {
       'OpenCode',
     ]
     expect(linkedTo('Claude')).toEqual(new Set(['Claude', ...claudeTools]))
-    for (const maker of ['DeepSeek', 'Qwen', 'Kimi', 'GLM', 'MiniMax']) {
+    for (const maker of ['DeepSeek', 'Qwen', 'GLM', 'MiniMax']) {
       expect(linkedTo(maker)).toEqual(new Set([maker, ...claudeTools]))
     }
     expect(linkedTo('OpenCode')).toEqual(
@@ -227,7 +226,6 @@ describe('the routes', () => {
         'OpenAI',
         'DeepSeek',
         'Qwen',
-        'Kimi',
         'GLM',
         'MiniMax',
       ])
@@ -253,7 +251,7 @@ describe('the requests in flight', () => {
     expect([...seen.keys()].sort()).toEqual([...MODELS].sort())
     const share = (m: string) => (seen.get(m) ?? 0) / (997 * 7)
     for (const big of ['Claude', 'OpenAI', 'Gemini']) {
-      for (const other of ['DeepSeek', 'Qwen', 'Kimi', 'GLM', 'MiniMax']) {
+      for (const other of ['DeepSeek', 'Qwen', 'GLM', 'MiniMax']) {
         expect(share(big)).toBeGreaterThan(share(other))
       }
     }
@@ -266,9 +264,9 @@ describe('the requests in flight', () => {
     const rand = evenly(101)
     for (let i = 0; i < 300; i++) {
       expect(pickRequest('Codex', rand)).toEqual(['OpenAI', 'Codex'])
-      const [model, tool] = pickRequest('Kimi', rand) ?? []
-      expect(model).toBe('Kimi')
-      expect(linkedTo('Kimi')).toContain(tool)
+      const [model, tool] = pickRequest('MiniMax', rand) ?? []
+      expect(model).toBe('MiniMax')
+      expect(linkedTo('MiniMax')).toContain(tool)
     }
   })
 
@@ -278,7 +276,7 @@ describe('the requests in flight', () => {
     expect(requestFormat('OpenAI', 'Codex')).toBe('Responses')
     expect(requestFormat('Gemini', 'Gemini CLI')).toBe('generateContent')
     expect(requestFormat('OpenAI', 'Pi')).toBe('Responses')
-    expect(requestFormat('Kimi', 'Pi')).toBe('Messages')
+    expect(requestFormat('MiniMax', 'Pi')).toBe('Messages')
     expect(requestFormat('OpenAI', 'OpenCode')).toBe('Responses')
     expect(requestFormat('Qwen', 'OpenCode')).toBe('Messages')
     expect(requestFormat('Claude', 'Cline')).toBe('Chat Completions')

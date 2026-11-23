@@ -29,7 +29,6 @@ export const MODELS = [
   'Gemini',
   'DeepSeek',
   'Qwen',
-  'Kimi',
   'GLM',
   'MiniMax',
 ] as const
@@ -40,7 +39,6 @@ const CLAUDE_FORMAT_MAKERS: readonly Model[] = [
   'Claude',
   'DeepSeek',
   'Qwen',
-  'Kimi',
   'GLM',
   'MiniMax',
 ]
@@ -62,7 +60,6 @@ export const TINT: Record<Model, readonly [number, number, number]> = {
   Gemini: [157, 190, 240],
   DeepSeek: [132, 150, 250],
   Qwen: [184, 168, 250],
-  Kimi: [146, 214, 236],
   GLM: [150, 222, 188],
   MiniMax: [244, 154, 172],
 }
@@ -73,7 +70,6 @@ const WEIGHT: Record<Model, number> = {
   Gemini: 2,
   DeepSeek: 1,
   Qwen: 1,
-  Kimi: 1,
   GLM: 1,
   MiniMax: 1,
 }
