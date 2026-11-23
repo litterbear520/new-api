@@ -22,7 +22,9 @@ import {
   gmtLabel,
   newRequestId,
   parseAccountQuota,
+  parseAccountQuotas,
   parseResetReply,
+  poolName,
   quotaLevel,
   resetExpiry,
   resetParts,
@@ -56,6 +58,7 @@ describe('parseAccountQuota', () => {
         { id: 'five_hour', left: 34, resetAt: 1793032259 },
         { id: 'weekly', left: 83.6, resetAt: null },
       ],
+      pools: [],
       resets: null,
       fetchedAt: 1793014259,
       nextRefreshAt: 1793014559,
@@ -70,6 +73,7 @@ describe('parseAccountQuota', () => {
       parseAccountQuota({ account: { ...reply.account, provider: value } })
         ?.provider
     expect(provider('claude')).toBe('claude')
+    expect(provider('antigravity')).toBe('antigravity')
     expect(provider('codex')).toBe('codex')
     expect(provider('other')).toBe('codex')
     expect(provider(undefined)).toBe('codex')
@@ -271,5 +275,100 @@ describe('reset cards', () => {
       / · in 4 hours$/
     )
     expect(resetExpiry(at(now) + 20, now, 'en')).toMatch(/ · in 1 minute$/)
+  })
+})
+
+const google = {
+  group: 'team_a',
+  provider: 'antigravity',
+  plan: 'google_pro',
+  windows: [],
+  pools: [
+    {
+      id: 'gemini',
+      name: 'Gemini Models',
+      windows: [
+        { id: 'five_hour', used_percent: 41.19, reset_at: 1795416143 },
+        { id: 'daily', used_percent: 10, reset_at: null },
+      ],
+    },
+    { id: 'empty', name: 'Nothing', windows: [] },
+    { name: 'No id', windows: [{ id: 'weekly', used_percent: 1 }] },
+    {
+      id: '3p',
+      name: 'Claude and GPT models',
+      windows: [{ id: 'weekly', used_percent: 0, reset_at: 1796019110 }],
+    },
+  ],
+  fetched_at: 1793014259,
+  next_refresh_at: 1793014559,
+  stale: false,
+  error: null,
+}
+
+describe('a group with several accounts', () => {
+  it('reads every account in order', () => {
+    const list = parseAccountQuotas({
+      account: reply.account,
+      accounts: [reply.account, google, { group: '' }, null],
+    })
+    expect(list.map((a) => a.provider)).toEqual(['codex', 'antigravity'])
+  })
+
+  it('reads an older reply that has only one account', () => {
+    expect(parseAccountQuotas(reply)).toEqual([parseAccountQuota(reply)])
+    expect(parseAccountQuotas({ account: null })).toEqual([])
+    expect(parseAccountQuotas(null)).toEqual([])
+  })
+
+  it('keeps the pools that have an id and a known window', () => {
+    const a = parseAccountQuotas({ accounts: [google] })[0]
+    expect(a.pools).toEqual([
+      {
+        id: 'gemini',
+        name: 'Gemini Models',
+        windows: [{ id: 'five_hour', left: 58.81, resetAt: 1795416143 }],
+      },
+      {
+        id: '3p',
+        name: 'Claude and GPT models',
+        windows: [{ id: 'weekly', left: 100, resetAt: 1796019110 }],
+      },
+    ])
+    expect([a.never, a.error]).toEqual([false, false])
+  })
+
+  it('no pools and no windows is "never read" or an error, as before', () => {
+    const bare = { ...google, pools: [], fetched_at: null }
+    expect(parseAccountQuotas({ accounts: [bare] })[0].never).toBe(true)
+    const failed = { ...bare, error: 'unavailable' }
+    expect(parseAccountQuotas({ accounts: [failed] })[0].error).toBe(true)
+  })
+
+  it("names Google pools briefly and falls back to Google's name", () => {
+    expect(poolName({ id: 'gemini', name: 'Gemini Models', windows: [] })).toBe(
+      'Gemini'
+    )
+    expect(poolName({ id: '3p', name: 'x', windows: [] })).toBe(
+      'Claude / GPT-OSS'
+    )
+    expect(poolName({ id: 'gemini-argon-wtu', name: 'x', windows: [] })).toBe(
+      'Gemini 4 Argon'
+    )
+    expect(poolName({ id: 'new', name: 'New Pool', windows: [] })).toBe(
+      'New Pool'
+    )
+    expect(poolName({ id: 'new', name: '', windows: [] })).toBe('new')
+  })
+
+  it('Google plans get a nameplate', () => {
+    expect(subscription('antigravity', 'google_pro')).toEqual({
+      brand: 'Google AI',
+      icon: 'Gemini.Color',
+      plan: 'Pro',
+      tier: 'gold',
+    })
+    expect(subscription('antigravity', 'google_ultra').tier).toBe('diamond')
+    expect(subscription('antigravity', null).plan).toBeNull()
   })
 })

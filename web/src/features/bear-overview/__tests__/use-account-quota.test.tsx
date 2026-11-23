@@ -96,7 +96,25 @@ describe('reading the quota', () => {
     })
     expect(
       client.getQueryData(['bear-overview', 'account-quota', 'team_a'])
-    ).toMatchObject({ group: 'team_a', windows: [{ left: 100 }] })
+    ).toMatchObject([{ group: 'team_a', windows: [{ left: 100 }] }])
+  })
+
+  it('reads every account of the group', async () => {
+    get.mockResolvedValue({
+      data: {
+        account,
+        accounts: [account, { ...account, provider: 'antigravity' }],
+      },
+    })
+    const client = new QueryClient()
+    const { result } = renderHook(() => useAccountQuota('team_a'), {
+      wrapper: wrapperFor(client),
+    })
+    await waitFor(() => expect(result.current.data).toBeTruthy())
+    expect(result.current.data?.map((a) => a.provider)).toEqual([
+      'codex',
+      'antigravity',
+    ])
   })
 })
 
@@ -114,7 +132,23 @@ describe('useResetAccountQuota', () => {
     )
     expect(
       client.getQueryData(['bear-overview', 'account-quota', 'team_a'])
-    ).toMatchObject({ group: 'team_a', windows: [{ left: 100 }] })
+    ).toMatchObject([{ group: 'team_a', windows: [{ left: 100 }] }])
+  })
+
+  it('replaces only the account the reset acted on', async () => {
+    const { client, reset } = setup()
+    const key = ['bear-overview', 'account-quota', 'team_a']
+    const google = { provider: 'antigravity', windows: [] }
+    client.setQueryData(key, [
+      { provider: 'codex', windows: [{ left: 5 }] },
+      google,
+    ])
+    post.mockResolvedValue({ data: { result: 'reset', account } })
+    await reset('id-12345678')
+    const after = client.getQueryData<{ provider: string }[]>(key)
+    expect(after?.map((a) => a.provider)).toEqual(['codex', 'antigravity'])
+    expect(after?.[0]).toMatchObject({ windows: [{ left: 100 }] })
+    expect(after?.[1]).toBe(google)
   })
 
   it('tells "nothing was spent" from "may have reached OpenAI"', async () => {

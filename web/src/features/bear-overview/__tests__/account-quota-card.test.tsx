@@ -38,6 +38,7 @@ function quota(over: Partial<AccountQuota> = {}): AccountQuota {
       { id: 'five_hour', left: 34, resetAt: S + 3600 },
       { id: 'weekly', left: 65, resetAt: S + 6 * 86400 },
     ],
+    pools: [],
     fetchedAt: S - 120,
     nextRefreshAt: S - 1,
     resets: null,
@@ -378,5 +379,97 @@ describe('AccountQuotaCard', () => {
       'OpenAI says no reset is needed right now.'
     )
     expect(screen.queryByText('Reset quota?')).toBeNull()
+  })
+})
+
+describe('a Google AI account', () => {
+  afterEach(cleanup)
+
+  const google = (over: Partial<AccountQuota> = {}) =>
+    quota({
+      provider: 'antigravity',
+      plan: 'google_pro',
+      windows: [],
+      pools: [
+        {
+          id: 'gemini',
+          name: 'Gemini Models',
+          windows: [
+            { id: 'five_hour', left: 59, resetAt: S + 3600 },
+            { id: 'weekly', left: 67, resetAt: S + 5 * 86400 },
+          ],
+        },
+        {
+          id: '3p',
+          name: 'Claude and GPT models',
+          windows: [{ id: 'five_hour', left: 100, resetAt: S + 3600 }],
+        },
+        {
+          id: 'something-new',
+          name: 'Something New',
+          windows: [{ id: 'weekly', left: 80, resetAt: null }],
+        },
+      ],
+      ...over,
+    })
+
+  it('shows each pool under its own name', () => {
+    renderCard(google())
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
+      'Google AI Pro'
+    )
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    ).toEqual(['Gemini', 'Claude / GPT-OSS', 'Something New'])
+    expect(
+      screen.getAllByRole('meter').map((m) => m.getAttribute('aria-label'))
+    ).toEqual([
+      'Gemini 5-hour limit',
+      'Gemini 7-day limit',
+      'Claude / GPT-OSS 5-hour limit',
+      'Something New 7-day limit',
+    ])
+    expect(screen.queryByText('Manual reset expiry (GMT+8)')).toBeNull()
+  })
+
+  it('a used-up pool marks its row but not the whole group', () => {
+    renderCard(
+      google({
+        pools: [
+          {
+            id: 'gemini',
+            name: '',
+            windows: [{ id: 'weekly', left: 0, resetAt: S + 3600 }],
+          },
+        ],
+      })
+    )
+    expect(screen.getByText('Used up')).toBeTruthy()
+    expect(
+      screen.queryByText(/Until it resets, keys in the team_a group/)
+    ).toBeNull()
+  })
+
+  it('two cards on one page keep their own titles', () => {
+    render(
+      <>
+        <AccountQuotaCard
+          quota={quota()}
+          refreshing={false}
+          onRefresh={vi.fn()}
+          now={NOW}
+        />
+        <AccountQuotaCard
+          quota={google()}
+          refreshing={false}
+          onRefresh={vi.fn()}
+          now={NOW}
+        />
+      </>
+    )
+    const names = screen
+      .getAllByRole('region')
+      .map((r) => r.getAttribute('aria-labelledby'))
+    expect(new Set(names).size).toBe(2)
   })
 })

@@ -36,6 +36,7 @@ import {
   hasReset,
   liveResets,
   newRequestId,
+  poolName,
   quotaLevel,
   resetExpiry,
   resetParts,
@@ -43,6 +44,7 @@ import {
   subscription,
   type AccountQuota,
   type PlanTier,
+  type QuotaWindow,
   type QuotaWindowId,
   type ResetCards,
   type ResetResult,
@@ -90,6 +92,59 @@ function quotaValue(
   if (reset) return t('Has reset')
   if (left <= 0) return t('Used up')
   return t('{{percent}} left', { percent: percent.format(left / 100) })
+}
+
+/** One limit: what is left, and when it resets */
+function WindowRow(props: {
+  window: QuotaWindow
+  /** The pool's name on a Google account, so screen readers tell rows apart */
+  pool?: string
+  now: Date
+  locale: Intl.LocalesArgument
+  percent: Intl.NumberFormat
+}) {
+  const { t } = useTranslation()
+  const w = props.window
+  const label = windowLabel(t, w.id)
+  const reset = hasReset(w, Math.floor(props.now.getTime() / 1000))
+  const left = reset ? 100 : Math.round(w.left)
+  const level = quotaLevel(left)
+  const when = w.resetAt ? resetParts(w.resetAt, props.now, props.locale) : null
+  return (
+    <div className='bo-qx-row'>
+      <div className='bo-qx-top'>
+        <span className='bo-qx-label'>{label}</span>
+        <span className='bo-qx-val'>
+          <b className={`bo-qx-${level}-t`}>
+            {quotaValue(t, reset, left, props.percent)}
+          </b>
+          {reset && (
+            <span className='bo-qx-when'>
+              {t('Select Refresh quota for the latest')}
+            </span>
+          )}
+          {when && !reset && (
+            <span className='bo-qx-when'>
+              {when.date} ·{' '}
+              <span className={cn(when.soon && 'bo-qx-soon')}>
+                {when.until}
+              </span>
+            </span>
+          )}
+        </span>
+      </div>
+      <div
+        className={cn('bo-bar', BAR_CLASS[level])}
+        role='meter'
+        aria-label={props.pool ? `${props.pool} ${label}` : label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={left}
+      >
+        <i style={{ width: `${left}%` }} />
+      </div>
+    </div>
+  )
 }
 
 /** The plan on a plate of its tier's material; plan names stay untranslated */
@@ -256,6 +311,8 @@ export function AccountQuotaCard(props: {
   const sub = subscription(props.quota.provider, props.quota.plan)
   // The numbers can be old: nothing refreshes by itself, so a limit may have
   // reset, and a manual reset expired, since the last reading.
+  // Only a whole-account limit stops the group's keys: a used-up Google pool
+  // leaves its other pools working, and its own row already says 已用完.
   const usedUp = props.quota.windows.some(
     (w) => w.left <= 0 && !hasReset(w, nowSeconds)
   )
@@ -263,6 +320,8 @@ export function AccountQuotaCard(props: {
   const resets = !props.quota.error && live?.available ? live : null
   const waiting = nowSeconds < props.quota.nextRefreshAt
   const waitId = useId()
+  const titleId = useId()
+  const logoSize = props.quota.provider === 'codex' ? 34 : 24
   // Re-render during the refresh wait: the minutes count down, then the button
   // comes back by itself.
   const [, setWoken] = useState(0)
@@ -275,20 +334,21 @@ export function AccountQuotaCard(props: {
   return (
     <section
       className={cn('bo-card bo-qx', `bo-qx-tier-${sub.tier}`)}
-      aria-labelledby='bo-qx-title'
+      aria-labelledby={titleId}
     >
       <div className='bo-qx-h'>
         <div
           className={cn(
             'bo-qx-logo',
-            props.quota.provider === 'claude' && 'bo-qx-logo-claude'
+            props.quota.provider === 'claude' && 'bo-qx-logo-claude',
+            props.quota.provider === 'antigravity' && 'bo-qx-logo-google'
           )}
           aria-hidden='true'
         >
-          {getLobeIcon(sub.icon, props.quota.provider === 'claude' ? 24 : 34)}
+          {getLobeIcon(sub.icon, logoSize)}
         </div>
         <div className='bo-qx-who'>
-          <h2 id='bo-qx-title'>
+          <h2 id={titleId}>
             {sub.brand}
             {sub.plan && ' '}
             {sub.plan && <Nameplate plan={sub.plan} tier={sub.tier} />}
@@ -310,48 +370,32 @@ export function AccountQuotaCard(props: {
       {props.quota.error ? (
         <p className='bo-qx-empty'>{t("Can't read the quota right now.")}</p>
       ) : (
-        props.quota.windows.map((w) => {
-          const label = windowLabel(t, w.id)
-          const reset = hasReset(w, nowSeconds)
-          const left = reset ? 100 : Math.round(w.left)
-          const level = quotaLevel(left)
-          const when = w.resetAt ? resetParts(w.resetAt, now, locale) : null
-          return (
-            <div key={w.id} className='bo-qx-row'>
-              <div className='bo-qx-top'>
-                <span className='bo-qx-label'>{label}</span>
-                <span className='bo-qx-val'>
-                  <b className={`bo-qx-${level}-t`}>
-                    {quotaValue(t, reset, left, percent)}
-                  </b>
-                  {reset && (
-                    <span className='bo-qx-when'>
-                      {t('Select Refresh quota for the latest')}
-                    </span>
-                  )}
-                  {when && !reset && (
-                    <span className='bo-qx-when'>
-                      {when.date} ·{' '}
-                      <span className={cn(when.soon && 'bo-qx-soon')}>
-                        {when.until}
-                      </span>
-                    </span>
-                  )}
-                </span>
-              </div>
-              <div
-                className={cn('bo-bar', BAR_CLASS[level])}
-                role='meter'
-                aria-label={label}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={left}
-              >
-                <i style={{ width: `${left}%` }} />
-              </div>
+        <>
+          {props.quota.windows.map((w) => (
+            <WindowRow
+              key={w.id}
+              window={w}
+              now={now}
+              locale={locale}
+              percent={percent}
+            />
+          ))}
+          {props.quota.pools.map((pool) => (
+            <div key={pool.id} className='bo-qx-pool'>
+              <h3 className='bo-qx-pool-h'>{poolName(pool)}</h3>
+              {pool.windows.map((w) => (
+                <WindowRow
+                  key={w.id}
+                  window={w}
+                  pool={poolName(pool)}
+                  now={now}
+                  locale={locale}
+                  percent={percent}
+                />
+              ))}
             </div>
-          )
-        })
+          ))}
+        </>
       )}
 
       {usedUp && (

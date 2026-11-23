@@ -243,9 +243,10 @@ export function BearOverview() {
 
           {stats}
 
-          {accountQuota.data && (
+          {accountQuota.data?.map((quota) => (
             <AccountQuotaCard
-              quota={accountQuota.data}
+              key={quota.provider}
+              quota={quota}
               refreshing={refreshQuota.isPending}
               onRefresh={() =>
                 refreshQuota.mutate(undefined, {
@@ -255,7 +256,7 @@ export function BearOverview() {
               }
               onReset={(id) => resetQuota.mutateAsync(id)}
             />
-          )}
+          ))}
 
           {kind === 'new' ? (
             <EmptyUsage

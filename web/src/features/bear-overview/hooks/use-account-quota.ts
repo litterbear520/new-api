@@ -24,8 +24,9 @@ import {
   ACCOUNT_QUOTA_REFRESH_URL,
   ACCOUNT_QUOTA_RESET_URL,
   ACCOUNT_QUOTA_URL,
-  parseAccountQuota,
+  parseAccountQuotas,
   parseResetReply,
+  type AccountQuota,
   type ResetResult,
 } from '../lib/account-quota'
 import { overviewKeys } from './use-overview-data'
@@ -34,7 +35,8 @@ const quotaKey = (group: string | undefined) =>
   [...overviewKeys.all, 'account-quota', group] as const
 
 /**
- * 专属号额度 for a user in their own group; default-group users never ask.
+ * 专属号额度 for a user in their own group, one entry per account in it;
+ * default-group users never ask.
  * This is the last reading: it never reaches the upstream, only
  * useRefreshAccountQuota does. A refused token here must not sign anyone out,
  * so it skips the auth refresh and the error toast and simply shows nothing.
@@ -47,7 +49,7 @@ export function useAccountQuota(group: string | undefined) {
         skipErrorHandler: true,
         skipAuthRefresh: true,
       })
-      return parseAccountQuota(res.data)
+      return parseAccountQuotas(res.data)
     },
     enabled: Boolean(group) && group !== 'default',
     staleTime: 60 * 1000,
@@ -64,9 +66,9 @@ export function useRefreshAccountQuota(group: string | undefined) {
         skipErrorHandler: true,
         skipAuthRefresh: true,
       })
-      return parseAccountQuota(res.data)
+      return parseAccountQuotas(res.data)
     },
-    onSuccess: (quota) => queryClient.setQueryData(quotaKey(group), quota),
+    onSuccess: (quotas) => queryClient.setQueryData(quotaKey(group), quotas),
   })
 }
 
@@ -94,7 +96,17 @@ export function useResetAccountQuota(group: string | undefined) {
         const before = status === 502 || (status !== undefined && status < 500)
         return before ? 'unavailable' : 'unknown'
       }
-      if (reply.quota) queryClient.setQueryData(quotaKey(group), reply.quota)
+      const after = reply.quota
+      if (after) {
+        // The reply holds only the account the reset acted on.
+        queryClient.setQueryData<AccountQuota[]>(quotaKey(group), (old) => {
+          if (!old) return [after]
+          if (!old.some((a) => a.provider === after.provider)) {
+            return [...old, after]
+          }
+          return old.map((a) => (a.provider === after.provider ? after : a))
+        })
+      }
       return reply.result
     },
   })

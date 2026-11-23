@@ -1252,6 +1252,9 @@ For commercial licensing, please contact support@quantumnous.com
 .bo-qx-logo-claude {
   background: color-mix(in oklab, #d97757 15%, transparent);
 }
+.bo-qx-logo-google {
+  background: color-mix(in oklab, #4285f4 13%, transparent);
+}
 .bo-qx-who {
   min-width: 0;
 }
@@ -1413,6 +1416,15 @@ For commercial licensing, please contact support@quantumnous.com
 }
 .bo-qx-row + .bo-qx-row {
   margin-top: 14px;
+}
+.bo-qx-pool + .bo-qx-pool {
+  margin-top: 18px;
+}
+.bo-qx-pool-h {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bo-ink2);
 }
 .bo-qx-top {
   display: flex;

@@ -87,13 +87,34 @@ export function liveResets(
   }
 }
 
-export type AccountProvider = 'codex' | 'claude'
+export type AccountProvider = 'codex' | 'claude' | 'antigravity'
+
+/** One of a Google account's separate quotas, such as its Gemini models */
+export type QuotaPool = {
+  id: string
+  /** Google's own name for it, shown when the id is not known */
+  name: string
+  windows: QuotaWindow[]
+}
+
+/** Short names for Google's quota pools; product names stay untranslated */
+const POOL_NAMES: Record<string, string> = {
+  gemini: 'Gemini',
+  '3p': 'Claude / GPT-OSS',
+  'gemini-argon-wtu': 'Gemini 4 Argon',
+}
+
+export function poolName(pool: QuotaPool): string {
+  return POOL_NAMES[pool.id] ?? (pool.name || pool.id)
+}
 
 export type AccountQuota = {
   group: string
   provider: AccountProvider
   plan: string | null
   windows: QuotaWindow[]
+  /** Google accounts only: their windows, per quota pool */
+  pools: QuotaPool[]
   /** null when OpenAI sent nothing about manual resets */
   resets: ResetCards | null
   fetchedAt: number | null
@@ -132,19 +153,9 @@ function parseResets(raw: unknown): ResetCards | null {
   }
 }
 
-/**
- * Reads /pay/quota leniently: no account, a malformed reply or an unknown
- * window means nothing to show for that part.
- */
-export function parseAccountQuota(raw: unknown): AccountQuota | null {
-  if (!raw || typeof raw !== 'object') return null
-  const account = (raw as { account?: unknown }).account
-  if (!account || typeof account !== 'object') return null
-  const a = account as Record<string, unknown>
-  if (typeof a.group !== 'string' || !a.group) return null
-
+function parseWindows(raw: unknown): QuotaWindow[] {
   const windows: QuotaWindow[] = []
-  for (const item of Array.isArray(a.windows) ? a.windows : []) {
+  for (const item of Array.isArray(raw) ? raw : []) {
     if (!item || typeof item !== 'object') continue
     const w = item as Record<string, unknown>
     const used = num(w.used_percent)
@@ -156,21 +167,80 @@ export function parseAccountQuota(raw: unknown): AccountQuota | null {
       resetAt: num(w.reset_at),
     })
   }
+  return windows
+}
+
+function parsePools(raw: unknown): QuotaPool[] {
+  const pools: QuotaPool[] = []
+  for (const item of Array.isArray(raw) ? raw : []) {
+    if (!item || typeof item !== 'object') continue
+    const p = item as Record<string, unknown>
+    const windows = parseWindows(p.windows)
+    if (typeof p.id !== 'string' || !p.id || windows.length === 0) continue
+    pools.push({
+      id: p.id,
+      name: typeof p.name === 'string' ? p.name : '',
+      windows,
+    })
+  }
+  return pools
+}
+
+const PROVIDERS: ReadonlySet<string> = new Set([
+  'codex',
+  'claude',
+  'antigravity',
+])
+
+function parseAccount(account: unknown): AccountQuota | null {
+  if (!account || typeof account !== 'object') return null
+  const a = account as Record<string, unknown>
+  if (typeof a.group !== 'string' || !a.group) return null
+
+  const windows = parseWindows(a.windows)
+  const pools = parsePools(a.pools)
+  const empty = windows.length === 0 && pools.length === 0
   const fetchedAt = num(a.fetched_at)
-  const never =
-    windows.length === 0 && fetchedAt === null && a.error !== 'unavailable'
+  const never = empty && fetchedAt === null && a.error !== 'unavailable'
   return {
     group: a.group,
-    provider: a.provider === 'claude' ? 'claude' : 'codex',
+    provider:
+      typeof a.provider === 'string' && PROVIDERS.has(a.provider)
+        ? (a.provider as AccountProvider)
+        : 'codex',
     plan: typeof a.plan === 'string' && a.plan ? a.plan : null,
     windows,
+    pools,
     resets: parseResets(a.resets),
     fetchedAt,
     nextRefreshAt: num(a.next_refresh_at) ?? 0,
     stale: a.stale === true,
     never,
-    error: windows.length === 0 && !never,
+    error: empty && !never,
   }
+}
+
+/**
+ * Reads one account of a /pay/quota reply leniently: no account, a malformed
+ * reply or an unknown window means nothing to show for that part.
+ */
+export function parseAccountQuota(raw: unknown): AccountQuota | null {
+  if (!raw || typeof raw !== 'object') return null
+  return parseAccount((raw as { account?: unknown }).account)
+}
+
+/**
+ * Every account of the user's group, in pay-bridge's order. Replies from
+ * before a group could hold several carry only `account`.
+ */
+export function parseAccountQuotas(raw: unknown): AccountQuota[] {
+  if (!raw || typeof raw !== 'object') return []
+  const list = (raw as { accounts?: unknown }).accounts
+  if (!Array.isArray(list)) {
+    const one = parseAccountQuota(raw)
+    return one ? [one] : []
+  }
+  return list.map(parseAccount).filter((a): a is AccountQuota => a !== null)
 }
 
 /** The nameplate's material. Plans of about the same price share one. */
@@ -200,11 +270,18 @@ const PLANS: Record<AccountProvider, Record<string, PlanName>> = {
     max_20x: { name: 'Max 20x', tier: 'diamond' },
     enterprise: { name: 'Enterprise', tier: 'diamond' },
   },
+  antigravity: {
+    free: { name: 'Free', tier: 'plain' },
+    google_pro: { name: 'Pro', tier: 'gold' },
+    google_ultra_lite: { name: 'Ultra Lite', tier: 'platinum' },
+    google_ultra: { name: 'Ultra', tier: 'diamond' },
+  },
 }
 
 const BRANDS = {
   codex: { brand: 'ChatGPT', icon: 'OpenAI' },
   claude: { brand: 'Claude', icon: 'Claude.Color' },
+  antigravity: { brand: 'Google AI', icon: 'Gemini.Color' },
 } as const
 
 /** What the card's header shows. An unknown plan type is shown as sent. */
