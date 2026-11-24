@@ -233,6 +233,37 @@ export function getResponseTimeColor(
   return getThroughputColor(completionTokens / seconds)
 }
 
+// Output speed needs at least this many output tokens and this long a
+// generation window. The backend stores use_time in whole seconds (the
+// fraction is cut off), so shorter requests give numbers that are mostly
+// rounding error.
+export const SPEED_MIN_OUTPUT_TOKENS = 100
+export const SPEED_MIN_GENERATION_SECONDS = 2
+
+/**
+ * Output speed of one streamed request in tokens per second:
+ * output tokens ÷ (duration − first token). Both times are measured on the
+ * server, so the result leaves out the client's own network time. Returns
+ * null for non-streamed requests, a missing first-token time, or a request
+ * too short to estimate.
+ */
+export function getOutputTokensPerSecond(
+  log: Pick<UsageLog, 'is_stream' | 'use_time' | 'completion_tokens'>,
+  frtMs: number | null | undefined
+): number | null {
+  if (!log.is_stream || frtMs == null || frtMs <= 0) return null
+  const outputTokens = log.completion_tokens || 0
+  if (outputTokens < SPEED_MIN_OUTPUT_TOKENS) return null
+  const generationSeconds = (log.use_time || 0) - frtMs / 1000
+  if (generationSeconds < SPEED_MIN_GENERATION_SECONDS) return null
+  return outputTokens / generationSeconds
+}
+
+/** `≈39 tok/s`: the ≈ marks the whole-second duration behind the number. */
+export function formatTokensPerSecond(tokensPerSecond: number): string {
+  return `≈${Math.round(tokensPerSecond)} tok/s`
+}
+
 /**
  * Format model name with mapping indicator
  */

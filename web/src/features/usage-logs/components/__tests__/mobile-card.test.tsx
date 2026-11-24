@@ -368,3 +368,26 @@ it.each([
     expect(screen.getByRole('button', { name: content })).toBeVisible()
   }
 )
+
+it.each([
+  [{}, true],
+  [{ speed: false }, false],
+])(
+  'shows the output speed only while the speed column is on (%j)',
+  (visibility, shown) => {
+    renderLogs({
+      visibility,
+      logs: [
+        {
+          ...log,
+          is_stream: true,
+          use_time: 12,
+          completion_tokens: 1000,
+          other: JSON.stringify({ frt: 2000 }),
+        },
+      ],
+    })
+
+    expect(Boolean(screen.queryByText('≈100 tok/s'))).toBe(shown)
+  }
+)

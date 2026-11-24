@@ -8592,6 +8592,9 @@
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Dự án này đã được thay đổi ở một tab khác nên đã được tải lại. Thay đổi vừa rồi của bạn chưa được lưu.",
     "This project was deleted in another tab.": "Dự án này đã bị xóa ở một tab khác.",
     "The pictures are ready": "Ảnh đã sẵn sàng",
-    "Save to Photos": "Lưu vào Ảnh"
+    "Save to Photos": "Lưu vào Ảnh",
+    "Speed": "Tốc độ",
+    "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Đo trên máy chủ: từ lúc nhận yêu cầu của bạn đến khi mô hình gửi về dữ liệu luồng đầu tiên. Không tính thời gian mạng của chính bạn.",
+    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Token đầu ra ÷ (thời lượng − token đầu), đo trên máy chủ. Thời lượng chỉ ghi theo giây chẵn nên đây là ước tính. Chỉ tính các yêu cầu dạng luồng có ít nhất 100 token đầu ra và ít nhất 2 giây sau token đầu."
   }
 }

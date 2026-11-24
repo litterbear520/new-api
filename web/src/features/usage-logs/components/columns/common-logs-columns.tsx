@@ -67,7 +67,9 @@ import type { UsageLog } from '../../data/schema'
 import {
   formatModelName,
   decodeBillingExprB64,
+  formatTokensPerSecond,
   getFirstResponseTimeColor,
+  getOutputTokensPerSecond,
   getResponseTimeColor,
   getTieredBillingSummary,
   hasAnyCacheTokens,
@@ -861,7 +863,39 @@ export function useCommonLogsColumns(
             </span>
           )
         },
+        meta: {
+          description: t(
+            'Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.'
+          ),
+        },
         size: 70,
+      },
+      {
+        id: 'speed',
+        header: t('Speed'),
+        accessorFn: (log) =>
+          getOutputTokensPerSecond(log, parseLogOther(log.other)?.frt),
+        cell: ({ row }) => {
+          const log = row.original
+          if (!isTimingLogType(log.type)) return null
+
+          const tokensPerSecond = getOutputTokensPerSecond(
+            log,
+            parseLogOther(log.other)?.frt
+          )
+          if (tokensPerSecond == null) return EMPTY_CELL
+          return (
+            <span className='tabular-nums'>
+              {formatTokensPerSecond(tokensPerSecond)}
+            </span>
+          )
+        },
+        meta: {
+          description: t(
+            'Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.'
+          ),
+        },
+        size: 80,
       },
       {
         accessorKey: 'use_time',
@@ -871,10 +905,6 @@ export function useCommonLogsColumns(
           if (!isTimingLogType(log.type)) return null
 
           const useTime = log.use_time || 0
-          const tokensPerSecond =
-            useTime > 0 && log.completion_tokens > 0
-              ? Math.round(log.completion_tokens / useTime)
-              : null
           const variant = getResponseTimeColor(useTime, log.completion_tokens)
           const streamStatus = parseLogOther(log.other)?.stream_status
           const streamFailed =
@@ -886,11 +916,6 @@ export function useCommonLogsColumns(
                 'inline-flex items-center gap-1 tabular-nums',
                 variant !== 'success' && textColorMap[variant]
               )}
-              title={
-                tokensPerSecond != null
-                  ? `${tokensPerSecond} tokens/s`
-                  : undefined
-              }
             >
               {formatUseTime(useTime)}
               {streamFailed && streamStatus && (

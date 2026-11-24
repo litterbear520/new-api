@@ -31,7 +31,9 @@ import type { LogOtherData } from '../../types'
 import { useCommonLogsColumns } from '../columns/common-logs-columns'
 import { UsageLogsProvider } from '../usage-logs-provider'
 
-function makeLog(other: LogOtherData, isStream = false) {
+type LogFields = { use_time?: number; completion_tokens?: number }
+
+function makeLog(other: LogOtherData, isStream = false, fields?: LogFields) {
   return usageLogSchema.parse({
     id: 1,
     user_id: 1,
@@ -45,6 +47,7 @@ function makeLog(other: LogOtherData, isStream = false) {
     use_time: 3,
     is_stream: isStream,
     other: JSON.stringify(other),
+    ...fields,
   })
 }
 
@@ -52,9 +55,10 @@ function Cell(props: {
   columnId: string
   other: LogOtherData
   stream?: boolean
+  fields?: LogFields
 }) {
   const table = useReactTable({
-    data: [makeLog(props.other, props.stream)],
+    data: [makeLog(props.other, props.stream, props.fields)],
     columns: useCommonLogsColumns(false, false),
     getCoreRowModel: getCoreRowModel(),
   })
@@ -74,14 +78,20 @@ function renderCell(
   columnId: string,
   other: LogOtherData,
   stream = false,
-  row: { onClick?: () => void; onKeyDown?: () => void } = {}
+  row: { onClick?: () => void; onKeyDown?: () => void } = {},
+  fields?: LogFields
 ) {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <UsageLogsProvider>
         {/* Stands in for the clickable table row. */}
         <div onClick={row.onClick} onKeyDown={row.onKeyDown}>
-          <Cell columnId={columnId} other={other} stream={stream} />
+          <Cell
+            columnId={columnId}
+            other={other}
+            stream={stream}
+            fields={fields}
+          />
         </div>
       </UsageLogsProvider>
     </QueryClientProvider>
@@ -102,6 +112,36 @@ it('shows the cache read and the write when both happened', () => {
   })
 
   expect(cell).toHaveTextContent(/^300\s*↑1,234$/)
+})
+
+it('shows the output speed after the first token', () => {
+  const cell = renderCell(
+    'speed',
+    { frt: 2000 },
+    true,
+    {},
+    {
+      use_time: 12,
+      completion_tokens: 1000,
+    }
+  )
+
+  expect(cell).toHaveTextContent(/^≈100 tok\/s$/)
+})
+
+it('shows no speed for a request too short to estimate', () => {
+  const cell = renderCell(
+    'speed',
+    { frt: 1500 },
+    true,
+    {},
+    {
+      use_time: 3,
+      completion_tokens: 1000,
+    }
+  )
+
+  expect(cell).toHaveTextContent(/^—$/)
 })
 
 it('explains a failed stream with its end reason and soft errors on hover', async () => {

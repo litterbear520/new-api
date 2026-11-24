@@ -16,11 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type Column } from '@tanstack/react-table'
+import type { Column } from '@tanstack/react-table'
 import {
   ArrowDown as ArrowDownIcon,
   ArrowUp as ArrowUpIcon,
   ChevronsUpDown as CaretSortIcon,
+  CircleHelp,
   EyeOff as EyeNoneIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -33,23 +34,63 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 type DataTableColumnHeaderProps<TData, TValue> =
   React.HTMLAttributes<HTMLDivElement> & {
     column: Column<TData, TValue>
     title: React.ReactNode
+    /** Shown in a tooltip behind a question mark after the title. */
+    description?: string
   }
+
+function ColumnHeaderHelp({ description }: { description: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type='button'
+            aria-label={description}
+            className='text-muted-foreground/70 hover:text-foreground focus-visible:ring-ring inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2'
+          />
+        }
+      >
+        <CircleHelp aria-hidden className='size-3.5' />
+      </TooltipTrigger>
+      <TooltipContent className='block max-w-64 text-left leading-relaxed font-normal whitespace-normal'>
+        {description}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 export function DataTableColumnHeader<TData, TValue>({
   column,
   title,
+  description,
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const { t } = useTranslation()
   if (!column.getCanSort()) {
-    return <div className={cn(className)}>{title}</div>
+    if (!description) return <div className={cn(className)}>{title}</div>
+    return (
+      <div className={cn('inline-flex items-center gap-1', className)}>
+        {title}
+        <ColumnHeaderHelp description={description} />
+      </div>
+    )
   }
+
+  const sorted = column.getIsSorted()
+  let SortIcon = CaretSortIcon
+  if (sorted === 'desc') SortIcon = ArrowDownIcon
+  else if (sorted === 'asc') SortIcon = ArrowUpIcon
 
   return (
     <div className={cn('flex items-center space-x-2', className)}>
@@ -64,13 +105,7 @@ export function DataTableColumnHeader<TData, TValue>({
           }
         >
           <span>{title}</span>
-          {column.getIsSorted() === 'desc' ? (
-            <ArrowDownIcon className='ms-2 h-4 w-4' />
-          ) : column.getIsSorted() === 'asc' ? (
-            <ArrowUpIcon className='ms-2 h-4 w-4' />
-          ) : (
-            <CaretSortIcon className='ms-2 h-4 w-4' />
-          )}
+          <SortIcon className='ms-2 h-4 w-4' />
         </DropdownMenuTrigger>
         <DropdownMenuContent align='start'>
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
@@ -92,6 +127,7 @@ export function DataTableColumnHeader<TData, TValue>({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      {description && <ColumnHeaderHelp description={description} />}
     </div>
   )
 }

@@ -70,6 +70,7 @@ const NUMERIC_COLUMNS = new Set([
   'cache_tokens',
   'quota',
   'frt',
+  'speed',
   'use_time',
 ])
 

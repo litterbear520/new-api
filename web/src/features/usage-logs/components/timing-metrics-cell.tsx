@@ -26,7 +26,11 @@ import {
 import { formatUseTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-import { getFirstResponseTimeColor, getResponseTimeColor } from '../lib/format'
+import {
+  formatTokensPerSecond,
+  getFirstResponseTimeColor,
+  getResponseTimeColor,
+} from '../lib/format'
 import type { LogOtherData } from '../types'
 import { StreamErrorAlert } from './stream-error-alert'
 
@@ -168,7 +172,7 @@ export function StreamTpsCell(props: StreamTpsCellProps) {
     props.isStream && props.streamStatus && props.streamStatus.status !== 'ok'
   const tpsLabel =
     props.tokensPerSecond != null
-      ? `${Math.round(props.tokensPerSecond)} t/s`
+      ? formatTokensPerSecond(props.tokensPerSecond)
       : '—'
   let streamLabel = props.isStream ? t('Stream') : t('Non-stream')
   if (props.isTask) {

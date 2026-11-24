@@ -8592,6 +8592,9 @@
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "這個專案在另一個分頁改過，已經重新整理成最新的內容。剛才的改動沒有儲存。",
     "This project was deleted in another tab.": "這個專案已經在另一個分頁刪除。",
     "The pictures are ready": "圖片準備好了",
-    "Save to Photos": "存到相簿"
+    "Save to Photos": "存到相簿",
+    "Speed": "速度",
+    "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "在伺服器上測量：從收到你的請求，到模型送回第一段串流資料。不含你自己的網路時間。",
+    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "輸出 token ÷（耗時 − 首字），在伺服器上測量。耗時只記到整秒，所以是估算值。只計算串流請求，且輸出不少於 100 token、首字之後至少 2 秒。"
   }
 }

@@ -8592,6 +8592,9 @@
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Этот проект изменили в другой вкладке, поэтому он обновлён. Последнее изменение не сохранено.",
     "This project was deleted in another tab.": "Этот проект удалили в другой вкладке.",
     "The pictures are ready": "Изображения готовы",
-    "Save to Photos": "Сохранить в Фото"
+    "Save to Photos": "Сохранить в Фото",
+    "Speed": "Скорость",
+    "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Измеряется на сервере: от получения вашего запроса до первых потоковых данных от модели. Ваше собственное сетевое время не учитывается.",
+    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Токены вывода ÷ (длительность − первый токен), измеряется на сервере. Длительность записывается в целых секундах, поэтому это оценка. Только потоковые запросы с не менее чем 100 токенами вывода и не менее 2 секунд после первого токена."
   }
 }

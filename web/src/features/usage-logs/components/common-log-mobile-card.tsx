@@ -35,7 +35,12 @@ import {
 } from '@/lib/format'
 
 import type { UsageLog } from '../data/schema'
-import { formatModelName, logTokenName, parseLogOther } from '../lib/format'
+import {
+  formatModelName,
+  getOutputTokensPerSecond,
+  logTokenName,
+  parseLogOther,
+} from '../lib/format'
 import {
   getLogTypeConfig,
   isDisplayableLogType,
@@ -202,8 +207,8 @@ export function CommonLogMobileCard<TData>(props: {
               isTask={other?.is_task === true}
               isSyncTask={other?.task_sync === true}
               tokensPerSecond={
-                log.use_time > 0 && log.completion_tokens > 0
-                  ? log.completion_tokens / log.use_time
+                props.cells.has('speed')
+                  ? getOutputTokensPerSecond(log, other?.frt)
                   : null
               }
               streamStatus={other?.stream_status}

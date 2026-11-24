@@ -8592,6 +8592,9 @@
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "Ce projet a été modifié dans un autre onglet et vient d’être rechargé. Votre dernière modification n’a pas été enregistrée.",
     "This project was deleted in another tab.": "Ce projet a été supprimé dans un autre onglet.",
     "The pictures are ready": "Les images sont prêtes",
-    "Save to Photos": "Enregistrer dans Photos"
+    "Save to Photos": "Enregistrer dans Photos",
+    "Speed": "Vitesse",
+    "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Mesuré sur le serveur : de la réception de votre requête aux premières données renvoyées en flux par le modèle. Votre propre temps réseau n’est pas inclus.",
+    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Tokens de sortie ÷ (durée − 1er token), mesuré sur le serveur. La durée est enregistrée en secondes entières : c’est donc une estimation. Uniquement les requêtes en flux avec au moins 100 tokens de sortie et au moins 2 secondes après le 1er token."
   }
 }

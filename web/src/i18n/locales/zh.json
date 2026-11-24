@@ -8592,6 +8592,9 @@
     "This project was changed in another tab and has been reloaded. Your last change was not saved.": "这个项目在另一个标签页改过，已经刷新成最新的内容。刚才的改动没有保存。",
     "This project was deleted in another tab.": "这个项目已经在另一个标签页删除。",
     "The pictures are ready": "图片准备好了",
-    "Save to Photos": "存到相册"
+    "Save to Photos": "存到相册",
+    "Speed": "速度",
+    "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "在服务器上测：从收到你的请求，到模型送回第一段流式数据。不含你自己的网络时间。",
+    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "输出 token ÷（耗时 − 首字），在服务器上测。耗时只记到整秒，所以是估算。只算流式请求，且输出不少于 100 token、首字之后至少 2 秒。"
   }
 }
