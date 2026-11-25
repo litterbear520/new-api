@@ -208,6 +208,8 @@ export type ActionSpec = {
   statuses?: NodeStatus[]
   /** Several pictures: only for exactly this many. */
   exactly?: number
+  /** Several pictures: only for this many or fewer, all of them finished. */
+  upTo?: number
 }
 
 export type MenuItem =

@@ -120,7 +120,7 @@ export function CanvasPane(props: {
   chatHidden: boolean
   canvasRef: (handle: CanvasHandle | null) => void
   onShowChat: () => void
-  onEdit: (nodeId: string) => void
+  onEdit: (nodeIds: string[]) => void
   onMarked: (nodeId: string, png: Blob, marks?: MarkInfo[]) => void
   onUpload: (files: File[]) => void
   onExport: (groupId: string) => void

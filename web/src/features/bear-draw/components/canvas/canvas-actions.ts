@@ -38,7 +38,7 @@ import { blocksDownloads, openSaveSheet } from './save-sheet-state'
 
 export type CanvasCallbacks = {
   /** 接着改: the page puts "@label" into the composer. */
-  onEdit: (nodeId: string) => void
+  onEdit: (nodeIds: string[]) => void
   /**
    * 完成圈选: the picture with the marks drawn on (PNG), and the
    * marks with their numbers and notes (for "① 换成红色").
@@ -198,7 +198,10 @@ export function runCanvasAction(
   const pid = x.project.id
   switch (id) {
     case 'edit':
-      if (p.node) x.cb.onEdit(p.node.id)
+      if (p.node) x.cb.onEdit([p.node.id])
+      return false
+    case 'cite':
+      x.cb.onEdit(p.nodes.filter((n) => n.status === 'ready').map((n) => n.id))
       return false
     case 'mark-done':
       if (p.node && p.png) {

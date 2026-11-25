@@ -8595,6 +8595,7 @@
     "Save to Photos": "Lưu vào Ảnh",
     "Speed": "Tốc độ",
     "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Đo trên máy chủ: từ lúc nhận yêu cầu của bạn đến khi mô hình gửi về dữ liệu luồng đầu tiên. Không tính thời gian mạng của chính bạn.",
-    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Token đầu ra ÷ (thời lượng − token đầu), đo trên máy chủ. Thời lượng chỉ ghi theo giây chẵn nên đây là ước tính. Chỉ tính các yêu cầu dạng luồng có ít nhất 100 token đầu ra và ít nhất 2 giây sau token đầu."
+    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Token đầu ra ÷ (thời lượng − token đầu), đo trên máy chủ. Thời lượng chỉ ghi theo giây chẵn nên đây là ước tính. Chỉ tính các yêu cầu dạng luồng có ít nhất 100 token đầu ra và ít nhất 2 giây sau token đầu.",
+    "Add to chat": "Thêm vào trò chuyện"
   }
 }

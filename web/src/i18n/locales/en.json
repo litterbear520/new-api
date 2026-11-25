@@ -8595,6 +8595,7 @@
     "Save to Photos": "Save to Photos",
     "Speed": "Speed",
     "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.",
-    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token."
+    "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.",
+    "Add to chat": "Add to chat"
   }
 }

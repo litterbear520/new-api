@@ -66,6 +66,8 @@ function multiActions(L: CanvasLabels): ActionSpec[] {
       primary: true,
       exactly: 2,
     },
+    // As many as one message takes (MAX_REFS).
+    { id: 'cite', label: L.cite, icon: ICONS.sparkles, upTo: 4 },
     { id: 'download', label: L.download, icon: ICONS.download },
     { id: 'delete', label: L.delete, icon: ICONS.trash },
   ]
@@ -92,6 +94,7 @@ export function toolbarList(c: Ctx, kind: SelectionKind): ActionSpec[] {
     return (c.o.multiActions ?? multiActions(c.L)).filter(
       (a) =>
         (!a.exactly || a.exactly === ids.length) &&
+        (!a.upTo || (ids.length <= a.upTo && allReady)) &&
         (a.id !== 'compare' || allReady)
     )
   }

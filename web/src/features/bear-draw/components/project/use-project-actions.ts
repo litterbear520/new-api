@@ -115,14 +115,18 @@ export function useProjectActions(o: Options) {
     [o.projectId, t]
   )
 
-  /** A canvas picture goes into the composer as an @ reference. */
+  /** Canvas pictures go into the composer as @ references. */
   const onEdit = useCallback(
-    (nodeId: string) => {
-      const node = findProject(o.projectId)?.nodes.find((n) => n.id === nodeId)
-      if (!node?.img) return
-      o.composerRef.current?.addRefs([
-        { ...node.img, nodeId: node.id, label: node.label },
-      ])
+    (nodeIds: string[]) => {
+      const nodes = findProject(o.projectId)?.nodes ?? []
+      const refs = nodeIds.flatMap((id) => {
+        const node = nodes.find((n) => n.id === id)
+        return node?.img
+          ? [{ ...node.img, nodeId: node.id, label: node.label }]
+          : []
+      })
+      if (!refs.length) return
+      o.composerRef.current?.addRefs(refs)
       showChat()
       o.composerRef.current?.focus()
     },

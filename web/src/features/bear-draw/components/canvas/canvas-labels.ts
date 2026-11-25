@@ -38,6 +38,7 @@ export function canvasLabels(t: TFunction): CanvasLabels {
     zoom: t('Zoom'),
     dropHint: t('Let go to put the pictures on the canvas'),
     edit: t('Keep editing'),
+    cite: t('Add to chat'),
     compare: t('Compare'),
     download: t('Download'),
     copyPrompt: t('Copy description'),

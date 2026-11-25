@@ -37,6 +37,7 @@ export type CanvasLabels = {
   zoom: string
   dropHint: string
   edit: string
+  cite: string
   compare: string
   download: string
   copyPrompt: string
@@ -111,6 +112,7 @@ export const DEFAULT_LABELS: CanvasLabels = {
   zoom: 'Zoom',
   dropHint: 'Let go to put the pictures on the canvas',
   edit: 'Keep editing',
+  cite: 'Add to chat',
   compare: 'Compare',
   download: 'Download',
   copyPrompt: 'Copy description',

@@ -116,7 +116,7 @@ describe('wide card: the project remembers chat, canvas or both', () => {
 
   test('editing a picture from canvas only brings the chat back with it in the box', () => {
     const a = actions(false, 'canvas')
-    act(() => a.act.current.onEdit('n1'))
+    act(() => a.act.current.onEdit(['n1']))
     expect(a.composer.addRefs).toHaveBeenCalledWith([
       expect.objectContaining({ id: 'i1', nodeId: 'n1', label: '首图' }),
     ])
@@ -126,7 +126,7 @@ describe('wide card: the project remembers chat, canvas or both', () => {
 
   test('editing from both sides leaves the layout as it is', () => {
     const a = actions(false, 'split')
-    act(() => a.act.current.onEdit('n1'))
+    act(() => a.act.current.onEdit(['n1']))
     expect(layout()).toBe('split')
   })
 })
@@ -148,7 +148,7 @@ describe('narrow card: the canvas is a sheet over the chat', () => {
 
   test('editing a picture closes the sheet so the box is in view', () => {
     const a = actions(true)
-    act(() => a.act.current.onEdit('n1'))
+    act(() => a.act.current.onEdit(['n1']))
     expect(a.setSheet).toHaveBeenLastCalledWith(false)
     expect(a.composer.addRefs).toHaveBeenCalled()
   })
