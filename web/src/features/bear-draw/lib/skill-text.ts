@@ -74,6 +74,8 @@ const LICENSES: Record<LicenseFile, Loader> = {
     import('../data/licenses/openai-skills-imagegen-APACHE-2.0.txt?raw'),
   'openai-cookbook-MIT.txt': () =>
     import('../data/licenses/openai-cookbook-MIT.txt?raw'),
+  'openai-codex-APACHE-2.0.txt': () =>
+    import('../data/licenses/openai-codex-APACHE-2.0.txt?raw'),
   'anthropics-skills-canvas-design-APACHE-2.0.txt': () =>
     import('../data/licenses/anthropics-skills-canvas-design-APACHE-2.0.txt?raw'),
   'anthropics-skills-theme-factory-APACHE-2.0.txt': () =>

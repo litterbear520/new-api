@@ -27,6 +27,7 @@ For commercial licensing, please contact support@quantumnous.com
 /** Licence texts in data/licenses/. */
 export const LICENSE_FILES = [
   'openai-skills-imagegen-APACHE-2.0.txt',
+  'openai-codex-APACHE-2.0.txt',
   'openai-cookbook-MIT.txt',
   'anthropics-skills-canvas-design-APACHE-2.0.txt',
   'anthropics-skills-theme-factory-APACHE-2.0.txt',
@@ -89,6 +90,21 @@ export const SKILL_CREDITS: SkillCredit[] = [
     changed:
       '不用 Codex 内置工具、CLI 和保存路径相关段落；原文的「no logos」改成允许用户自己的品牌；模型改成本站的三个 gpt-image 模型',
     licenseFiles: ['openai-skills-imagegen-APACHE-2.0.txt'],
+  },
+  {
+    repo: 'openai/codex',
+    url: 'https://github.com/openai/codex/tree/main/codex-rs/skills/src/assets/samples/imagegen',
+    stars: 136388,
+    license: 'Apache-2.0',
+    copyright: 'Apache-2.0，Copyright 2025 OpenAI，commit ebd0765',
+    files: [
+      'codex-rs/skills/src/assets/samples/imagegen/SKILL.md',
+      'codex-rs/skills/src/assets/samples/imagegen/references/prompting.md',
+    ],
+    used: '设计助手的常驻规则里逐字引用：具体的需求只整理不加料、输入图是参考还是要改的图、改图每轮重复不变的部分、八种改图各自的写法',
+    changed:
+      '只取这几段；原文分行的两组清单各并成一行、用分号隔开，字句没改；给输入图编号和写角色由本站代做，没有引用那一句；星数为 2026-11-25',
+    licenseFiles: ['openai-codex-APACHE-2.0.txt'],
   },
   {
     repo: 'openai/openai-cookbook',
