@@ -45,17 +45,30 @@ type WireMessage =
     }
   | { role: 'tool'; tool_call_id: string; content: string }
 
+/** Long side of the pictures the planner sees. */
+export const PLANNER_PICTURE_PX = 1024
+
 const urlCache = new Map<string, string>()
+
+/** "1536×1024, shown to you at 1024×683": the planner sees a smaller copy. */
+function sizeNote(w: number, h: number): string {
+  const long = Math.max(w, h)
+  if (!long) return ''
+  if (long <= PLANNER_PICTURE_PX) return `${w}×${h}`
+  const k = PLANNER_PICTURE_PX / long
+  return `${w}×${h}, shown to you at ${Math.round(w * k)}×${Math.round(h * k)}`
+}
 
 async function pictureUrl(id: string): Promise<string | null> {
   const hit = urlCache.get(id)
   if (hit) return hit
+  // From the full picture, resized once: the 640 px thumb resized again
+  // blurred small print and the numbers in the red circles.
   const blob =
-    (await getImageBlob(id, 'thumb')) ?? (await getImageBlob(id, 'full'))
+    (await getImageBlob(id, 'full')) ?? (await getImageBlob(id, 'thumb'))
   if (!blob) return null
   try {
-    // 768 px is plenty to read a product and its label.
-    const url = await blobToDataUrl(await smallJpeg(blob, 768))
+    const url = await blobToDataUrl(await smallJpeg(blob, PLANNER_PICTURE_PX))
     urlCache.set(id, url)
     return url
   } catch {
@@ -66,12 +79,12 @@ async function pictureUrl(id: string): Promise<string | null> {
 /** What a picture attached to a message is, for the planner. */
 export function describeRef(ref: Attachment, n: number): string {
   if (ref.marked) {
-    return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(${ref.nodeId ?? ''}) with red numbered circles marking where to change (a guide only).`
+    return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(${ref.nodeId ?? ''}) with red numbered circles marking where to change (a guide only), ${sizeNote(ref.w, ref.h)}.`
   }
   if (ref.nodeId) {
-    return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(id ${ref.nodeId}).`
+    return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(id ${ref.nodeId}), ${sizeNote(ref.w, ref.h)}.`
   }
-  return `Picture ${n}: uploaded by the user${ref.name ? ` (${ref.name})` : ''}, ${ref.w}×${ref.h}.`
+  return `Picture ${n}: uploaded by the user${ref.name ? ` (${ref.name})` : ''}, ${sizeNote(ref.w, ref.h)}.`
 }
 
 /** The text of a user turn: the message plus what came with it. */
