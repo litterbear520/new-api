@@ -60,14 +60,14 @@
           "label": "首图",
           "ratio": "1:1",
           "size": "800×800",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "商品占画面 60–70%，最多品牌名 + 一句 ≤8 字卖点"
         },
         {
           "label": "卖点图",
           "ratio": "1:1",
           "size": "800×800",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "只讲一个卖点，2–3 个短标注"
         },
         {
@@ -88,7 +88,7 @@
           "label": "白底图",
           "ratio": "1:1",
           "size": "800×800",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "纯白 #FFFFFF，无字、无道具"
         }
       ],
@@ -173,21 +173,21 @@
           "label": "白底主图",
           "ratio": "1:1",
           "size": "800×800",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "纯白背景，商品完整居中，四周留白均匀"
         },
         {
           "label": "透明底 PNG",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-flare",
+          "model": "gpt-image-2.6-flare",
           "note": "透明背景，边缘干净无光晕"
         },
         {
           "label": "3:4 白底（可选）",
           "ratio": "3:4",
           "size": "750×1000",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "服饰鞋包类竖版"
         }
       ],
@@ -288,7 +288,7 @@
           "label": "首屏",
           "ratio": "2:3",
           "size": "750×1125",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "商品 + 品牌 + 一句主张"
         },
         {
@@ -302,7 +302,7 @@
           "label": "核心卖点",
           "ratio": "2:3",
           "size": "750×1125",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "特征 → 好处，2–3 个标注"
         },
         {
@@ -323,14 +323,14 @@
           "label": "规格参数",
           "ratio": "2:3",
           "size": "750×1125",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "尺寸图 + ≤8 行参数，只写用户给的"
         },
         {
           "label": "售后与品牌",
           "ratio": "3:2",
           "size": "750×500",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "真实保障 + 品牌收尾"
         }
       ],
@@ -447,28 +447,28 @@
           "label": "封面",
           "ratio": "3:4",
           "size": "1080×1440",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "大字标题占画面 30%–40%"
         },
         {
           "label": "内页 1",
           "ratio": "3:4",
           "size": "1080×1440",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "一个要点，同一模板"
         },
         {
           "label": "内页 2",
           "ratio": "3:4",
           "size": "1080×1440",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "一个要点，同一模板"
         },
         {
           "label": "内页 3",
           "ratio": "3:4",
           "size": "1080×1440",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "一个要点，同一模板"
         },
         {
@@ -581,28 +581,28 @@
           "label": "价格贴片",
           "ratio": "1:1",
           "size": "600×600",
-          "model": "gpt-image-2.5-flare",
+          "model": "gpt-image-2.6-flare",
           "note": "透明底 PNG，价格逐字"
         },
         {
           "label": "福利贴片",
           "ratio": "3:2",
           "size": "900×600",
-          "model": "gpt-image-2.5-flare",
+          "model": "gpt-image-2.6-flare",
           "note": "透明底 PNG，如「关注领券」"
         },
         {
           "label": "直播预告海报",
           "ratio": "3:4",
           "size": "1080×1440",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "主题 + 真实时间 + 主推商品"
         },
         {
           "label": "视频封面",
           "ratio": "9:16",
           "size": "1080×1920",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "标题放在竖屏安全带内"
         }
       ],
@@ -703,28 +703,28 @@
           "label": "主海报",
           "ratio": "3:4",
           "size": "1080×1440",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "上活动名，中商品，下优惠和时间"
         },
         {
           "label": "竖版",
           "ratio": "9:16",
           "size": "1080×1920",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "主海报编辑延展，文字不改"
         },
         {
           "label": "横版 Banner",
           "ratio": "16:9",
           "size": "1920×1080",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "文字左、商品右"
         },
         {
           "label": "方图（可选）",
           "ratio": "1:1",
           "size": "1080×1080",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "朋友圈、社群用"
         }
       ],
@@ -809,42 +809,42 @@
           "label": "角度 A 主图",
           "ratio": "1:1",
           "size": "1080×1080",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "一个角度一句标题，≤12 字"
         },
         {
           "label": "角度 B 主图",
           "ratio": "1:1",
           "size": "1080×1080",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "换动机，不只换措辞"
         },
         {
           "label": "角度 C 主图",
           "ratio": "1:1",
           "size": "1080×1080",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "换版式模板"
         },
         {
           "label": "延展 4:5",
           "ratio": "3:4",
           "size": "1080×1350",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "选中的角度编辑延展"
         },
         {
           "label": "延展 9:16",
           "ratio": "9:16",
           "size": "1080×1920",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "字放在竖屏安全带内"
         },
         {
           "label": "延展 16:9",
           "ratio": "16:9",
           "size": "1920×1080",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "文字和商品左右分开"
         }
       ],
@@ -929,21 +929,21 @@
           "label": "主包装",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "正面 + 45°，标签文字逐字"
         },
         {
           "label": "标签平面稿",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "展开的正面标签，无透视"
         },
         {
           "label": "礼盒",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "打开的礼盒 + 内托 + 单品"
         },
         {
@@ -1061,42 +1061,42 @@
           "label": "方向 A",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-flare",
+          "model": "gpt-image-2.6-flare",
           "note": "透明底，图形 + 字标"
         },
         {
           "label": "方向 B",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-flare",
+          "model": "gpt-image-2.6-flare",
           "note": "换一种构思法"
         },
         {
           "label": "方向 C",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-flare",
+          "model": "gpt-image-2.6-flare",
           "note": "换一种构思法"
         },
         {
           "label": "名片样机",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "选定 Logo 做参考图"
         },
         {
           "label": "门头样机",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "真实街景或店内"
         },
         {
           "label": "App 图标/头像",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "圆角方形和圆形裁切"
         }
       ],
@@ -1208,35 +1208,35 @@
           "label": "3×3 品牌板",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "Logo、构造、色板、字体、应用等 9 格"
         },
         {
           "label": "色板卡",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "主色、辅助色、中性色，每块写 hex"
         },
         {
           "label": "字体样张",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "中英文标题字 + 正文字示意"
         },
         {
           "label": "应用板",
           "ratio": "3:2",
           "size": "1536×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "名片、纸袋、杯套、门头、手机界面"
         },
         {
           "label": "社交头像与封面",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-flare",
+          "model": "gpt-image-2.6-flare",
           "note": "透明底头像 + 主色背景版"
         }
       ],
@@ -1340,21 +1340,21 @@
           "label": "左右对比",
           "ratio": "1:1",
           "size": "800×800",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "Image 1 = 前，Image 2 = 后"
         },
         {
           "label": "上下对比",
           "ratio": "3:4",
           "size": "750×1000",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "上前下后，手机竖屏"
         },
         {
           "label": "详情页对比屏（可选）",
           "ratio": "2:3",
           "size": "750×1125",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "标题 + 对比 + 一句说明"
         }
       ],
@@ -1461,14 +1461,14 @@
           "label": "风格小样 A",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "最接近参考图"
         },
         {
           "label": "风格小样 B",
           "ratio": "1:1",
           "size": "1024×1024",
-          "model": "gpt-image-2.5-sunburst",
+          "model": "gpt-image-2.6-sunburst",
           "note": "同一风格，强度减弱"
         },
         {

@@ -24,15 +24,15 @@ description: 先出 3 个不同思路的 Logo 方向（透明底），用户选�
 
    | # | 名称 | 比例 | 交付尺寸 | 模型 | 要点 |
    |---|---|---|---|---|---|
-   | 1 | 方向 A | 1:1 | 1024×1024 | gpt-image-2.5-flare | 透明底，图形 + 字标，扁平 |
-   | 2 | 方向 B | 1:1 | 1024×1024 | gpt-image-2.5-flare | 换一种构思法 |
-   | 3 | 方向 C | 1:1 | 1024×1024 | gpt-image-2.5-flare | 换一种构思法 |
-   | 4 | 名片样机 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 选定 Logo 做 Image 1 |
-   | 5 | 门头/招牌样机 | 3:2 | 1536×1024 | gpt-image-2.5-sunburst | 真实街景或店内 |
-   | 6 | App 图标/头像 | 1:1 | 1024×1024 | gpt-image-2.5-sunburst | 圆角方形和圆形两种裁切 |
+   | 1 | 方向 A | 1:1 | 1024×1024 | gpt-image-2.6-flare | 透明底，图形 + 字标，扁平 |
+   | 2 | 方向 B | 1:1 | 1024×1024 | gpt-image-2.6-flare | 换一种构思法 |
+   | 3 | 方向 C | 1:1 | 1024×1024 | gpt-image-2.6-flare | 换一种构思法 |
+   | 4 | 名片样机 | 3:2 | 1536×1024 | gpt-image-2.6-sunburst | 选定 Logo 做 Image 1 |
+   | 5 | 门头/招牌样机 | 3:2 | 1536×1024 | gpt-image-2.6-sunburst | 真实街景或店内 |
+   | 6 | App 图标/头像 | 1:1 | 1024×1024 | gpt-image-2.6-sunburst | 圆角方形和圆形两种裁切 |
    | 7 | 周边样机（可选） | 3:2 | 1536×1024 | gpt-image-2 | 纸杯、帆布袋、贴纸 |
 
-4. **一张图调用一次**：方向图用 `generate_image` 并带 `background=transparent`、`output_format=png`；样机用 `edit_image`，Image 1 = 选定的 Logo，写「Logo 的形状、颜色、文字不变，只放到样机上」。
+4. **一张图一个条目**，整套放进同一次 propose_plan：方向图设 transparent: true；样机的条目带上选定的 Logo（Image 1），写「Logo 的形状、颜色、文字不变，只放到样机上」。
 5. **检查**：品牌名逐字核对，字母和笔画不能多也不能少；缩到 32px 还认不认得出；单色版是否成立；不能像任何已知品牌的 Logo。
 
 ## 最佳实践原文
@@ -284,7 +284,7 @@ Logos, icons, and illustrations. AI generation has limits here.
 ## 本站调整
 
 - **3 个方向、3 种方法**：原文 brandkit 说一个 Logo 最多结合两种构思法；我们让 3 个方向各用一种不同的方法，方便用户比较。
-- **透明底**：Cookbook 原文建议 Logo 用透明底 PNG。本站透明底走 gpt-image-2.5-flare；样机用 gpt-image-2.5-sunburst 做编辑。原文的 `n=4` 一次出多张，本站改成一张图调用一次。
+- **透明底**：Cookbook 原文建议 Logo 用透明底 PNG。本站透明底走 gpt-image-2.6-flare；样机用 gpt-image-2.6-sunburst 做编辑。原文的 `n=4` 一次出多张，本站改成一张图调用一次。
 - **AI Logo 只是方向**：marketingskills 原文说 AI 做 Logo「不一致、不是矢量」，这点我们照实告诉用户。选定方向后，要找设计师重绘成矢量稿；上线前到商标局网站查一下近似商标。
 - **原文样机提示词里的「8k resolution」等质量词**：对 gpt-image 系列作用不大，可以删；「no watermark」「clear legible logo」要保留。
 - **不像别人**：不参考、不模仿任何已知品牌的 Logo，不用名人、IP 角色做图形。
