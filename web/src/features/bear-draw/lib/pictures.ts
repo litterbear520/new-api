@@ -225,6 +225,47 @@ async function callImage(job: PictureJob) {
   }
 }
 
+const RETRY_STATUS = new Set([429, 502, 503, 504])
+/** Only an answer this fast is retried: a slow failure may have drawn upstream. */
+export const RETRY_WITHIN_MS = 10_000
+export const RETRY_WAIT_MS = 2000
+
+/**
+ * A busy answer that came back at once (429, 502, 503, 504) is tried once
+ * more. Timeouts, dropped connections and slow failures are not: the
+ * upstream may already have drawn and billed that picture.
+ */
+export function retryable(error: unknown, tookMs: number): boolean {
+  return (
+    error instanceof DrawApiError &&
+    error.kind === 'busy' &&
+    RETRY_STATUS.has(error.status) &&
+    tookMs < RETRY_WITHIN_MS
+  )
+}
+
+const stops = new Map<string, number>()
+
+/** ■ was pressed: a picture waiting to be tried again is not sent. */
+export function cancelRetries(projectId: string) {
+  stops.set(projectId, (stops.get(projectId) ?? 0) + 1)
+}
+
+async function callImageOnceMore(t: PictureTarget, job: PictureJob) {
+  const start = Date.now()
+  try {
+    return await callImage(job)
+  } catch (error) {
+    if (!retryable(error, Date.now() - start)) throw error
+    const stopsBefore = stops.get(t.projectId) ?? 0
+    await new Promise((resolve) => setTimeout(resolve, RETRY_WAIT_MS))
+    // Stopped or deleted while waiting: send nothing more.
+    const stopped = (stops.get(t.projectId) ?? 0) !== stopsBefore
+    if (stopped || currentItem(t)?.status !== 'drawing') throw error
+    return callImage(job)
+  }
+}
+
 function emit(e: PictureFinished) {
   finishedListeners.forEach((fn) => {
     try {
@@ -254,7 +295,7 @@ async function draw(
     meta: { ...n.meta, startedAt: start },
   }))
 
-  const result = await callImage(job)
+  const result = await callImageOnceMore(t, job)
   const pic = result.images[0]
   const imgId = newId('i')
   const prepared = await prepareImage(pic.blob, job.transparent)
