@@ -28,10 +28,13 @@ import {
 } from '../../constants'
 import type {
   AdLawHit,
+  ApiMessage,
   Attachment,
   CanvasNode,
+  InputRole,
   Part,
   PictureJob,
+  PlanInput,
   PlanItem,
   ProgressItem,
   Project,
@@ -40,7 +43,8 @@ import type {
 import { findPromptAdLaw } from '../adlaw'
 import { drawPicture, estimatePicture, type PictureOutcome } from '../pictures'
 import { addGroup, addPart, edit, editPart } from '../project-edit'
-import type { PlanArgsT } from './tools'
+import { MAX_INPUTS, type PlanArgsT } from './tools'
+import { shownPictures } from './transcript'
 
 /*
  * propose_plan: turns the planner's items into a plan card with prices and
@@ -129,6 +133,114 @@ export function unclearBase(
   return bases.some((b) => b && circled.includes(b)) ? null : circled
 }
 
+/** The canvas picture an item's inputs change, if they name one. */
+function targetOf(inputs: PlanInput[] | undefined): string | undefined {
+  return inputs?.find((x) => x.role === 'edit_target' && x.node)?.node
+}
+
+/** The picture each item says it edits: its base, or the edit_target of its inputs. */
+export function statedBases(args: PlanArgsT): Array<string | undefined> {
+  return args.items.map((it) => it.base || targetOf(it.inputs))
+}
+
+/**
+ * What is wrong with the inputs of a plan, in words for the planner, or
+ * null. Nothing is dropped silently: a picture left out changes the result.
+ */
+export function inputProblem(
+  p: Project,
+  agentMessageId: string,
+  args: PlanArgsT
+): string | null {
+  const ready = new Set(
+    p.nodes.filter((n) => n.status === 'ready' && n.img).map((n) => n.id)
+  )
+  const refs = turnRefs(p, agentMessageId)
+  const marks = turnMarks(p, agentMessageId)
+  const circled = baseOf(undefined, marks, ready)
+  for (const it of args.items) {
+    const list = it.inputs ?? []
+    if (!list.length) continue
+    const name = it.label || 'an item'
+    const target = targetOf(list)
+    if (circled && target !== circled) {
+      return `「${name}」: the user circled the canvas picture ${circled}, so it is the picture to edit. List it in inputs with the role edit_target and call propose_plan again.`
+    }
+    // The red-circle copy of the picture to edit is sent too.
+    const sent = list.length + (marks.some((r) => r.nodeId === target) ? 1 : 0)
+    if (sent > MAX_INPUTS) {
+      return `「${name}」 has ${sent} input pictures${sent > list.length ? " (the copy with the user's red circles counts as one)" : ''}; a picture takes at most ${MAX_INPUTS}. Keep the ones that matter and call propose_plan again.`
+    }
+    if (list.filter((x) => x.role === 'edit_target').length > 1) {
+      return `「${name}」 has more than one edit_target. Keep one picture to change and give the others another role (insert, product_ref, …), then call propose_plan again.`
+    }
+    for (const x of list) {
+      if (x.node && !ready.has(x.node)) {
+        return `「${name}」: there is no finished canvas picture with the id ${x.node}. Use an id from the canvas list and call propose_plan again.`
+      }
+      if (!x.node && (!x.ref || x.ref > refs.length)) {
+        return `「${name}」: an input needs node_id or ref, and the user attached ${refs.length} picture(s) to this request. Fix it and call propose_plan again.`
+      }
+    }
+  }
+  return null
+}
+
+const ROLE_TEXT: Record<InputRole, string> = {
+  edit_target: 'the picture to edit',
+  product_ref:
+    'the product reference: keep this exact product (shape, color, material, logo, proportions)',
+  style_ref:
+    'a style reference: follow its style, palette and mood only, not its content',
+  logo_ref: 'the logo: place it as it is, do not redraw or restyle it',
+  scene_ref: 'the scene or background to use',
+  insert: 'a subject to place into the result',
+}
+
+/** The inputs of an item that names each one's role, in order. */
+function roledInputs(
+  p: Project,
+  item: PlanItem,
+  refs: Attachment[],
+  marks: Attachment[]
+) {
+  const ids: string[] = []
+  const roles: string[] = []
+  let circles: { at: number; copy?: Attachment } | undefined
+  for (const x of item.inputs ?? []) {
+    if (x.node) {
+      const node = p.nodes.find((n) => n.id === x.node && n.img)
+      if (!node?.img || ids.includes(node.img.id)) continue
+      ids.push(node.img.id)
+      roles.push(
+        x.role === 'edit_target'
+          ? ROLE_TEXT.edit_target
+          : `「${node.label}」, ${ROLE_TEXT[x.role]}`
+      )
+      if (x.role === 'edit_target') {
+        circles = {
+          at: ids.length,
+          copy: marks.find((r) => r.nodeId === node.id),
+        }
+      }
+      continue
+    }
+    const ref = x.ref ? refs[x.ref - 1] : undefined
+    if (!ref || ref.marked || ids.includes(ref.id)) continue
+    ids.push(ref.id)
+    roles.push(ROLE_TEXT[x.role])
+  }
+  // The red-circle copy goes last, so "Image N" in the planner's prompt
+  // still counts the inputs in the order it listed them.
+  if (circles?.copy && !ids.includes(circles.copy.id)) {
+    ids.push(circles.copy.id)
+    roles.push(
+      `a copy of Image ${circles.at} with red numbered circles marking where to change (a guide only; change only inside the circles and never draw them)`
+    )
+  }
+  return { ids, roles }
+}
+
 function wantsLogo(prompt: string): boolean {
   return /logo|标志|商标|品牌标/i.test(prompt)
 }
@@ -140,9 +252,10 @@ export function itemInputs(
   refs: Attachment[],
   marks: Attachment[] = refs.filter((r) => r.marked)
 ) {
-  const ids: string[] = []
-  const roles: string[] = []
-  if (item.base) {
+  const roled = item.inputs?.length ? roledInputs(p, item, refs, marks) : null
+  const ids: string[] = roled?.ids ?? []
+  const roles: string[] = roled?.roles ?? []
+  if (!roled && item.base) {
     const node = p.nodes.find((n) => n.id === item.base && n.img)
     if (node?.img) {
       ids.push(node.img.id)
@@ -154,7 +267,7 @@ export function itemInputs(
       }
     }
   }
-  for (const n of item.refs ?? []) {
+  for (const n of roled ? [] : (item.refs ?? [])) {
     const ref = refs[n - 1]
     if (!ref || ids.includes(ref.id) || ref.marked) continue
     ids.push(ref.id)
@@ -170,7 +283,8 @@ export function itemInputs(
     brandOn &&
     kit?.logo &&
     wantsLogo(item.prompt) &&
-    !ids.includes(kit.logo.id)
+    !ids.includes(kit.logo.id) &&
+    ids.length < MAX_INPUTS
   ) {
     ids.push(kit.logo.id)
     roles.push('the brand logo')
@@ -211,10 +325,16 @@ export function makePlan(
     (p?.nodes ?? []).filter((n) => n.status === 'ready').map((n) => n.id)
   )
   const items = args.items.map((it, i): PlanItem => {
-    const base = baseOf(it.base, marks, ready)
-    // An edit keeps the transparency of its picture unless the planner says otherwise.
+    // Inputs replace base and refs: with them, only they say what is edited.
+    const inputs = it.inputs?.length ? it.inputs : undefined
+    const base = inputs ? targetOf(inputs) : baseOf(it.base, marks, ready)
+    // An edit keeps the transparency of its picture unless the planner says
+    // otherwise: a canvas picture, or one the user attached.
+    const target = inputs?.find((x) => x.role === 'edit_target')
     const baseClear = Boolean(
-      base && p?.nodes.find((n) => n.id === base)?.img?.clear
+      base
+        ? p?.nodes.find((n) => n.id === base)?.img?.clear
+        : target?.ref && refs[target.ref - 1]?.clear
     )
     const transparent = it.transparent ?? baseClear
     const item: PlanItem = {
@@ -227,15 +347,16 @@ export function makePlan(
       transparent: transparent || undefined,
       refs: it.refs.filter((n) => n <= refs.length),
       base,
+      inputs,
       note: it.note || undefined,
       est: 0,
       on: true,
     }
-    const inputs = p ? itemInputs(p, item, refs, marks).ids.length : 0
+    const sent = p ? itemInputs(p, item, refs, marks).ids.length : 0
     item.est =
       estimatePicture(model, {
-        edit: inputs > 0,
-        refs: inputs,
+        edit: sent > 0,
+        refs: sent,
         transparent: Boolean(item.transparent),
         ratio: item.ratio,
       }) ?? 0
@@ -283,8 +404,51 @@ export type DrawnPlan = {
     node_id: string
     status: 'done' | 'failed' | 'stopped'
     error?: string
+    /** Why it failed, so the planner can say what to do about it. */
+    error_kind?: 'moderation' | 'balance' | 'busy' | 'unreadable' | 'other'
   }>
   cost: number
+}
+
+/** A drawn set this small goes back to the planner as pictures to check. */
+export const CHECK_MAX = 4
+/** Long side of the pictures sent for the check. */
+export const CHECK_PX = 768
+
+/**
+ * The pictures of a drawn plan as a message for the planner, so it checks
+ * them before it describes them. A bigger set is left to view_pictures.
+ */
+export function drawnPictures(
+  projectId: string,
+  drawn: DrawnPlan
+): ApiMessage[] {
+  const p = findProject(projectId)
+  const done = drawn.results.filter((r) => r.status === 'done')
+  if (!p || !done.length || done.length > CHECK_MAX) return []
+  const nodes = done.flatMap((r) => {
+    const n = p.nodes.find((x) => x.id === r.node_id && x.img)
+    return n ? [n] : []
+  })
+  const message = shownPictures('drawn', nodes, CHECK_PX)
+  return message ? [message] : []
+}
+
+/**
+ * A picture a waiting plan was priced with is gone from the canvas (the user
+ * removed it before pressing start): what to tell the planner, else null.
+ */
+export function lostInput(p: Project, plan: PlanPart): string | null {
+  for (const it of plan.items.filter((x) => x.on)) {
+    const ids = it.inputs
+      ? it.inputs.flatMap((x) => (x.node ? [x.node] : []))
+      : [it.base].filter((id): id is string => Boolean(id))
+    const gone = ids.find((id) => !p.nodes.some((n) => n.id === id && n.img))
+    if (gone) {
+      return `Nothing was drawn and nothing was charged: 「${it.label}」 needs the canvas picture ${gone}, and the user removed it after the plan was made. Tell the user, and offer a plan without it.`
+    }
+  }
+  return null
 }
 
 /** Puts the plan's frames on the canvas and draws every ticked item. */
@@ -394,11 +558,18 @@ export async function drawPlan(
       let status: 'done' | 'failed' | 'stopped' = 'stopped'
       if (it.status === 'done') status = 'done'
       else if (it.status === 'failed') status = 'failed'
+      const kind = it.error?.kind
       return {
         label: it.label,
         node_id: it.nodeId,
         status,
         ...(it.error?.message ? { error: it.error.message.slice(0, 160) } : {}),
+        ...(status === 'failed' && kind
+          ? {
+              error_kind:
+                kind === 'auth' || kind === 'lost' ? ('other' as const) : kind,
+            }
+          : {}),
       }
     }),
   }

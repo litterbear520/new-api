@@ -24,15 +24,17 @@ import type {
   ApiMessage,
   ApiToolCall,
   Attachment,
+  CanvasNode,
   Skill,
   UserMessage,
 } from '../../types'
 
 /*
  * The planner's conversation is kept in OpenAI chat format. User turns
- * store picture ids; only the newest user turn's pictures are sent (as
- * small JPEGs), older ones become a line of text, so long projects stay
- * cheap and fast to upload from China.
+ * store picture ids; only the pictures of the newest request are sent (as
+ * small JPEGs): the user's own and those the page showed the planner since.
+ * Older ones become a line of text, so long projects stay cheap and fast to
+ * upload from China.
  */
 
 type WireMessage =
@@ -51,25 +53,29 @@ export const PLANNER_PICTURE_PX = 1024
 const urlCache = new Map<string, string>()
 
 /** "1536×1024, shown to you at 1024×683": the planner sees a smaller copy. */
-function sizeNote(w: number, h: number): string {
+function sizeNote(w: number, h: number, px = PLANNER_PICTURE_PX): string {
   const long = Math.max(w, h)
   if (!long) return ''
-  if (long <= PLANNER_PICTURE_PX) return `${w}×${h}`
-  const k = PLANNER_PICTURE_PX / long
+  if (long <= px) return `${w}×${h}`
+  const k = px / long
   return `${w}×${h}, shown to you at ${Math.round(w * k)}×${Math.round(h * k)}`
 }
 
-async function pictureUrl(id: string): Promise<string | null> {
-  const hit = urlCache.get(id)
+async function pictureUrl(
+  id: string,
+  px = PLANNER_PICTURE_PX
+): Promise<string | null> {
+  const key = `${id}@${px}`
+  const hit = urlCache.get(key)
   if (hit) return hit
   // From the full picture, resized once: the 640 px thumb resized again
   // blurred small print and the numbers in the red circles.
-  const blob =
-    (await getImageBlob(id, 'full')) ?? (await getImageBlob(id, 'thumb'))
-  if (!blob) return null
   try {
-    const url = await blobToDataUrl(await smallJpeg(blob, PLANNER_PICTURE_PX))
-    urlCache.set(id, url)
+    const blob =
+      (await getImageBlob(id, 'full')) ?? (await getImageBlob(id, 'thumb'))
+    if (!blob) return null
+    const url = await blobToDataUrl(await smallJpeg(blob, px))
+    urlCache.set(key, url)
     return url
   } catch {
     return null
@@ -85,6 +91,36 @@ export function describeRef(ref: Attachment, n: number): string {
     return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(id ${ref.nodeId}), ${sizeNote(ref.w, ref.h)}.`
   }
   return `Picture ${n}: uploaded by the user${ref.name ? ` (${ref.name})` : ''}, ${sizeNote(ref.w, ref.h)}.`
+}
+
+/**
+ * Canvas pictures for the planner to look at, as the message that follows
+ * the tool result: the ones it asked for, or the ones just drawn. They are
+ * named by canvas id, never "Picture n" — that numbering belongs to the
+ * pictures the user attached.
+ */
+export function shownPictures(
+  why: 'asked' | 'drawn',
+  nodes: CanvasNode[],
+  px = PLANNER_PICTURE_PX
+): ApiMessage | null {
+  const list = nodes.filter((n) => n.img)
+  if (!list.length) return null
+  const head =
+    why === 'asked'
+      ? 'The canvas pictures you asked to see, in this order:'
+      : 'The pictures just drawn, in this order. Compare the text in each one with the text you asked for, character by character, and check the product and whatever an edit had to keep. Then tell the user in a sentence or two (name what is wrong, if anything) and call suggest_next:'
+  const lines = list.map(
+    (n) =>
+      `- ${n.id}「${n.label}」, ${sizeNote(n.img?.w ?? 0, n.img?.h ?? 0, px)}`
+  )
+  return {
+    role: 'user',
+    content: `[${head}\n${lines.join('\n')}]`,
+    images: list.flatMap((n) => (n.img ? [n.img.id] : [])),
+    shown: true,
+    ...(px === PLANNER_PICTURE_PX ? {} : { px }),
+  }
 }
 
 /** The text of a user turn: the message plus what came with it. */
@@ -163,6 +199,8 @@ export function placeToolResult(
 export function openCalls(list: ApiMessage[]): string[] {
   for (let i = list.length - 1; i >= 0; i--) {
     const m = list[i]
+    // Pictures the page showed follow the results; they end nothing.
+    if (m.role === 'user' && m.shown) continue
     if (m.role === 'user') return []
     if (m.role !== 'assistant') continue
     const answered = new Set(
@@ -180,7 +218,11 @@ export function openCalls(list: ApiMessage[]): string[] {
   return []
 }
 
-/** The request messages: system prompt + transcript, pictures of the newest user turn inlined. */
+/**
+ * The request messages: system prompt + transcript. Pictures are inlined
+ * from the user's newest message on, so the ones the page showed the
+ * planner during this request stay until the user speaks again.
+ */
 export async function wireMessages(
   system: string,
   transcript: ApiMessage[]
@@ -188,7 +230,7 @@ export async function wireMessages(
   const list = repairTranscript(transcript)
   let lastUser = -1
   list.forEach((m, i) => {
-    if (m.role === 'user') lastUser = i
+    if (m.role === 'user' && !m.shown) lastUser = i
   })
   const out: WireMessage[] = [{ role: 'system', content: system }]
   for (const [i, m] of list.entries()) {
@@ -197,7 +239,7 @@ export async function wireMessages(
       continue
     }
     const ids = m.images ?? []
-    if (i !== lastUser || !ids.length) {
+    if (i < lastUser || !ids.length) {
       const note = ids.length
         ? `\n[${ids.length} picture(s) were attached here earlier; they are no longer shown.]`
         : ''
@@ -206,7 +248,7 @@ export async function wireMessages(
     }
     const parts: ApiContentPart[] = [{ type: 'text', text: m.content }]
     for (const id of ids) {
-      const url = await pictureUrl(id)
+      const url = await pictureUrl(id, m.px)
       if (url) parts.push({ type: 'image_url', image_url: { url } })
     }
     out.push({ role: 'user', content: parts })

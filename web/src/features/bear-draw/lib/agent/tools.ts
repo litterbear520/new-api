@@ -19,19 +19,35 @@ For commercial licensing, please contact support@quantumnous.com
 import { z } from 'zod'
 
 import { MAX_PLAN_ITEMS, RATIOS } from '../../constants'
-import type { QuestionItem, Ratio } from '../../types'
+import type { InputRole, PlanInput, QuestionItem, Ratio } from '../../types'
 
 /*
  * The planner's tools. Names avoid the ones New API or the upstream treat specially
  * (image_generation, web_search, web_fetch, code_execution, tool_search).
  * The browser runs every tool: load_skill reads a bundled SKILL.md,
- * ask_user shows a question card, propose_plan shows the plan card and
- * draws, suggest_next ends the turn with "↳" follow-ups.
+ * ask_user shows a question card, view_pictures sends canvas pictures to
+ * the planner, propose_plan shows the plan card and draws, suggest_next ends
+ * the turn with "↳" follow-ups.
  */
+
+/** Pictures one view_pictures call may ask for. */
+export const MAX_VIEW = 3
+/** Input pictures one plan item may carry (the cap of Codex's image tool). */
+export const MAX_INPUTS = 5
+
+export const INPUT_ROLES: InputRole[] = [
+  'edit_target',
+  'product_ref',
+  'style_ref',
+  'logo_ref',
+  'scene_ref',
+  'insert',
+]
 
 export const TOOL_NAMES = [
   'load_skill',
   'ask_user',
+  'view_pictures',
   'propose_plan',
   'suggest_next',
 ] as const
@@ -100,8 +116,28 @@ export const TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'view_pictures',
+      description: `Look at pictures on the canvas (at most ${MAX_VIEW} per call). They arrive in the next message. Call it before you edit or reuse a canvas picture you have not been shown.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          node_ids: {
+            type: 'array',
+            minItems: 1,
+            maxItems: MAX_VIEW,
+            items: { type: 'string' },
+            description: 'Canvas ids from the canvas list, e.g. n_abc.',
+          },
+        },
+        required: ['node_ids'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'propose_plan',
-      description: `Show the plan card listing every picture to draw (one item = one picture, at most ${MAX_PLAN_ITEMS}) with its price. Small plans start at once; bigger ones wait for the user to confirm. Returns which pictures were drawn, with their canvas ids.`,
+      description: `Show the plan card listing every picture to draw (one item = one picture, at most ${MAX_PLAN_ITEMS}) with its price. Small plans start at once; bigger ones wait for the user to confirm. Returns which pictures were drawn, with their canvas ids; a small set also comes back as pictures for you to check.`,
       parameters: {
         type: 'object',
         properties: {
@@ -155,6 +191,33 @@ export const TOOLS = [
                   type: 'string',
                   description:
                     'Canvas id of an existing picture to edit (e.g. n_abc). The prompt then says what to change and what to keep.',
+                },
+                inputs: {
+                  type: 'array',
+                  maxItems: MAX_INPUTS,
+                  description:
+                    'Use instead of base + refs when a picture needs inputs with different roles, or a canvas picture as a reference. In order: they become Image 1, Image 2, …',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      node_id: {
+                        type: 'string',
+                        description: 'A canvas picture (give this or ref).',
+                      },
+                      ref: {
+                        type: 'integer',
+                        description:
+                          'A user picture by number (Picture 1 = 1).',
+                      },
+                      role: {
+                        type: 'string',
+                        enum: INPUT_ROLES,
+                        description:
+                          'edit_target: the picture to change (one at most). product_ref: keep this exact product. style_ref: follow its style only. logo_ref: place this logo as it is. scene_ref: use this scene or background. insert: put this subject into the result.',
+                      },
+                    },
+                    required: ['role'],
+                  },
                 },
                 note: {
                   type: 'string',
@@ -226,6 +289,34 @@ const AskArgs = z.object({
   questions: z.array(QuestionArgs).catch([]),
 })
 
+const roleOf = (v: unknown): InputRole =>
+  (INPUT_ROLES as unknown[]).includes(v) ? (v as InputRole) : 'style_ref'
+
+const InputArgs = z
+  .object({
+    node_id: str(40).optional(),
+    ref: z.unknown().optional(),
+    role: z.unknown().transform(roleOf),
+  })
+  .transform((x): PlanInput => {
+    const n = Number(x.ref)
+    if (x.node_id) return { node: x.node_id, role: x.role }
+    return { ref: Number.isInteger(n) && n > 0 ? n : 0, role: x.role }
+  })
+
+const ViewArgs = z.object({
+  node_ids: z
+    .array(z.unknown())
+    .catch([])
+    .transform((list) => [
+      ...new Set(
+        list
+          .filter((s): s is string => typeof s === 'string' && s.trim() !== '')
+          .map((s) => s.trim().slice(0, 40))
+      ),
+    ]),
+})
+
 const PlanItemArgs = z.object({
   label: str(16),
   prompt: str(4000),
@@ -242,6 +333,18 @@ const PlanItemArgs = z.object({
         .filter((n) => Number.isInteger(n) && n > 0)
     ),
   base: str(40).optional(),
+  // A malformed entry stays in the list as an input without a picture, so
+  // the plan is sent back to the planner instead of drawn without it.
+  inputs: z
+    .array(z.unknown())
+    .catch([])
+    .optional()
+    .transform((list) =>
+      list?.map((x): PlanInput => {
+        const one = InputArgs.safeParse(x)
+        return one.success ? one.data : { ref: 0, role: 'style_ref' }
+      })
+    ),
   note: str(80).optional(),
 })
 
@@ -283,6 +386,7 @@ function parseJson(raw: string): unknown {
 export type ParsedCall =
   | { name: 'load_skill'; args: { skill_id: string } }
   | { name: 'ask_user'; args: { intro?: string; questions: QuestionItem[] } }
+  | { name: 'view_pictures'; args: { node_ids: string[] } }
   | { name: 'propose_plan'; args: PlanArgsT }
   | { name: 'suggest_next'; args: { suggestions: string[] } }
   | { name: 'unknown'; error: string }
@@ -322,6 +426,19 @@ export function parseCall(name: string, raw: string): ParsedCall {
         }
       }
       return { name, args: { intro: r.data.intro || undefined, questions } }
+    }
+    case 'view_pictures': {
+      const r = ViewArgs.safeParse(data)
+      if (!r.success || !r.data.node_ids.length) {
+        return { name: 'unknown', error: 'view_pictures needs node_ids.' }
+      }
+      if (r.data.node_ids.length > MAX_VIEW) {
+        return {
+          name: 'unknown',
+          error: `view_pictures takes at most ${MAX_VIEW} pictures per call.`,
+        }
+      }
+      return { name, args: r.data }
     }
     case 'propose_plan': {
       const r = PlanArgs.safeParse(data)

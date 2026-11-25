@@ -980,6 +980,7 @@ export const STATIC_I18N_KEYS = [
   'Reading the skill “{{name}}”…',
   'Read the skill · {{name}}',
   'Could not read the skill “{{name}}”',
+  'Looked at {{names}}',
   'Download failed',
   'Not a SKILL.md: the file is empty',
   'Not a SKILL.md: the file is larger than 200 KB',

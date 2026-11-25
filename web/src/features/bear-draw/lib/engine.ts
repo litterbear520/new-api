@@ -35,7 +35,7 @@ import type {
 } from '../types'
 import { applyAdLawFixes } from './adlaw'
 import { finishTurn, refreshResult } from './agent/finish'
-import { drawPlan, setPlanState } from './agent/plan'
+import { drawnPictures, drawPlan, lostInput, setPlanState } from './agent/plan'
 import {
   activeRun,
   closeOpenCalls,
@@ -430,6 +430,17 @@ export function decide(
     clearLiveIfIdle(projectId)
     return
   }
+  const now = findProject(projectId)
+  const lost = now ? lostInput(now, found.part) : null
+  if (lost) {
+    setPlanState(projectId, partId, 'cancelled')
+    setLive(projectId, 'think')
+    void resume(projectId, messageId, callId, {
+      status: 'not_drawn',
+      error: lost,
+    }).then(() => clearLiveIfIdle(projectId))
+    return
+  }
   if (decision === 'first') {
     let first = true
     editPart(projectId, partId, 'plan', (x) => ({
@@ -455,10 +466,13 @@ export function decide(
       clearLiveIfIdle(projectId)
       return
     }
-    void resume(projectId, messageId, callId, {
-      status: 'drawn',
-      ...drawn,
-    }).then(() => clearLiveIfIdle(projectId))
+    void resume(
+      projectId,
+      messageId,
+      callId,
+      { status: 'drawn', ...drawn },
+      drawnPictures(projectId, drawn)
+    ).then(() => clearLiveIfIdle(projectId))
   })
 }
 

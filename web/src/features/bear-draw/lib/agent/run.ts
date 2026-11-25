@@ -37,17 +37,25 @@ import {
 import { finishTurn, refreshResult } from './finish'
 import { frameBatch } from './frame-batch'
 import {
+  drawnPictures,
   drawPlan,
+  inputProblem,
   makePlan,
   needsConfirm,
   setPlanState,
+  statedBases,
   unclearBase,
 } from './plan'
 import { buildSystemPrompt } from './prompt'
 import { loadSkillForModel } from './skills'
 import { streamStep } from './stream'
 import { parseCall, TOOLS } from './tools'
-import { openCalls, placeToolResult, wireMessages } from './transcript'
+import {
+  openCalls,
+  placeToolResult,
+  shownPictures,
+  wireMessages,
+} from './transcript'
 
 /*
  * The agent loop. One request = one "step": the planner streams text and
@@ -66,6 +74,8 @@ type Run = {
   ctrl: AbortController
   stopped: boolean
   steps: number
+  /** Pictures were drawn in this turn: any further plan waits for the user. */
+  drew?: boolean
 }
 
 const runs = new Map<string, Run>()
@@ -342,7 +352,48 @@ function showError(run: Run, error: ChatRequestError, model: string) {
   runs.delete(run.projectId)
 }
 
-type CallResult = { content: unknown; pause?: boolean; end?: boolean }
+type CallResult = {
+  content: unknown
+  pause?: boolean
+  end?: boolean
+  /** Pictures for the planner; they follow the results of this step. */
+  after?: ApiMessage[]
+}
+
+/** view_pictures: the canvas pictures the planner asked for. */
+function viewPictures(run: Run, ids: string[]): CallResult {
+  setLive(run.projectId, 'look')
+  const p = findProject(run.projectId)
+  const nodes = ids.flatMap((id) => {
+    const n = p?.nodes.find((x) => x.id === id && x.status === 'ready' && x.img)
+    return n ? [n] : []
+  })
+  const missing = ids.filter((id) => !nodes.some((n) => n.id === id))
+  const message = shownPictures('asked', nodes)
+  if (!message) {
+    return {
+      content: {
+        error: `No finished canvas picture has the id ${missing.join(', ')}. Use ids from the canvas list.`,
+      },
+    }
+  }
+  addPart(run.projectId, run.messageId, {
+    type: 'status',
+    icon: 'scan',
+    text: {
+      key: 'Looked at {{names}}',
+      params: { names: nodes.map((n) => `「${n.label}」`).join('') },
+    },
+  })
+  return {
+    content: {
+      shown: nodes.map((n) => n.id),
+      ...(missing.length ? { not_found: missing } : {}),
+      note: 'The pictures are in the next message.',
+    },
+    after: [message],
+  }
+}
 
 async function runTool(run: Run, call: ApiToolCall): Promise<CallResult> {
   const parsed = parseCall(call.function.name, call.function.arguments)
@@ -366,14 +417,16 @@ async function runTool(run: Run, call: ApiToolCall): Promise<CallResult> {
       })
       return { content: null, pause: true }
     }
+    case 'view_pictures':
+      return viewPictures(run, parsed.args.node_ids)
     case 'propose_plan': {
       const before = findProject(run.projectId)
+      const problem = before
+        ? inputProblem(before, run.messageId, parsed.args)
+        : null
+      if (problem) return { content: { error: problem } }
       const circled = before
-        ? unclearBase(
-            before,
-            run.messageId,
-            parsed.args.items.map((it) => it.base)
-          )
+        ? unclearBase(before, run.messageId, statedBases(parsed.args))
         : null
       if (circled) {
         return {
@@ -384,7 +437,9 @@ async function runTool(run: Run, call: ApiToolCall): Promise<CallResult> {
       }
       const plan = makePlan(run.projectId, run.messageId, call.id, parsed.args)
       const env = picturesEnv()
-      const waits = needsConfirm(plan, currentBalance())
+      // After a draw the planner has seen the result; drawing again is the
+      // user's call, however small the plan.
+      const waits = run.drew || needsConfirm(plan, currentBalance())
       const part = addPart<Extract<Part, { type: 'plan' }>>(
         run.projectId,
         run.messageId,
@@ -396,7 +451,11 @@ async function runTool(run: Run, call: ApiToolCall): Promise<CallResult> {
       if (waits || !env) return { content: null, pause: true }
       setLive(run.projectId, 'draw')
       const drawn = await drawPlan(run.projectId, run.messageId, part)
-      return { content: { status: 'drawn', ...drawn } }
+      run.drew = true
+      return {
+        content: { status: 'drawn', ...drawn },
+        after: drawnPictures(run.projectId, drawn),
+      }
     }
     case 'suggest_next': {
       editMessage(run.projectId, run.messageId, (m) => ({
@@ -448,10 +507,13 @@ export async function loop(run: Run): Promise<void> {
     })
     if (!out.toolCalls.length) break
     let end = false
+    const after: ApiMessage[] = []
     for (const call of out.toolCalls) {
       if (run.stopped || ownerLeft(run)) return
       const res = await runTool(run, call)
       if (res.pause) {
+        // The paused call's result still lands before them (placeToolResult).
+        if (after.length) pushTranscript(run.projectId, ...after)
         editMessage(run.projectId, run.messageId, (m) => ({
           ...m,
           status: 'waiting',
@@ -466,8 +528,10 @@ export async function loop(run: Run): Promise<void> {
         refreshResult(run.projectId, run.messageId)
         return
       }
+      if (res.after) after.push(...res.after)
       if (res.end) end = true
     }
+    if (after.length) pushTranscript(run.projectId, ...after)
     if (end) break
   }
   if (run.stopped) return
@@ -501,6 +565,7 @@ export async function resume(
 ) {
   setToolResult(projectId, callId, content)
   const run = newRun(projectId, messageId)
+  run.drew = (content as { status?: string } | null)?.status === 'drawn'
   runs.set(projectId, run)
   editMessage(projectId, messageId, (m) => ({ ...m, status: 'running' }))
   // Calls after the paused one in the same message (rare): run them now.
@@ -525,6 +590,13 @@ export async function resume(
       return
     }
     setToolResult(projectId, call.id, res.content)
+    if (run.stopped) {
+      // Stopped while this call drew: its pictures stay with their own
+      // turn and never reach a newer one.
+      refreshResult(projectId, messageId)
+      return
+    }
+    if (res.after?.length) pushTranscript(projectId, ...res.after)
     if (res.end) {
       finishTurn(projectId, messageId, 'done')
       setLive(projectId, null)

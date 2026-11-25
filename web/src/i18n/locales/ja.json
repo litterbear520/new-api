@@ -8596,6 +8596,7 @@
     "Speed": "速度",
     "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "サーバー側で計測：リクエストを受け取ってから、モデルから最初のストリームデータが届くまで。お使いの環境のネットワーク時間は含みません。",
     "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "出力トークン ÷（所要時間 − 先頭トークン）、サーバー側で計測。所要時間は秒単位で記録されるため、概算値です。出力が 100 トークン以上で、先頭トークンから 2 秒以上かかったストリームリクエストのみ。",
-    "Add to chat": "チャットに追加"
+    "Add to chat": "チャットに追加",
+    "Looked at {{names}}": "{{names}}を確認しました"
   }
 }

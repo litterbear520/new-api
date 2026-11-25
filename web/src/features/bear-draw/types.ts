@@ -206,6 +206,18 @@ export type QuestionItem = {
 
 export type QuestionAnswer = { q: string; answer: string }
 
+/** What an input picture is for. */
+export type InputRole =
+  | 'edit_target'
+  | 'product_ref'
+  | 'style_ref'
+  | 'logo_ref'
+  | 'scene_ref'
+  | 'insert'
+
+/** One input picture of a plan item: a canvas node or a "Picture n" of the user. */
+export type PlanInput = { node?: string; ref?: number; role: InputRole }
+
 export type PlanItem = {
   id: string
   label: string
@@ -220,6 +232,8 @@ export type PlanItem = {
   refs?: number[]
   /** Canvas node to edit. */
   base?: string
+  /** Every input picture with its role, in order; replaces base + refs. */
+  inputs?: PlanInput[]
   note?: string
   /** Estimated USD. */
   est: number
@@ -407,7 +421,18 @@ export type ApiContentPart =
   | { type: 'image_url'; image_url: { url: string } }
 
 export type ApiMessage =
-  | { role: 'user'; content: string; images?: string[] }
+  | {
+      role: 'user'
+      content: string
+      images?: string[]
+      /**
+       * Pictures the page shows the planner after a tool result (it asked to
+       * see them, or they were just drawn), not words of the user.
+       */
+      shown?: boolean
+      /** Long side these pictures are sent at (default PLANNER_PICTURE_PX). */
+      px?: number
+    }
   | {
       role: 'assistant'
       content: string | null
