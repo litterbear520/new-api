@@ -139,7 +139,7 @@ function canvasBlob(
 export async function prepareImage(
   blob: Blob,
   keepAlpha: boolean
-): Promise<{ w: number; h: number; thumb: Blob }> {
+): Promise<{ w: number; h: number; thumb: Blob; clear: boolean }> {
   const src = await decode(blob)
   const w = src.width
   const h = src.height
@@ -147,12 +147,28 @@ export async function prepareImage(
   const canvas = document.createElement('canvas')
   canvas.width = Math.max(1, Math.round(w * k))
   canvas.height = Math.max(1, Math.round(h * k))
-  canvas.getContext('2d')?.drawImage(src, 0, 0, canvas.width, canvas.height)
+  const ctx = canvas.getContext('2d')
+  ctx?.drawImage(src, 0, 0, canvas.width, canvas.height)
   if ('close' in src) src.close()
+  const clear = keepAlpha && ctx ? seesThrough(ctx, canvas) : false
   const thumb = keepAlpha
     ? await canvasBlob(canvas, 'image/webp', 0.86)
     : await canvasBlob(canvas, 'image/jpeg', 0.84)
-  return { w, h, thumb }
+  return { w, h, thumb, clear }
+}
+
+/** Whether any pixel of the small copy lets the background through. */
+function seesThrough(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement
+): boolean {
+  try {
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    for (let i = 3; i < data.length; i += 4) if (data[i] < 250) return true
+  } catch {
+    // a canvas that cannot be read back: treat the picture as opaque
+  }
+  return false
 }
 
 /** Draws a stored picture into a canvas of the given width. */

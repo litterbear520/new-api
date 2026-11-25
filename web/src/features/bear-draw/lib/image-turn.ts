@@ -32,7 +32,7 @@ import type {
   UserMessage,
 } from '../types'
 import { finishTurn } from './agent/finish'
-import { composePrompt } from './agent/plan'
+import { composePrompt, MARKED_ROLE } from './agent/plan'
 import { drawPicture } from './pictures'
 import { addGroup, addMessage, addPart, edit } from './project-edit'
 
@@ -56,9 +56,7 @@ export function imageInputs(p: Project | null, refs: Attachment[]) {
       roles.push('the picture to edit')
     }
     ids.push(marked.id)
-    roles.push(
-      'the same picture with red numbered circles marking where to change (a guide only; change only inside the circles and never draw them)'
-    )
+    roles.push(MARKED_ROLE)
   }
   for (const r of refs) {
     if (ids.includes(r.id) || r.marked) continue

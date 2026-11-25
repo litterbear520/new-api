@@ -358,6 +358,8 @@ export type UserMessage = {
   mode: Mode
   text: string
   refs: Attachment[]
+  /** Typed as the answer to a waiting question or plan card. */
+  reply?: boolean
   skillId?: string
   /** The brand kit was applied. */
   brand?: boolean

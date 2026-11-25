@@ -143,7 +143,7 @@ export const TOOLS = [
                 transparent: {
                   type: 'boolean',
                   description:
-                    'Transparent background (stickers, logos, cut-outs).',
+                    'Transparent background (stickers, logos, cut-outs). When editing a transparent picture, leave it out to keep the transparency; set false only when the user asks for a background.',
                 },
                 refs: {
                   type: 'array',

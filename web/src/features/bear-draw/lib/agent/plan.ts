@@ -62,12 +62,84 @@ export function turnRefs(p: Project, agentMessageId: string): Attachment[] {
   return []
 }
 
+/** What the red-circle copy is, in the prompt of both modes. */
+export const MARKED_ROLE =
+  'the same picture with red numbered circles marking where to change (a guide only; change only inside the circles and never draw them)'
+
+/**
+ * The picture an item edits. The planner's `base` wins; without one, the
+ * only picture the user circled for this request is it, so its red-circle
+ * copy is never left out.
+ */
+export function baseOf(
+  base: string | undefined,
+  marks: Attachment[],
+  ready: Set<string>
+): string | undefined {
+  if (base && ready.has(base)) return base
+  const circled = [
+    ...new Set(
+      marks
+        .filter((r) => r.marked && r.nodeId && ready.has(r.nodeId))
+        .map((r) => r.nodeId as string)
+    ),
+  ]
+  return circled.length === 1 ? circled[0] : undefined
+}
+
+/**
+ * The red-circle copies that belong to this request: those of the message
+ * the Agent message answers. A typed answer to a card passes on to the
+ * message before it; any other message without circles ends the search, so
+ * the circles of an earlier request never reach a new one. The newest copy
+ * of a picture comes first.
+ */
+export function turnMarks(p: Project, agentMessageId: string): Attachment[] {
+  const at = p.messages.findIndex((m) => m.id === agentMessageId)
+  for (let i = at - 1; i >= 0; i--) {
+    const m = p.messages[i]
+    if (m.role !== 'user' || m.mode !== 'agent') continue
+    const marks = m.refs.filter((r) => r.marked)
+    if (marks.length) return [...marks].reverse()
+    if (!m.reply) return []
+  }
+  return []
+}
+
+/**
+ * Several pictures are circled and no item says which one it edits: the
+ * ids to ask the planner about, else null.
+ */
+export function unclearBase(
+  p: Project,
+  agentMessageId: string,
+  bases: Array<string | undefined>
+): string[] | null {
+  const ready = new Set(
+    p.nodes.filter((n) => n.status === 'ready').map((n) => n.id)
+  )
+  const circled = [
+    ...new Set(
+      turnMarks(p, agentMessageId)
+        .map((r) => r.nodeId)
+        .filter((id): id is string => Boolean(id && ready.has(id)))
+    ),
+  ]
+  if (circled.length < 2) return null
+  return bases.some((b) => b && circled.includes(b)) ? null : circled
+}
+
 function wantsLogo(prompt: string): boolean {
   return /logo|标志|商标|品牌标/i.test(prompt)
 }
 
 /** Stored pictures to send for one item, in the order the prompt refers to them. */
-export function itemInputs(p: Project, item: PlanItem, refs: Attachment[]) {
+export function itemInputs(
+  p: Project,
+  item: PlanItem,
+  refs: Attachment[],
+  marks: Attachment[] = refs.filter((r) => r.marked)
+) {
   const ids: string[] = []
   const roles: string[] = []
   if (item.base) {
@@ -75,12 +147,10 @@ export function itemInputs(p: Project, item: PlanItem, refs: Attachment[]) {
     if (node?.img) {
       ids.push(node.img.id)
       roles.push('the picture to edit')
-      const marked = refs.find((r) => r.marked && r.nodeId === node.id)
+      const marked = marks.find((r) => r.nodeId === node.id)
       if (marked) {
         ids.push(marked.id)
-        roles.push(
-          'the same picture with red numbered circles marking where to change (a guide only; never draw the circles)'
-        )
+        roles.push(MARKED_ROLE)
       }
     }
   }
@@ -136,11 +206,17 @@ export function makePlan(
   const p = findProject(projectId)
   const model = useBearDrawStore.getState().prefs.image
   const refs = p ? turnRefs(p, agentMessageId) : []
+  const marks = p ? turnMarks(p, agentMessageId) : []
   const ready = new Set(
     (p?.nodes ?? []).filter((n) => n.status === 'ready').map((n) => n.id)
   )
   const items = args.items.map((it, i): PlanItem => {
-    const base = it.base && ready.has(it.base) ? it.base : undefined
+    const base = baseOf(it.base, marks, ready)
+    // An edit keeps the transparency of its picture unless the planner says otherwise.
+    const baseClear = Boolean(
+      base && p?.nodes.find((n) => n.id === base)?.img?.clear
+    )
+    const transparent = it.transparent ?? baseClear
     const item: PlanItem = {
       id: newId('it'),
       label: it.label || `#${i + 1}`,
@@ -148,14 +224,14 @@ export function makePlan(
       ratio: it.ratio,
       size: it.size || undefined,
       model,
-      transparent: it.transparent || undefined,
+      transparent: transparent || undefined,
       refs: it.refs.filter((n) => n <= refs.length),
       base,
       note: it.note || undefined,
       est: 0,
       on: true,
     }
-    const inputs = p ? itemInputs(p, item, refs).ids.length : 0
+    const inputs = p ? itemInputs(p, item, refs, marks).ids.length : 0
     item.est =
       estimatePicture(model, {
         edit: inputs > 0,
@@ -220,6 +296,7 @@ export async function drawPlan(
   const p = findProject(projectId)
   if (!p) return { groupId: '', results: [], cost: 0 }
   const refs = turnRefs(p, agentMessageId)
+  const marks = turnMarks(p, agentMessageId)
   const todo = plan.items.filter((x) => x.on)
   const groupId = newId('g')
   const nodes: CanvasNode[] = []
@@ -228,7 +305,7 @@ export async function drawPlan(
   for (const it of todo) {
     const nodeId = newId('n')
     const [w, h] = ratioSize(it.ratio)
-    const inputs = itemInputs(p, it, refs)
+    const inputs = itemInputs(p, it, refs, marks)
     const job: PictureJob = {
       model: it.model,
       prompt: composePrompt(

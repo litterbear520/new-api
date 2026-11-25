@@ -57,6 +57,7 @@ function actions(narrow: boolean, layout?: ProjectLayout) {
   const composer: ComposerHandle = {
     focus: vi.fn(),
     setText: vi.fn(),
+    appendText: vi.fn(),
     setSkill: vi.fn(),
     applyPreset: vi.fn(),
     addRefs: vi.fn(),

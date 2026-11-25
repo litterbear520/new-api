@@ -93,6 +93,33 @@ describe('Composer sending', () => {
     }
   })
 
+  it('adds the notes of a 圈选 after what is already typed', async () => {
+    const { ref, box, user } = setup()
+    await user.type(box, '整体再亮一点')
+
+    act(() => ref.current?.appendText('①杯身换成白色'))
+    expect(box).toHaveValue('整体再亮一点\n①杯身换成白色')
+
+    // the same notes again (圈选 done twice) are not repeated
+    act(() => ref.current?.appendText('①杯身换成白色'))
+    expect(box).toHaveValue('整体再亮一点\n①杯身换成白色')
+  })
+
+  it('swaps the notes when the same picture is circled again', async () => {
+    const { ref, box, user } = setup()
+    await user.type(box, '整体再亮一点')
+    act(() => ref.current?.appendText('①改红'))
+
+    act(() => ref.current?.appendText('①改蓝', '①改红'))
+    expect(box).toHaveValue('整体再亮一点\n①改蓝')
+  })
+
+  it('puts the notes of a 圈选 into an empty box as they are', () => {
+    const { ref, box } = setup()
+    act(() => ref.current?.appendText('①杯身换成白色'))
+    expect(box).toHaveValue('①杯身换成白色')
+  })
+
   it('sends the trimmed text in Agent mode when Enter is pressed, then clears', async () => {
     const { onSend, box, user } = setup()
     await user.type(box, '  给保温杯做主图  ')

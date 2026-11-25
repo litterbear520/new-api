@@ -27,7 +27,12 @@ import type { Skill } from '../types'
 vi.mock('@/features/draw/lib/images', async (original) => ({
   ...(await original<typeof import('@/features/draw/lib/images')>()),
   copyBlob: vi.fn(async (b: Blob) => b),
-  prepareImage: vi.fn(async () => ({ w: 1, h: 1, thumb: undefined })),
+  prepareImage: vi.fn(async () => ({
+    w: 1,
+    h: 1,
+    thumb: undefined,
+    clear: false,
+  })),
   primeImageUrls: vi.fn(),
 }))
 vi.mock('@/features/draw/lib/storage', async (original) => ({

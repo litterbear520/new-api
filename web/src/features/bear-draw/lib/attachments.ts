@@ -62,7 +62,13 @@ async function storeBlob(blob: Blob, name?: string): Promise<Attachment> {
   primeImageUrls(id, bytes, prepared.thumb)
   await putImage(uid(), id, bytes, prepared.thumb)
   requestPersistence()
-  return { id, w: prepared.w, h: prepared.h, ...(name ? { name } : {}) }
+  return {
+    id,
+    w: prepared.w,
+    h: prepared.h,
+    ...(prepared.clear ? { clear: true } : {}),
+    ...(name ? { name } : {}),
+  }
 }
 
 /**

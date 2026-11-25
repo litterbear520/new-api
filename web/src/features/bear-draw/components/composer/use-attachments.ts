@@ -49,7 +49,13 @@ export function useAttachments() {
   /** Adds pictures; ones already attached are skipped. False when none fit. */
   const add = useCallback(
     (list: Attachment[]): boolean => {
-      const cur = latest.current
+      // a picture circled again: its new red-circle copy replaces the old one
+      const again = new Set(
+        list.filter((a) => a.marked && a.nodeId).map((a) => a.nodeId)
+      )
+      const cur = latest.current.filter(
+        (r) => !(r.marked && again.has(r.nodeId))
+      )
       const fresh = list.filter((a) => !cur.some((r) => r.id === a.id))
       const room = MAX_REFS - cur.length
       if (fresh.length > room) tooMany()

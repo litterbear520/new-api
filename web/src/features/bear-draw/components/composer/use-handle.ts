@@ -29,9 +29,15 @@ import type { Preset } from './composer-chips'
 export type ComposerHandle = {
   focus(): void
   setText(text: string): void
+  /**
+   * Adds to what is already typed (the notes of a 圈选). `replaces` is the
+   * text this one takes the place of when it is still there.
+   */
+  appendText(text: string, replaces?: string): void
   setSkill(skillId: string | null): void
   applyPreset(item: GalleryItem): void
-  addRefs(refs: Attachment[]): void
+  /** False when the message already holds as many pictures as it can. */
+  addRefs(refs: Attachment[]): boolean
 }
 
 const isRatio = (r: unknown): r is Ratio => RATIOS.includes(r as Ratio)
@@ -58,6 +64,16 @@ export function useComposerHandle(
       focus: () => taRef.current?.focus({ preventScroll: true }),
       setText: (value) => {
         write(value, value.length)
+        taRef.current?.focus({ preventScroll: true })
+      },
+      appendText: (value, replaces) => {
+        const typed = taRef.current?.value.trim() ?? ''
+        let next = value
+        if (replaces && typed.includes(replaces)) {
+          next = typed.replace(replaces, value)
+        } else if (typed.includes(value)) next = typed
+        else if (typed) next = `${typed}\n${value}`
+        write(next, next.length)
         taRef.current?.focus({ preventScroll: true })
       },
       setSkill: (id) => {
@@ -89,8 +105,9 @@ export function useComposerHandle(
         }
       },
       addRefs: (list) => {
-        addRefs(list)
+        const added = addRefs(list)
         taRef.current?.focus({ preventScroll: true })
+        return added
       },
     }),
     [taRef, write, setSkillId, setPreset, addRefs, setPrefs]

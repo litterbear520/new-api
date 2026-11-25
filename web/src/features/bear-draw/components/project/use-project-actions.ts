@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useMemo, type RefObject } from 'react'
+import { useCallback, useMemo, useRef, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -129,6 +129,9 @@ export function useProjectActions(o: Options) {
     [o.projectId, o.composerRef, showChat]
   )
 
+  /** The notes last put into the composer for each circled picture. */
+  const markNotes = useRef(new Map<string, string>())
+
   const onMarked = useCallback(
     async (nodeId: string, png: Blob, marks?: MarkInfo[]) => {
       const att = await storeMarked(o.projectId, nodeId, png).catch(() => null)
@@ -136,12 +139,17 @@ export function useProjectActions(o: Options) {
         toast.error(t('Could not keep the circled picture. Try again.'))
         return
       }
-      o.composerRef.current?.addRefs([att])
+      // no room for the circled picture: its notes stay out too
+      if (o.composerRef.current?.addRefs([att]) === false) return
       // 「①杯身换成白色；②…」: the notes written on the marks
       const notes = (marks ?? [])
         .filter((m) => m.note.trim())
         .map((m) => `${CIRCLED[m.n - 1] ?? `${m.n}.`}${m.note.trim()}`)
-      if (notes.length) o.composerRef.current?.setText(notes.join('；'))
+        .join('；')
+      // circled again: the new notes take the place of the earlier ones
+      const earlier = markNotes.current.get(nodeId)
+      if (notes) o.composerRef.current?.appendText(notes, earlier)
+      markNotes.current.set(nodeId, notes)
       showChat()
       o.composerRef.current?.focus()
     },

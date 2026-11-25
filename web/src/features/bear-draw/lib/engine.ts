@@ -50,7 +50,11 @@ import { findSkill, loadSkillForModel } from './agent/skills'
 import { userTurnText } from './agent/transcript'
 import { storeFiles, storePicture } from './attachments'
 import { imageTurns, runImageTurn, titleFrom } from './image-turn'
-import { drawPicture, estimatePicture as estimate } from './pictures'
+import {
+  cancelRetries,
+  drawPicture,
+  estimatePicture as estimate,
+} from './pictures'
 import {
   addMessage,
   addPart,
@@ -279,6 +283,7 @@ export function send(projectId: string, input: SendInput): boolean {
   }
   const waiting = waitingCard(p)
   if (waiting) {
+    user.reply = true
     addMessage(projectId, user)
     const { message, card } = waiting
     let content: unknown
@@ -333,6 +338,7 @@ export function send(projectId: string, input: SendInput): boolean {
 /** Stops the agent: queued pictures are not sent (and not charged). */
 export function stop(projectId: string, opts?: { quiet?: boolean }): void {
   stopEpoch.set(projectId, epochOf(projectId) + 1)
+  cancelRetries(projectId)
   stopRun(projectId)
   const p = findProject(projectId)
   if (!p) return

@@ -36,7 +36,13 @@ import {
 } from '../project-edit'
 import { finishTurn, refreshResult } from './finish'
 import { frameBatch } from './frame-batch'
-import { drawPlan, makePlan, needsConfirm, setPlanState } from './plan'
+import {
+  drawPlan,
+  makePlan,
+  needsConfirm,
+  setPlanState,
+  unclearBase,
+} from './plan'
 import { buildSystemPrompt } from './prompt'
 import { loadSkillForModel } from './skills'
 import { streamStep } from './stream'
@@ -361,6 +367,21 @@ async function runTool(run: Run, call: ApiToolCall): Promise<CallResult> {
       return { content: null, pause: true }
     }
     case 'propose_plan': {
+      const before = findProject(run.projectId)
+      const circled = before
+        ? unclearBase(
+            before,
+            run.messageId,
+            parsed.args.items.map((it) => it.base)
+          )
+        : null
+      if (circled) {
+        return {
+          content: {
+            error: `The user circled several pictures (${circled.join(', ')}). Call propose_plan again and give every item that edits one of them its base.`,
+          },
+        }
+      }
       const plan = makePlan(run.projectId, run.messageId, call.id, parsed.args)
       const env = picturesEnv()
       const waits = needsConfirm(plan, currentBalance())
