@@ -147,6 +147,10 @@ export const TYPICAL_SECS: Record<
   string,
   { gen: [number, number]; edit: [number, number] }
 > = {
+  // live logs 2026-11-05..25: 16 plain, 18 with an input picture; Flare
+  // had one request and timed like Sunburst when both were measured
+  'gpt-image-2.6-sunburst': { gen: [25, 35.5], edit: [32, 87] },
+  'gpt-image-2.6-flare': { gen: [25, 35.5], edit: [32, 87] },
   'gpt-image-2.5-sunburst': { gen: [25, 40], edit: [34.5, 64] },
   'gpt-image-2.5-flare': { gen: [22, 38], edit: [32, 60] },
   'gpt-image-2': { gen: [20.5, 35], edit: [30, 58] },
