@@ -247,8 +247,11 @@ function scheduleSave(uid: number, p: Project) {
   })
 }
 
-/** Writes everything pending right away (the tab is being hidden or closed). */
-function flush() {
+/**
+ * Writes everything pending right away: the tab is being hidden or closed,
+ * or the change is one a reload a moment later must not lose (the layout).
+ */
+export function flush() {
   const s = useBearDrawStore.getState()
   if (s.uid == null) return
   for (const [id, timer] of timers) {

@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { isQuotaError } from '@/features/draw/lib/storage'
 import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
+import { flush as flushSaves } from '../../hooks/use-persistence'
 import { SKIPPED_PICTURES_TEXT, storeFailedText } from '../../lib/attachments'
 import type { MarkInfo } from '../../lib/canvas/types'
 import { storeMarked, uploadToCanvas } from '../../lib/engine'
@@ -80,6 +81,8 @@ export function useProjectActions(o: Options) {
         .updateProject(o.projectId, (x) =>
           x.layout === layout ? x : { ...x, layout }
         )
+      // kept at once: a reload right after the click opens the same view
+      flushSaves()
     },
     [o.projectId, o.narrow, setSheet]
   )
