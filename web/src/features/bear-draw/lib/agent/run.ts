@@ -76,6 +76,8 @@ type Run = {
   steps: number
   /** Pictures were drawn in this turn: any further plan waits for the user. */
   drew?: boolean
+  /** The planner was asked once to end with suggest_next. */
+  nudged?: boolean
 }
 
 const runs = new Map<string, Run>()
@@ -507,7 +509,21 @@ export async function loop(run: Run): Promise<void> {
       content: out.text || null,
       ...(out.toolCalls.length ? { tool_calls: out.toolCalls } : {}),
     })
-    if (!out.toolCalls.length) break
+    if (!out.toolCalls.length) {
+      // After drawing, the planner sometimes ends in plain text and the
+      // result has no way on: ask it once for its suggestions.
+      if (run.drew && !run.nudged) {
+        run.nudged = true
+        pushTranscript(run.projectId, {
+          role: 'user',
+          content:
+            '[The turn is not finished. Call suggest_next now with 3 concrete follow-ups; write no more text.]',
+          shown: true,
+        })
+        continue
+      }
+      break
+    }
     let end = false
     const after: ApiMessage[] = []
     for (const call of out.toolCalls) {

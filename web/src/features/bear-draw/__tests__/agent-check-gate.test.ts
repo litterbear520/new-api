@@ -131,3 +131,47 @@ test('a plan made after pictures were drawn in the same turn waits for the user'
   expect(drawPlan).toHaveBeenCalledTimes(1)
   expect(m?.role === 'agent' && m.status).toBe('waiting')
 })
+
+test('a turn that drew and ended in plain text is asked once for its suggestions', async () => {
+  const suggest = {
+    id: 's1',
+    type: 'function' as const,
+    function: {
+      name: 'suggest_next',
+      arguments: JSON.stringify({ suggestions: ['warmer light'] }),
+    },
+  }
+  const replies = [
+    { text: '', toolCalls: [planCall('c1')] },
+    { text: 'Here is your poster.', toolCalls: [] },
+    { text: '', toolCalls: [suggest] },
+  ]
+  vi.mocked(streamStep).mockImplementation(async () => ({
+    ...(replies.shift() ?? { text: '', toolCalls: [] }),
+    finish: 'stop',
+    usage: null,
+  }))
+  vi.mocked(drawPlan).mockResolvedValue({ groupId: 'g', results: [], cost: 0 })
+
+  await loop(newRun('gate-test', 'agent'))
+
+  expect(streamStep).toHaveBeenCalledTimes(3)
+  const m = findProject('gate-test')?.messages[0]
+  expect(m?.role === 'agent' && m.suggestions).toEqual(['warmer light'])
+  expect(m?.role === 'agent' && m.status).toBe('done')
+})
+
+test('the planner is asked for suggestions only once', async () => {
+  const replies = [{ text: '', toolCalls: [planCall('c1')] }]
+  vi.mocked(streamStep).mockImplementation(async () => ({
+    ...(replies.shift() ?? { text: 'Done.', toolCalls: [] }),
+    finish: 'stop',
+    usage: null,
+  }))
+  vi.mocked(drawPlan).mockResolvedValue({ groupId: 'g', results: [], cost: 0 })
+
+  await loop(newRun('gate-test', 'agent'))
+
+  // the plan, the plain answer, the answer to the one reminder
+  expect(streamStep).toHaveBeenCalledTimes(3)
+})

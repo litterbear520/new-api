@@ -527,15 +527,18 @@ For commercial licensing, please contact support@quantumnous.com
 }
 .bd-plan-hd {
   display: flex;
+  /* beside the canvas the card is narrow: the numbers go under the title */
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
   padding: 12px 14px 6px;
   font-size: 13px;
   color: var(--bd-ink3);
 }
 .bd-plan-ti {
   display: inline-flex;
+  flex: 1 1 9em;
   align-items: baseline;
   gap: 8px;
   min-width: 0;
