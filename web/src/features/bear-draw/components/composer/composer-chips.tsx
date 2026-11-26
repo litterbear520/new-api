@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { Tip } from '@/features/draw/components/tip'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
-import type { BrandKit, Mode, Skill } from '../../types'
+import type { BrandKit, Skill } from '../../types'
 import { openDialog } from '../dialogs/dialog-bus'
 
 /** A 玩法 from the home gallery, applied to this message. */
@@ -32,13 +32,11 @@ export type Preset = {
   needsPhoto: boolean
   /** What photo it wants, from the gallery item. */
   hint: string
-  /** The text it put in the box, and the mode it replaced: undone with it. */
+  /** The text it put in the box: taken out with it while untouched. */
   prompt: string
-  modeBefore: Mode
 }
 
 type ChipsProps = {
-  mode: Mode
   skill: Skill | null
   preset: Preset | null
   onClearSkill: () => void
@@ -49,9 +47,9 @@ type ChipsProps = {
 export function ComposerChips(props: ChipsProps) {
   const { t } = useTranslation()
   const brandKit = useBearDrawStore((s) => s.brandKit)
-  const agent = props.mode === 'agent'
-  const skill = agent ? props.skill : null
-  const brand = agent ? brandKit : null
+  const skill = props.skill
+  // a 玩法 is drawn as written, without the brand kit
+  const brand = props.preset ? null : brandKit
   if (!skill && !props.preset && !brand) return null
   return (
     <div className='bd-comp-chips'>

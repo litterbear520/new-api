@@ -18,19 +18,14 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { create } from 'zustand'
 
-import {
-  DEFAULT_PREFS,
-  MAX_COUNT,
-  RATIOS,
-  STORAGE_KEYS,
-} from '@/features/bear-draw/constants'
+import { DEFAULT_PREFS, STORAGE_KEYS } from '@/features/bear-draw/constants'
 import type {
   Attachment,
   BrandKit,
   LiveState,
-  Mode,
   Prefs,
   Project,
+  Ratio,
   Skill,
 } from '@/features/bear-draw/types'
 
@@ -44,10 +39,12 @@ import type {
 /** A message composed on the home page, sent once its project opens. */
 export type Draft = {
   text: string
-  mode: Mode
   refs: Attachment[]
   skillId?: string
   presetId?: string
+  presetTitle?: string
+  /** The ratio picked for this message; left out when the planner chooses. */
+  ratio?: Ratio
 }
 
 type State = {
@@ -120,7 +117,6 @@ export function readPrefs(): Prefs {
     !WAS_DEFAULT_BRAIN.has(saved.brain)
   const auto = p.auto !== false && !pickedBefore
   return {
-    mode: p.mode === 'image' ? 'image' : 'agent',
     auto,
     brain:
       !auto && typeof p.brain === 'string' && p.brain
@@ -129,9 +125,6 @@ export function readPrefs(): Prefs {
     effort: EFFORT_IDS.has(p.effort) ? p.effort : DEFAULT_PREFS.effort,
     // the image model is the page's choice (index.tsx fits it to the account)
     image: DEFAULT_PREFS.image,
-    ratio: RATIOS.includes(p.ratio) ? p.ratio : DEFAULT_PREFS.ratio,
-    count: Math.min(MAX_COUNT, Math.max(1, Math.round(Number(p.count) || 1))),
-    transparent: p.transparent === true,
     brand: p.brand !== false,
   }
 }

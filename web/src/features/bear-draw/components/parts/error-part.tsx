@@ -33,7 +33,6 @@ import {
   errorTitle,
   type ErrorFix,
 } from '@/features/bear-chat/lib/errors'
-import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { retryStep } from '../../lib/engine'
 import type { BrainErrorKind, Part } from '../../types'
@@ -68,10 +67,8 @@ export function ErrorPart(props: {
   const fixes = FIXES[part.kind] ?? FIXES.other
   const view = { kind: part.kind, fixes }
   const has = (fix: ErrorFix) => fixes.includes(fix)
-  /** Opens the planner list of 模型偏好 (the menu is on the Agent bar). */
+  /** Opens the planner list of 模型偏好 (the menu is on the composer bar). */
   const pickModel = () => {
-    const store = useBearDrawStore.getState()
-    if (store.prefs.mode !== 'agent') store.setPrefs({ mode: 'agent' })
     actions.focusComposer()
     window.setTimeout(
       () =>

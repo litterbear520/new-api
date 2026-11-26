@@ -27,9 +27,10 @@ import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { useBearDrawEnv } from '../../hooks/use-env'
 import { estimatePicture } from '../../lib/engine'
-import { ModeMenu, PlusMenu } from './bar-menus'
+import type { Ratio } from '../../types'
+import { PlusMenu } from './bar-menus'
 import { EffortMenu } from './effort-menu'
-import { ImageSettings } from './image-settings'
+import { RatioMenu } from './ratio-menu'
 
 type BarProps = {
   variant: 'home' | 'dock'
@@ -38,8 +39,9 @@ type BarProps = {
   busy: boolean
   /** Something to send and nothing in the way. */
   ready: boolean
-  /** Image mode: rough USD for this message; null when unknown. */
-  estimate: number | null
+  /** The ratio picked for this message. */
+  ratio: Ratio
+  onRatio: (ratio: Ratio) => void
   taRef: RefObject<HTMLTextAreaElement | null>
   onUpload: () => void
   onSkill: () => void
@@ -77,19 +79,9 @@ function LowBalance() {
   )
 }
 
-/** Under the text: + and the mode on the left; thinking effort and send on the right. */
+/** Under the text: + and the ratio on the left; thinking effort and send on the right. */
 export function ComposerBar(props: BarProps) {
   const { t } = useTranslation()
-  const money = useMoney()
-  const image = useBearDrawStore((s) => s.prefs.mode === 'image')
-  const cost =
-    image && props.estimate != null ? money.cost(props.estimate) : null
-  let tip = t('Send (Enter)')
-  if (props.busy) {
-    tip = t("Stop the pictures that haven't started (not charged)")
-  } else if (cost) {
-    tip = t('Send (Enter) · about {{cost}}', { cost })
-  }
   return (
     <div className='bd-comp-bar'>
       <div className='bd-comp-l'>
@@ -100,22 +92,22 @@ export function ComposerBar(props: BarProps) {
           onSkill={props.onSkill}
           onCanvas={props.onCanvas}
         />
-        <ModeMenu finalFocus={props.taRef} />
-        {image && <ImageSettings cost={cost} />}
+        <RatioMenu
+          ratio={props.ratio}
+          onChange={props.onRatio}
+          finalFocus={props.taRef}
+        />
       </div>
       <div className='bd-comp-r'>
-        {!image && <EffortMenu />}
-        {cost && props.variant === 'home' && (
-          <Tip
-            label={t(
-              'Rough cost of this message; nothing is charged if it fails'
-            )}
-          >
-            <span className='bd-est'>≈{cost}</span>
-          </Tip>
-        )}
+        <EffortMenu />
         <LowBalance />
-        <Tip label={tip}>
+        <Tip
+          label={
+            props.busy
+              ? t("Stop the pictures that haven't started (not charged)")
+              : t('Send (Enter)')
+          }
+        >
           <button
             type='button'
             className='bd-send'

@@ -31,7 +31,6 @@ import {
 import { buildSystemPrompt } from '../lib/agent/prompt'
 import { parseCall } from '../lib/agent/tools'
 import { describeRef } from '../lib/agent/transcript'
-import { imageInputs } from '../lib/image-turn'
 import { retryable, RETRY_WITHIN_MS } from '../lib/pictures'
 import type { Attachment, CanvasNode, PlanItem, Project } from '../types'
 
@@ -102,13 +101,6 @@ describe('the picture a plan item edits', () => {
     const got = itemInputs(p, item({ base: 'n_a' }), [circled('n_a')])
     expect(got.ids).toEqual(['img-n_a', 'mark-n_a'])
     expect(got.roles).toEqual(['the picture to edit', MARKED_ROLE])
-  })
-
-  it('describes the red-circle copy the same way in Image mode', () => {
-    const p = project([node('n_a')])
-    const got = imageInputs(p, [circled('n_a')])
-    expect(got.roles[1]).toBe(MARKED_ROLE)
-    expect(MARKED_ROLE).toContain('change only inside the circles')
   })
 })
 

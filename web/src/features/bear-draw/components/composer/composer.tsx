@@ -136,12 +136,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
             refs={c.att.refs}
             needPhoto={c.needPhoto}
             photoHint={c.preset?.hint}
-            showAdd={c.mode === 'image' && !home}
             onAdd={() => c.fileRef.current?.click()}
             onRemove={c.att.remove}
           />
           <ComposerChips
-            mode={c.mode}
             skill={c.skill}
             preset={c.preset}
             onClearSkill={() => {
@@ -196,7 +194,6 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
             />
             {!c.text && (
               <Placeholder
-                mode={c.mode}
                 skillName={c.skill?.name ?? null}
                 example={c.example}
                 exampleKey={c.turn}
@@ -212,9 +209,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
           <ComposerBar
             variant={props.variant}
             canvas={hasPictures}
-            busy={c.canStop}
+            busy={c.busy}
             ready={c.ready}
-            estimate={c.estimate}
+            ratio={c.ratio}
+            onRatio={c.setRatio}
             taRef={ta}
             onUpload={() => c.fileRef.current?.click()}
             onSkill={() => c.startPicker('/')}

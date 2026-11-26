@@ -115,7 +115,6 @@ describe('Composer "/" skill picker', () => {
     await user.keyboard('{Enter}')
     expect(onSend).toHaveBeenCalledWith({
       text: '保温杯',
-      mode: 'agent',
       refs: [],
       skillId: 'taobao-main-set',
     })
@@ -146,7 +145,6 @@ describe('Composer "@" canvas picker', () => {
     await user.keyboard('{Enter}')
     expect(onSend).toHaveBeenCalledWith({
       text: '把@首图 换成蓝色',
-      mode: 'agent',
       refs: [{ id: 'img-n1', w: 800, h: 800, nodeId: 'n1', label: '首图' }],
     })
   })

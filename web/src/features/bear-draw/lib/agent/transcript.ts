@@ -25,6 +25,7 @@ import type {
   ApiToolCall,
   Attachment,
   CanvasNode,
+  Ratio,
   Skill,
   UserMessage,
 } from '../../types'
@@ -137,8 +138,20 @@ export function userTurnText(
   }
   if (opts.brand) lines.push(`[Apply the brand kit「${opts.brand}」.]`)
   user.refs.forEach((ref, i) => lines.push(`[${describeRef(ref, i + 1)}]`))
+  if (user.presetId && user.text.trim()) {
+    lines.push(
+      `[The user sent the gallery preset「${user.presetTitle ?? user.presetId}」. Its prompt is ready-made: the page draws it as written, in the propose_plan call that follows. Check the result and suggest follow-ups as usual.]`
+    )
+  } else if (user.ratio) {
+    lines.push(`[${ratioRule(user.ratio)}]`)
+  }
   lines.push(user.text.trim() || '(no text)')
   return lines.join('\n')
+}
+
+/** What a ratio the user picked for a message means for the planner. */
+export function ratioRule(ratio: Ratio): string {
+  return `The user set the aspect ratio of this request to ${ratio}. Every new picture uses ${ratio}; give no size that has another ratio. If the request edits an existing picture of another ratio, recompose or extend it to ${ratio}. If a loaded skill fixes a different ratio for a platform, do not draw yet: tell the user about the conflict and let them choose.`
 }
 
 /**

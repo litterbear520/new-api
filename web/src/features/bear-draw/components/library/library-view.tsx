@@ -75,7 +75,7 @@ export function LibraryView(props: { tab?: string; skillId?: string }) {
   )
   const tryIt = useCallback(
     (s: Skill, text = '') => {
-      setDraft({ text, mode: 'agent', refs: [], skillId: s.id })
+      setDraft({ text, refs: [], skillId: s.id })
       void navigate({ to: '/draw', search: {} })
     },
     [navigate, setDraft]

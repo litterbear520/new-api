@@ -34,7 +34,7 @@ import { EffortSlider } from './effort-slider'
 import { OPEN_EVENT, type ModelMenuAsk } from './model-menu-bus'
 
 /**
- * Agent mode: one chip that says how hard the bear thinks (Codex's picker).
+ * One chip that says how hard the bear thinks (Codex's picker).
  * It opens the model in one row (「最新」 until one is picked by hand; the
  * row turns the panel to the list) over the thinking-effort slider. The
  * image model is not offered: the page draws with the recommended one.

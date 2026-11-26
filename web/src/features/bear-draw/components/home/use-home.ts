@@ -35,7 +35,6 @@ export function useHomeDraft(composer: RefObject<ComposerHandle | null>) {
     if (!draft || !c) return
     const store = useBearDrawStore.getState()
     store.setDraft(null)
-    if (draft.mode !== store.prefs.mode) store.setPrefs({ mode: draft.mode })
     if (draft.refs.length) c.addRefs(draft.refs)
     if (draft.skillId) c.setSkill(draft.skillId)
     if (draft.text) c.setText(draft.text)

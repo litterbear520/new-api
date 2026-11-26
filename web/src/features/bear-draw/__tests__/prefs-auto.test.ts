@@ -21,8 +21,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { readPrefs, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { DEFAULT_PREFS, STORAGE_KEYS } from '../constants'
-import { hasQueued, stopQueued } from '../lib/engine'
-import type { Project } from '../types'
 
 const save = (prefs: object) =>
   localStorage.setItem(STORAGE_KEYS.prefs, JSON.stringify(prefs))
@@ -82,70 +80,12 @@ describe('「最新」 and the thinking effort', () => {
   })
 })
 
-describe('hasQueued', () => {
-  const project = (status: string) =>
-    ({
-      messages: [
-        { role: 'user' },
-        {
-          role: 'agent',
-          parts: [
-            { type: 'progress', items: [{ status: 'done' }, { status }] },
-          ],
-        },
-      ],
-    }) as unknown as Project
-
-  it('is true while a picture waits for its turn', () => {
-    expect(hasQueued(project('queued'))).toBe(true)
-    expect(hasQueued(project('drawing'))).toBe(false)
-    expect(hasQueued(null)).toBe(false)
-  })
-})
-
-describe('stopQueued', () => {
-  it('stops pictures in line and leaves a waiting question card alone', () => {
-    const p = {
-      id: 'p',
-      title: 'p',
-      createdAt: 1,
-      updatedAt: 1,
-      cost: 0,
-      transcript: [],
-      groups: [],
-      nodes: [{ id: 'n', status: 'pending' }],
-      messages: [
-        {
-          id: 'ask',
-          role: 'agent',
-          mode: 'agent',
-          status: 'waiting',
-          parts: [{ id: 'q', type: 'questions', items: [] }],
-        },
-        {
-          id: 'img',
-          role: 'agent',
-          mode: 'image',
-          status: 'running',
-          parts: [
-            {
-              id: 'pg',
-              type: 'progress',
-              items: [{ id: 'i', nodeId: 'n', status: 'queued' }],
-            },
-          ],
-        },
-      ],
-    } as unknown as Project
-    useBearDrawStore.getState().init(1, [p])
-
-    stopQueued('p')
-
-    const now = useBearDrawStore.getState().projects[0]
-    expect(hasQueued(now)).toBe(false)
-    expect(now.messages[0]).toMatchObject({ status: 'waiting' })
-    const ask = now.messages[0]
-    expect(ask.role === 'agent' && ask.parts[0]).not.toHaveProperty('skipped')
-    useBearDrawStore.setState({ projects: [], uid: null, loaded: false })
+describe('prefs from the time of the Image mode', () => {
+  it('drop the mode and its ratio, count and transparency', () => {
+    save({ mode: 'image', ratio: '16:9', count: 4, transparent: true })
+    const prefs = readPrefs()
+    expect(prefs).toEqual({ ...DEFAULT_PREFS })
+    expect(prefs).not.toHaveProperty('mode')
+    expect(prefs).not.toHaveProperty('ratio')
   })
 })

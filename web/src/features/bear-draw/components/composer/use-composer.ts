@@ -31,12 +31,8 @@ import { toast } from 'sonner'
 
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
-import {
-  estimatePicture,
-  hasQueued,
-  isBusy,
-  type SendInput,
-} from '../../lib/engine'
+import { isBusy, type SendInput } from '../../lib/engine'
+import type { Ratio } from '../../types'
 import type { Preset } from './composer-chips'
 import { findSkill, getExamples, useRotation } from './examples'
 import { insertTrigger, replaceTrigger } from './trigger'
@@ -75,11 +71,6 @@ export function useComposer(
   focused: boolean
 ) {
   const { t } = useTranslation()
-  const mode = useBearDrawStore((s) => s.prefs.mode)
-  const imageModel = useBearDrawStore((s) => s.prefs.image)
-  const count = useBearDrawStore((s) => s.prefs.count)
-  const transparent = useBearDrawStore((s) => s.prefs.transparent)
-  const setPrefs = useBearDrawStore((s) => s.setPrefs)
   const mySkills = useBearDrawStore((s) => s.mySkills)
   // re-render on every phase so isBusy below stays fresh
   const live = useBearDrawStore((s) =>
@@ -88,39 +79,32 @@ export function useComposer(
   const [text, setText] = useState('')
   const [skillId, setSkillId] = useState<string | null>(null)
   const [preset, setPreset] = useState<Preset | null>(null)
+  // The ratio belongs to the message being written: it goes back to 自动
+  // once that message is sent.
+  const [ratio, setRatio] = useState<Ratio>('auto')
+  const presetOn = useRef(false)
+  presetOn.current = preset != null
   const taRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const caret = useRef<number | null>(null)
   const att = useAttachments()
 
-  // Image mode can always send: its pictures draw side by side (≤3 at once,
-  // the rest queue unsent). Only an Agent turn holds the box (and offers ■).
-  const busy =
-    mode === 'agent' &&
-    (props.busy ?? (props.projectId ? isBusy(props.projectId) : false))
-  // Image mode: pictures still waiting for their turn can be stopped while
-  // the box is empty (with text in it, the button sends).
-  const queued = useBearDrawStore((s) =>
-    props.projectId
-      ? hasQueued(s.projects.find((p) => p.id === props.projectId))
-      : false
-  )
+  const busy = props.busy ?? (props.projectId ? isBusy(props.projectId) : false)
   const skill = findSkill(skillId, mySkills)
   const examples = useMemo(() => getExamples(t), [t])
-  const exampleOn = props.variant === 'home' && mode === 'agent' && !skill
+  const exampleOn = props.variant === 'home' && !skill && !preset
   const turn = useRotation(exampleOn && !text && !focused)
   const example = exampleOn ? examples[turn % examples.length] : null
   const refs = att.refs
   const needPhoto = preset?.needsPhoto === true && refs.length === 0
   const hasBody = text.trim() !== '' || (preset != null && refs.length > 0)
-  const one =
-    mode === 'image'
-      ? estimatePicture(imageModel, {
-          edit: refs.length > 0,
-          refs: refs.length,
-          transparent,
-        })
-      : null
+
+  /** A skill takes the place of the 玩法: the ratio it brought goes with it. */
+  const leavePreset = useCallback(() => {
+    if (!presetOn.current) return
+    setPreset(null)
+    setRatio('auto')
+  }, [])
 
   /** Sets the text and where the caret goes after the render. */
   const write = useCallback((value: string, at: number) => {
@@ -141,7 +125,7 @@ export function useComposer(
         const next = replaceTrigger(text, trigger, '')
         write(next.value, next.caret)
         setSkillId(item.skill.id)
-        if (mode !== 'agent') setPrefs({ mode: 'agent' })
+        leavePreset()
         return
       }
       const img = item.pick.node.img
@@ -181,13 +165,18 @@ export function useComposer(
       taRef.current?.focus()
       return
     }
-    const input: SendInput = { text: text.trim(), mode, refs }
-    if (mode === 'agent' && skill) input.skillId = skill.id
-    if (preset) input.presetId = preset.id
+    const input: SendInput = { text: text.trim(), refs }
+    if (skill) input.skillId = skill.id
+    if (preset) {
+      input.presetId = preset.id
+      input.presetTitle = preset.title
+    }
+    if (ratio !== 'auto') input.ratio = ratio
     if (props.onSend(input) === false) return
     setText('')
     setSkillId(null)
     setPreset(null)
+    setRatio('auto')
     att.clear()
     picker.close()
   }
@@ -231,20 +220,21 @@ export function useComposer(
     write,
     setSkillId,
     setPreset,
+    setRatio,
+    leavePreset,
     att.add,
     att.addFiles
   )
 
-  /** 「×」 on the 玩法: its untouched text and the mode it brought go too. */
+  /** 「×」 on the 玩法: its untouched text and the ratio it brought go too. */
   const clearPreset = () => {
     if (!preset) return
     if (text === preset.prompt) setText('')
-    if (mode !== preset.modeBefore) setPrefs({ mode: preset.modeBefore })
+    setRatio('auto')
     setPreset(null)
   }
 
   return {
-    mode,
     live,
     busy,
     text,
@@ -258,8 +248,8 @@ export function useComposer(
     att,
     needPhoto,
     ready: !busy && !needPhoto && hasBody,
-    canStop: busy || (mode === 'image' && queued && !hasBody),
-    estimate: one == null ? null : one * count,
+    ratio,
+    setRatio,
     picker,
     taRef,
     fileRef,

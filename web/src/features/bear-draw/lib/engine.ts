@@ -27,11 +27,11 @@ import type {
   AgentMessage,
   ApiMessage,
   Attachment,
-  Mode,
   Part,
   PlanItem,
   Project,
   QuestionAnswer,
+  Ratio,
   UserMessage,
 } from '../types'
 import { applyAdLawFixes, findPromptAdLaw } from './adlaw'
@@ -42,16 +42,16 @@ import {
   closeOpenCalls,
   loop,
   newRun,
+  type Opening,
   resume,
   setLive,
   setToolResult,
   stopRun,
 } from './agent/run'
 import { findSkill, loadSkillForModel } from './agent/skills'
-import { userTurnText } from './agent/transcript'
+import { ratioRule, userTurnText } from './agent/transcript'
 import { storeFiles, storePicture } from './attachments'
 import type { MarkInfo } from './canvas/types'
-import { imageTurns, runImageTurn, titleFrom } from './image-turn'
 import { markSpots } from './mark-spots'
 import {
   cancelRetries,
@@ -82,10 +82,18 @@ export { onPictureFinished, type PictureFinished } from './pictures'
 
 export type SendInput = {
   text: string
-  mode: Mode
   refs: Attachment[]
   skillId?: string
+  /** A 玩法 from the gallery: `text` is drawn as written. */
   presetId?: string
+  presetTitle?: string
+  /** The ratio picked for this message; left out when the planner chooses. */
+  ratio?: Ratio
+}
+
+function titleFrom(text: string): string {
+  const flat = text.replaceAll(/\s+/g, ' ').trim()
+  return flat.length > 16 ? `${flat.slice(0, 16)}…` : flat
 }
 
 /** Pictures being drawn again, per project (they keep the bear busy). */
@@ -115,7 +123,7 @@ export function createProject(title?: string): Project {
 
 /** True while the agent of this project thinks or draws (not while it waits for you). */
 export function isBusy(projectId: string): boolean {
-  if (activeRun(projectId) || imageTurns(projectId) > 0) return true
+  if (activeRun(projectId)) return true
   if ((retrying.get(projectId) ?? 0) > 0) return true
   const p = findProject(projectId)
   return Boolean(
@@ -123,26 +131,8 @@ export function isBusy(projectId: string): boolean {
   )
 }
 
-/** Pictures of this project wait for their turn: 停止 can still spare them. */
-export function hasQueued(p: Project | null | undefined): boolean {
-  return Boolean(
-    p?.messages.some(
-      (m) =>
-        m.role === 'agent' &&
-        m.parts.some(
-          (part) =>
-            part.type === 'progress' &&
-            part.items.some((it) => it.status === 'queued')
-        )
-    )
-  )
-}
-
 function clearLiveIfIdle(projectId: string) {
-  const idle =
-    !activeRun(projectId) &&
-    imageTurns(projectId) === 0 &&
-    (retrying.get(projectId) ?? 0) === 0
+  const idle = !activeRun(projectId) && (retrying.get(projectId) ?? 0) === 0
   if (idle) {
     const p = findProject(projectId)
     const waiting = p?.messages.some(
@@ -187,22 +177,15 @@ function userMessageOf(input: SendInput): UserMessage {
     id: newId('m'),
     role: 'user',
     at: Date.now(),
-    mode: input.mode,
+    mode: 'agent',
     text: input.text.trim(),
     refs: input.refs,
     skillId: input.skillId,
     presetId: input.presetId,
-    brand: input.mode === 'agent' && prefs.brand && Boolean(store.brandKit),
-    ...(input.mode === 'image'
-      ? {
-          image: {
-            model: prefs.image,
-            ratio: prefs.ratio,
-            count: prefs.count,
-            transparent: prefs.transparent,
-          },
-        }
-      : {}),
+    presetTitle: input.presetTitle,
+    // a 玩法 is drawn as written, without the brand kit
+    brand: !input.presetId && prefs.brand && Boolean(store.brandKit),
+    ...(input.ratio && input.ratio !== 'auto' ? { ratio: input.ratio } : {}),
   }
 }
 
@@ -273,14 +256,45 @@ async function startAgentTurn(projectId: string, user: UserMessage) {
       },
     })
   }
-  await loop(newRun(projectId, message.id))
+  await loop(newRun(projectId, message.id), presetPlan(user, message.id))
   clearLiveIfIdle(projectId)
 }
 
 /**
- * Sends a message. Agent mode: the planner answers (it may ask a question
- * card or show a plan). Image mode: draws `prefs.count` pictures at once.
- * While a question card or a plan waits, Agent text answers it instead.
+ * A 玩法 from the gallery: its prompt is ready-made, so the page writes the
+ * one-picture plan itself, with the text as the user sent it and the
+ * pictures that came with it. Other messages have no opening plan.
+ */
+function presetPlan(user: UserMessage, messageId: string): Opening | undefined {
+  if (!user.presetId || !user.text) return undefined
+  const title = (user.presetTitle || titleFrom(user.text)).slice(0, 40)
+  const args: Opening['args'] = {
+    title,
+    items: [
+      {
+        label: title.slice(0, 16),
+        prompt: user.text,
+        ratio: user.ratio ?? 'auto',
+        refs: user.refs.map((_, i) => i + 1),
+        inputs: undefined,
+      },
+    ],
+  }
+  return {
+    args,
+    call: {
+      id: `pre_plan_${messageId}`,
+      type: 'function',
+      function: { name: 'propose_plan', arguments: JSON.stringify(args) },
+    },
+  }
+}
+
+/**
+ * Sends a message: the planner answers (it may ask a question card or show
+ * a plan). A 玩法 from the gallery is drawn as written first, and the
+ * planner takes over from the result. While a question card or a plan
+ * waits, the text answers it instead.
  * Returns false (and tells the user) when the agent is still busy.
  */
 export function send(projectId: string, input: SendInput): boolean {
@@ -293,12 +307,6 @@ export function send(projectId: string, input: SendInput): boolean {
       title: titleFrom(user.text),
       autoTitle: true,
     }))
-  }
-  if (input.mode === 'image') {
-    addMessage(projectId, user)
-    setLive(projectId, 'draw')
-    void runImageTurn(projectId, user, () => clearLiveIfIdle(projectId))
-    return true
   }
   const waiting = waitingCard(p)
   if (waiting) {
@@ -315,10 +323,15 @@ export function send(projectId: string, input: SendInput): boolean {
       }))
       content = {
         answers: [{ question: '(typed by the user)', answer: user.text }],
+        ...(user.ratio ? { aspect_ratio: ratioRule(user.ratio) } : {}),
       }
     } else {
       setPlanState(projectId, card.id, 'changed')
-      content = { status: 'not_drawn', user_says: user.text }
+      content = {
+        status: 'not_drawn',
+        user_says: user.text,
+        ...(user.ratio ? { aspect_ratio: ratioRule(user.ratio) } : {}),
+      }
     }
     finishTurn(projectId, message.id, 'done')
     // The rest of the turn shows under the user's words.
@@ -402,36 +415,6 @@ export function stop(projectId: string, opts?: { quiet?: boolean }): void {
         )
       : t('Stopped.')
   )
-}
-
-/**
- * 停止 in Image mode: the pictures still waiting for their turn are not
- * drawn. The agent's own turn (a question card, a plan that waits) is left
- * as it is.
- */
-export function stopQueued(projectId: string): void {
-  const p = findProject(projectId)
-  if (!p) return
-  let queued = 0
-  for (const m of p.messages) {
-    if (m.role !== 'agent') continue
-    for (const part of m.parts) {
-      if (part.type !== 'progress') continue
-      for (const it of part.items) {
-        if (it.status !== 'queued') continue
-        queued++
-        editProgressItem(projectId, part.id, it.id, { status: 'stopped' })
-        editNode(projectId, it.nodeId, (n) => ({ ...n, status: 'stopped' }))
-      }
-    }
-  }
-  if (queued) {
-    toast(
-      t(
-        'Stopped. Pictures that had not started are not drawn and not charged; the ones already drawing will finish.'
-      )
-    )
-  }
 }
 
 /** Answers a question card; 'skip' lets the agent go on with its own defaults. */
@@ -680,7 +663,11 @@ export function retryStep(projectId: string, messageId: string): void {
     ),
   }))
   setLive(projectId, 'think')
-  void loop(newRun(projectId, messageId)).then(() => clearLiveIfIdle(projectId))
+  const run = newRun(projectId, messageId)
+  // Pictures of this turn are drawn already (the step that failed came
+  // after them): a plan made now waits for the user, as it would have.
+  run.drew = m.parts.some((part) => part.type === 'progress')
+  void loop(run).then(() => clearLiveIfIdle(projectId))
 }
 
 /** Removes a picture from the canvas (its message keeps showing it). */

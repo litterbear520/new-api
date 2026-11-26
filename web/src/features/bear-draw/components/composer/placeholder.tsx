@@ -19,14 +19,12 @@ For commercial licensing, please contact support@quantumnous.com
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { Mode } from '../../types'
 import type { Example } from './examples'
 
 type PlaceholderProps = {
-  mode: Mode
   /** The skill in use, if any. */
   skillName: string | null
-  /** Home, Agent mode: the example shown now (「使用示例」 fills it in). */
+  /** Home: the example shown now (「使用示例」 fills it in). */
   example: Example | null
   /** Changes with every new example, to replay the fade. */
   exampleKey: number
@@ -43,7 +41,7 @@ type PlaceholderProps = {
 export function Placeholder(props: PlaceholderProps) {
   const { t } = useTranslation()
   const exampleId = useId()
-  if (props.mode === 'agent' && !props.skillName && props.example) {
+  if (!props.skillName && props.example) {
     return (
       <div className='bd-comp-ph bd-comp-ph-ex'>
         <span key={props.exampleKey} className='bd-ph-in' aria-hidden='true'>
@@ -67,9 +65,7 @@ export function Placeholder(props: PlaceholderProps) {
     )
   }
   let body
-  if (props.mode === 'image') {
-    body = t('Say what to draw, e.g. a latte by the window at dawn, film look')
-  } else if (props.skillName) {
+  if (props.skillName) {
     body = t(
       'Tell the bear about your product or what you need; it will follow “{{name}}”',
       { name: props.skillName }

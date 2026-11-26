@@ -19,11 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 import {
   AtSign,
   BookOpen,
-  ChevronDown,
   FileUp,
-  ImagePlus,
   Plus,
-  Sparkles,
   SwatchBook,
   Upload,
 } from 'lucide-react'
@@ -34,15 +31,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tip } from '@/features/draw/components/tip'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
-import type { Mode } from '../../types'
 import { openDialog } from '../dialogs/dialog-bus'
 
 function MenuRow(props: {
@@ -84,11 +78,9 @@ type PlusMenuProps = {
 export function PlusMenu(props: PlusMenuProps) {
   const { t } = useTranslation()
   const brandKit = useBearDrawStore((s) => s.brandKit)
-  // Image mode draws what is typed: skills and the brand kit are the agent's
-  const agent = useBearDrawStore((s) => s.prefs.mode === 'agent')
   return (
     <DropdownMenu>
-      <Tip label={agent ? t('Upload, skills, brand kit') : t('Add pictures')}>
+      <Tip label={t('Upload, skills, brand kit')}>
         <DropdownMenuTrigger
           render={
             <button
@@ -113,14 +105,12 @@ export function PlusMenu(props: PlusMenuProps) {
           label={t('Upload pictures')}
           onClick={props.onUpload}
         />
-        {agent && (
-          <MenuRow
-            icon={<BookOpen />}
-            label={t('Use a skill…')}
-            kbd='/'
-            onClick={props.onSkill}
-          />
-        )}
+        <MenuRow
+          icon={<BookOpen />}
+          label={t('Use a skill…')}
+          kbd='/'
+          onClick={props.onSkill}
+        />
         {props.canvas && (
           <MenuRow
             icon={<AtSign />}
@@ -129,106 +119,21 @@ export function PlusMenu(props: PlusMenuProps) {
             onClick={props.onCanvas}
           />
         )}
-        {agent && (
-          <>
-            <MenuRow
-              icon={<FileUp />}
-              label={t('Import a skill')}
-              onClick={() => openDialog('import-skill')}
-            />
-            <DropdownMenuSeparator />
-            <MenuRow
-              icon={<SwatchBook />}
-              label={
-                brandKit
-                  ? t('Brand kit: {{name}}', { name: brandKit.name })
-                  : t('Set up a brand kit')
-              }
-              onClick={() => openDialog('brand')}
-            />
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function ModeItem(props: {
-  value: Mode
-  icon: ReactNode
-  label: string
-  desc: string
-}) {
-  return (
-    <DropdownMenuRadioItem
-      value={props.value}
-      closeOnClick
-      className='bd-mi bd-mi-radio'
-    >
-      <span className='bd-mi-ic' aria-hidden='true'>
-        {props.icon}
-      </span>
-      <span className='bd-mi-main'>
-        <span>{props.label}</span>
-        <span className='bd-mi-desc'>{props.desc}</span>
-      </span>
-    </DropdownMenuRadioItem>
-  )
-}
-
-/** Agent (plans first) or Image (draws what you typed). */
-export function ModeMenu(props: {
-  finalFocus: RefObject<HTMLTextAreaElement | null>
-}) {
-  const { t } = useTranslation()
-  const mode = useBearDrawStore((s) => s.prefs.mode)
-  const setPrefs = useBearDrawStore((s) => s.setPrefs)
-  const image = mode === 'image'
-  return (
-    <DropdownMenu>
-      <Tip label={t('Mode')}>
-        <DropdownMenuTrigger
-          render={
-            <button type='button' className='bd-chip bd-mode'>
-              {image ? (
-                <ImagePlus aria-hidden='true' />
-              ) : (
-                <Sparkles aria-hidden='true' />
-              )}
-              {image ? t('Image mode') : t('Agent')}
-              <ChevronDown className='bd-chev' aria-hidden='true' />
-            </button>
-          }
+        <MenuRow
+          icon={<FileUp />}
+          label={t('Import a skill')}
+          onClick={() => openDialog('import-skill')}
         />
-      </Tip>
-      <DropdownMenuContent
-        side='top'
-        align='start'
-        sideOffset={8}
-        finalFocus={props.finalFocus}
-        className='bd-pop bd-menu w-[300px]'
-      >
-        <DropdownMenuRadioGroup
-          value={mode}
-          onValueChange={(v) =>
-            setPrefs({ mode: v === 'image' ? 'image' : 'agent' })
+        <DropdownMenuSeparator />
+        <MenuRow
+          icon={<SwatchBook />}
+          label={
+            brandKit
+              ? t('Brand kit: {{name}}', { name: brandKit.name })
+              : t('Set up a brand kit')
           }
-        >
-          <ModeItem
-            value='agent'
-            icon={<Sparkles />}
-            label={t('Agent')}
-            desc={t(
-              'Thinks first: asks, plans and quotes, then makes a whole set'
-            )}
-          />
-          <ModeItem
-            value='image'
-            icon={<ImagePlus />}
-            label={t('Image mode')}
-            desc={t('Draws exactly what you type, no planning')}
-          />
-        </DropdownMenuRadioGroup>
+          onClick={() => openDialog('brand')}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -43,11 +43,13 @@ import {
 import { finishTurn, refreshResult } from './finish'
 import { frameBatch } from './frame-batch'
 import {
+  brandFor,
   drawnPictures,
   drawPlan,
   inputProblem,
   makePlan,
   needsConfirm,
+  ratioProblem,
   setPlanState,
   statedBases,
   unclearBase,
@@ -55,7 +57,7 @@ import {
 import { buildSystemPrompt } from './prompt'
 import { loadSkillForModel } from './skills'
 import { streamStep } from './stream'
-import { parseCall, TOOLS } from './tools'
+import { parseCall, TOOLS, type ParsedCall, type PlanArgsT } from './tools'
 import {
   openCalls,
   placeToolResult,
@@ -180,7 +182,7 @@ async function step(run: Run): Promise<StepOutcome> {
   const system = buildSystemPrompt({
     skills: allSkills(),
     project: p,
-    brand: store.prefs.brand ? store.brandKit : null,
+    brand: brandFor(p, run.messageId) ? store.brandKit : null,
   })
   const messages = await wireMessages(system, p.transcript)
   const chain = modelChain()
@@ -413,8 +415,16 @@ function viewPictures(run: Run, ids: string[]): CallResult {
   }
 }
 
-async function runTool(run: Run, call: ApiToolCall): Promise<CallResult> {
-  const parsed = parseCall(call.function.name, call.function.arguments)
+async function runTool(
+  run: Run,
+  call: ApiToolCall,
+  written?: PlanArgsT
+): Promise<CallResult> {
+  // A plan the page wrote is used as it is: reading it back would cut a
+  // long prompt and turn the ratio 自动 into 1:1.
+  const parsed: ParsedCall = written
+    ? { name: 'propose_plan', args: written }
+    : parseCall(call.function.name, call.function.arguments)
   switch (parsed.name) {
     case 'load_skill': {
       setLive(run.projectId, 'skill')
@@ -443,6 +453,12 @@ async function runTool(run: Run, call: ApiToolCall): Promise<CallResult> {
         ? inputProblem(before, run.messageId, parsed.args)
         : null
       if (problem) return { content: { error: problem } }
+      // a plan the page wrote already has the ratio the user sent
+      const offRatio =
+        before && !written
+          ? ratioProblem(before, run.messageId, parsed.args)
+          : null
+      if (offRatio) return { content: { error: offRatio } }
       const circled = before
         ? unclearBase(before, run.messageId, statedBases(parsed.args))
         : null
@@ -495,8 +511,19 @@ function currentBalance(): number | null {
   return balanceOf()
 }
 
-/** Runs steps until the planner ends its turn, pauses for the user, or fails. */
-export async function loop(run: Run): Promise<void> {
+/**
+ * A plan the page writes in the planner's place (a 玩法 from the gallery,
+ * drawn as written). It goes through the turn like a call of the planner's
+ * own, so the planner sees the result and carries on from it.
+ */
+export type Opening = { call: ApiToolCall; args: PlanArgsT }
+
+/**
+ * Runs steps until the planner ends its turn, pauses for the user, or fails.
+ * With an `opening`, the first step is that plan instead of a request.
+ */
+export async function loop(run: Run, opening?: Opening): Promise<void> {
+  let first = opening
   runs.set(run.projectId, run)
   editMessage(run.projectId, run.messageId, (m) => ({
     ...m,
@@ -512,7 +539,11 @@ export async function loop(run: Run): Promise<void> {
       break
     }
     run.steps++
-    const out = await step(run)
+    const given = first
+    first = undefined
+    const out: StepOutcome = given
+      ? { kind: 'ok', text: '', toolCalls: [given.call], model: '' }
+      : await step(run)
     if (out.kind === 'aborted') return
     if (out.kind === 'error') {
       showError(run, out.error, out.model)
@@ -542,7 +573,7 @@ export async function loop(run: Run): Promise<void> {
     const after: ApiMessage[] = []
     for (const call of out.toolCalls) {
       if (run.stopped || ownerLeft(run)) return
-      const res = await runTool(run, call)
+      const res = await runTool(run, call, given?.args)
       if (res.pause) {
         // The paused call's result still lands before them (placeToolResult).
         if (after.length) pushTranscript(run.projectId, ...after)

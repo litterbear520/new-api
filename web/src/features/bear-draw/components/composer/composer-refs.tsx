@@ -16,13 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { ImagePlus, Upload, X } from 'lucide-react'
+import { Upload, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Tip } from '@/features/draw/components/tip'
 import { useImageUrl } from '@/features/draw/hooks/use-image-url'
 
-import { MAX_REFS } from '../../constants'
 import type { Attachment } from '../../types'
 
 type RefsProps = {
@@ -31,18 +30,14 @@ type RefsProps = {
   needPhoto: boolean
   /** What photo the 玩法 wants. */
   photoHint?: string
-  /** Image mode in a project: a 参考图 tile to add one. */
-  showAdd: boolean
   onAdd: () => void
   onRemove: (id: string) => void
 }
 
-/** Thumbnails of the attached pictures, and the tile to add one. */
+/** Thumbnails of the attached pictures, and the tile for the photo a 玩法 needs. */
 export function ComposerRefs(props: RefsProps) {
   const { t } = useTranslation()
-  const addTile =
-    !props.needPhoto && props.showAdd && props.refs.length < MAX_REFS
-  if (!props.refs.length && !props.needPhoto && !addTile) return null
+  if (!props.refs.length && !props.needPhoto) return null
   return (
     <div className='bd-comp-refs'>
       {props.refs.map((r) => (
@@ -61,16 +56,6 @@ export function ComposerRefs(props: RefsProps) {
             <span>{t('Add your photo')}</span>
           </button>
         </Tip>
-      )}
-      {addTile && (
-        <button
-          type='button'
-          className='bd-ref bd-ref-add'
-          onClick={props.onAdd}
-        >
-          <ImagePlus aria-hidden='true' />
-          <span>{t('Reference picture')}</span>
-        </button>
       )}
     </div>
   )

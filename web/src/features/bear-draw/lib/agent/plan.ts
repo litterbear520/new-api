@@ -39,8 +39,10 @@ import type {
   ProgressItem,
   Project,
   Ratio,
+  UserMessage,
 } from '../../types'
 import { findPromptAdLaw } from '../adlaw'
+import { parseSize } from '../export'
 import { drawPicture, estimatePicture, type PictureOutcome } from '../pictures'
 import { addGroup, addPart, edit, editPart } from '../project-edit'
 import { MAX_INPUTS, type PlanArgsT } from './tools'
@@ -66,7 +68,55 @@ export function turnRefs(p: Project, agentMessageId: string): Attachment[] {
   return []
 }
 
-/** What the red-circle copy is, in the prompt of both modes. */
+/** The user message an agent message answers. */
+export function turnUser(
+  p: Project,
+  agentMessageId: string
+): UserMessage | null {
+  const at = p.messages.findIndex((m) => m.id === agentMessageId)
+  for (let i = at - 1; i >= 0; i--) {
+    const m = p.messages[i]
+    if (m.role === 'user') return m
+  }
+  return null
+}
+
+/**
+ * The brand kit applies to this turn: it is switched on, and the turn is
+ * not a 玩法 from the gallery (those are drawn as written).
+ */
+export function brandFor(p: Project, agentMessageId: string): boolean {
+  if (turnUser(p, agentMessageId)?.presetId) return false
+  return useBearDrawStore.getState().prefs.brand
+}
+
+/**
+ * The user picked a ratio for this request and the plan uses another one:
+ * what to tell the planner, else null. The planner is told the rule with
+ * the message (ratioRule); this keeps a plan that ignores it from drawing.
+ */
+export function ratioProblem(
+  p: Project,
+  agentMessageId: string,
+  args: PlanArgsT
+): string | null {
+  const ratio = turnUser(p, agentMessageId)?.ratio
+  if (!ratio) return null
+  const off = args.items.filter((it) => it.ratio !== ratio)
+  if (!off.length) return null
+  const names = off.map((it) => `「${it.label}」`).join('')
+  return `Nothing was drawn: the user set the aspect ratio of this request to ${ratio}, and ${names} use another one. Call propose_plan again with ratio ${ratio} for every picture. If a loaded skill fixes a different ratio for a platform, do not call propose_plan: tell the user about the conflict and let them choose.`
+}
+
+/** A delivery size is kept only when it has the item's ratio (export crops to it). */
+export function sizeFits(size: string | undefined, ratio: Ratio): boolean {
+  const s = parseSize(size)
+  if (!s || ratio === 'auto') return true
+  const [a, b] = ratio.split(':').map(Number)
+  return Math.abs(s.w / s.h - a / b) / (a / b) < 0.03
+}
+
+/** What the red-circle copy is, in the prompt of every picture. */
 export const MARKED_ROLE =
   'the same picture with red numbered circles marking where to change (a guide only; change only inside the circles and never draw them)'
 
@@ -250,7 +300,8 @@ export function itemInputs(
   p: Project,
   item: PlanItem,
   refs: Attachment[],
-  marks: Attachment[] = refs.filter((r) => r.marked)
+  marks: Attachment[] = refs.filter((r) => r.marked),
+  brandOn: boolean = useBearDrawStore.getState().prefs.brand
 ) {
   const roled = item.inputs?.length ? roledInputs(p, item, refs, marks) : null
   const ids: string[] = roled?.ids ?? []
@@ -278,7 +329,6 @@ export function itemInputs(
     )
   }
   const kit = useBearDrawStore.getState().brandKit
-  const brandOn = useBearDrawStore.getState().prefs.brand
   if (
     brandOn &&
     kit?.logo &&
@@ -342,7 +392,8 @@ export function makePlan(
       label: it.label || `#${i + 1}`,
       prompt: it.prompt,
       ratio: it.ratio,
-      size: it.size || undefined,
+      // export cuts to the size: one of another ratio would crop the picture
+      size: it.size && sizeFits(it.size, it.ratio) ? it.size : undefined,
       model,
       transparent: transparent || undefined,
       refs: it.refs.filter((n) => n <= refs.length),
@@ -352,7 +403,9 @@ export function makePlan(
       est: 0,
       on: true,
     }
-    const sent = p ? itemInputs(p, item, refs, marks).ids.length : 0
+    const sent = p
+      ? itemInputs(p, item, refs, marks, brandFor(p, agentMessageId)).ids.length
+      : 0
     item.est =
       estimatePicture(model, {
         edit: sent > 0,
@@ -475,7 +528,7 @@ export async function drawPlan(
   for (const it of todo) {
     const nodeId = newId('n')
     const [w, h] = ratioSize(it.ratio)
-    const inputs = itemInputs(p, it, refs, marks)
+    const inputs = itemInputs(p, it, refs, marks, brandFor(p, agentMessageId))
     const job: PictureJob = {
       model: it.model,
       prompt: composePrompt(

@@ -511,9 +511,14 @@ For commercial licensing, please contact support@quantumnous.com
   background: var(--bd-hov);
   color: var(--bd-ink);
 }
-.bd-mode {
+.bd-ratio-chip > b {
   color: var(--bd-ink);
-  font-weight: 500;
+  font-weight: 600;
+}
+.bd-ratio-chip > .bd-set-shape {
+  width: 16px;
+  height: 16px;
+  color: var(--bd-ink);
 }
 .bd-model-chip > span:not(.bc-micon) {
   max-width: 120px;
@@ -531,12 +536,6 @@ For commercial licensing, please contact support@quantumnous.com
   display: block;
   width: 100%;
   height: 100%;
-}
-.bd-est {
-  padding: 0 4px;
-  color: var(--bd-ink3);
-  font-size: 12.5px;
-  font-variant-numeric: tabular-nums;
 }
 .bd-send {
   display: grid;
@@ -574,9 +573,6 @@ For commercial licensing, please contact support@quantumnous.com
   height: 12px;
   border-radius: 3px;
   background: currentColor;
-}
-.bd-comp-dock .bd-est {
-  display: none;
 }
 .bd-comp-dock .bd-comp-l {
   flex-wrap: nowrap;
@@ -775,25 +771,13 @@ For commercial licensing, please contact support@quantumnous.com
   color: var(--bd-ink3);
   font-size: 13px;
 }
-/* image settings */
+/* the ratio of this message's pictures */
 .bd-set {
   display: grid;
-  gap: 8px;
-  padding: 10px 10px 6px;
+  padding: 10px;
   border-radius: 14px;
 }
-.bd-set-t {
-  padding: 2px 2px 4px;
-  font-size: 14px;
-  font-weight: 600;
-}
-.bd-set-l {
-  margin-top: 4px;
-  color: var(--bd-ink3);
-  font-size: 12.5px;
-}
-.bd-set-r,
-.bd-set-n {
+.bd-set-r {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
@@ -825,14 +809,6 @@ For commercial licensing, please contact support@quantumnous.com
 .bd-set-auto {
   font-size: 13px;
 }
-.bd-set-n button {
-  height: 32px;
-  border: 1px solid var(--bd-bd);
-  border-radius: 999px;
-  background: none;
-  color: var(--bd-ink2);
-  font-size: 13px;
-}
 .bd-set button:hover {
   background: var(--bd-hov);
 }
@@ -840,33 +816,6 @@ For commercial licensing, please contact support@quantumnous.com
   border-color: var(--bd-ink);
   box-shadow: inset 0 0 0 0.5px var(--bd-ink);
   color: var(--bd-ink);
-}
-.bd-set-sw {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 4px;
-}
-.bd-set-sw > span {
-  display: grid;
-  gap: 1px;
-  font-size: 13px;
-}
-.bd-set-sw small {
-  color: var(--bd-ink3);
-  font-size: 12px;
-}
-.bd-set-foot {
-  margin-top: 4px;
-  padding: 8px 2px 4px;
-  border-top: 1px solid var(--bd-bd);
-  color: var(--bd-ink3);
-  font-size: 12.5px;
-}
-.bd-set-foot b {
-  color: var(--bd-ink);
-  font-weight: 500;
 }
 .bd-bear-note {
   margin: 4px 0 0;

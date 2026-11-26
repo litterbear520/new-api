@@ -35,7 +35,7 @@ import { useNightSeaStore } from '@/stores/night-sea-store'
 
 import { NARROW_CARD } from '../../constants'
 import { useBearDrawEnv } from '../../hooks/use-env'
-import { isBusy, send, stop, stopQueued } from '../../lib/engine'
+import { isBusy, send, stop } from '../../lib/engine'
 import type { Project, ProjectLayout } from '../../types'
 import { Composer, type ComposerHandle } from '../composer/composer'
 import { loadCanvasPane, warmCanvas } from '../lazy-views'
@@ -186,12 +186,7 @@ function ProjectScreen(props: { project: Project }) {
                 projectId={pid}
                 busy={busy}
                 onSend={(input) => send(pid, input)}
-                onStop={() =>
-                  // Image mode has no turn to stop, only pictures in line
-                  useBearDrawStore.getState().prefs.mode === 'image'
-                    ? stopQueued(pid)
-                    : stop(pid)
-                }
+                onStop={() => stop(pid)}
               />
               {busy && (
                 <p className='bd-chatp-foot' role='status'>

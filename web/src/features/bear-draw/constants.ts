@@ -24,8 +24,6 @@ export { DRAW_GUIDE_URL, DRAW_TOKEN_NAME } from '@/features/draw/constants'
 export const MAX_DRAWING = 3
 /** Pictures one plan may hold. */
 export const MAX_PLAN_ITEMS = 8
-/** Image mode: pictures per message. */
-export const MAX_COUNT = 4
 /** Pictures attached to one message. */
 export const MAX_REFS = 4
 /** A plan waits for 开始画 from this many pictures… */
@@ -206,14 +204,10 @@ export const TYPICAL_SECS: Record<
 export const TYPICAL_DEFAULT = { gen: [25, 40], edit: [34.5, 64] } as const
 
 export const DEFAULT_PREFS: Prefs = {
-  mode: 'agent',
   auto: true,
   brain: DEFAULT_BRAIN,
   effort: 'medium',
   image: DEFAULT_IMAGE_MODEL,
-  ratio: 'auto',
-  count: 1,
-  transparent: false,
   brand: true,
 }
 

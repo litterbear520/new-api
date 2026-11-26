@@ -108,7 +108,7 @@ describe('sweeping pictures nobody uses', () => {
   test('a picture only this tab’s unsaved draft uses stays', async () => {
     vi.mocked(storedImageTimes).mockResolvedValue([old('u-draft')])
     useBearDrawStore.setState({
-      draft: { text: '', mode: 'image', refs: [{ id: 'u-draft', w: 1, h: 1 }] },
+      draft: { text: '', refs: [{ id: 'u-draft', w: 1, h: 1 }] },
     })
     expect(await sweepImages(1, NOW)).toEqual([])
   })

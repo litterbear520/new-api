@@ -24,7 +24,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { activeRun, loop, newRun, setAgentModels } from '../lib/agent/run'
-import { createProject, send, stop } from '../lib/engine'
+import { createProject, retryStep, send, stop } from '../lib/engine'
 import type { Project } from '../types'
 
 vi.mock('../lib/storage', async (original) => ({
@@ -133,7 +133,6 @@ describe('stopping while a picked skill loads', () => {
     vi.stubGlobal('fetch', fetchMock)
     const p = createProject('stop-test')
     send(p.id, {
-      mode: 'agent',
       text: 'design a set',
       refs: [],
       skillId: 'taobao-main-set',
@@ -229,7 +228,6 @@ describe('answering a question card with a new picture', () => {
     ]
     useBearDrawStore.getState().init(1, [p])
     send(p.id, {
-      mode: 'agent',
       text: 'Use this new product',
       refs: [{ id: 'new-product', w: 100, h: 100 }],
     })
@@ -244,5 +242,121 @@ describe('answering a question card with a new picture', () => {
       'user:new-product',
       'assistant',
     ])
+  })
+})
+
+describe('a 玩法 from the gallery', () => {
+  test('is planned by the page as written, without asking the planner first', async () => {
+    const fetchMock = vi.fn(async () => reply('should not be asked'))
+    vi.stubGlobal('fetch', fetchMock)
+    // longer than a planner's own prompt may be
+    const prompt = 'ink mountains, '.repeat(400).trim()
+    const p = createProject()
+    send(p.id, {
+      text: prompt,
+      refs: [{ id: 'my-photo', w: 100, h: 100 }],
+      presetId: 'ink-mountains',
+      presetTitle: '水墨山水',
+    })
+    // the test has no drawing environment, so the turn stops at its plan
+    await waitFor(() =>
+      expect(findProject(p.id)?.messages.at(-1)).toMatchObject({
+        status: 'waiting',
+      })
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    const now = findProject(p.id)
+    const agent = now?.messages.at(-1)
+    const plan =
+      agent?.role === 'agent'
+        ? agent.parts.find((x) => x.type === 'plan')
+        : null
+    expect(plan).toMatchObject({
+      title: '水墨山水',
+      items: [{ label: '水墨山水', prompt, ratio: 'auto', refs: [1] }],
+    })
+    // the brand kit stays out of a 玩法
+    expect(now?.messages[0]).toMatchObject({ brand: false })
+
+    // the planner will read the call as its own, with the whole prompt
+    const call = now?.transcript.at(-1)
+    expect(call).toMatchObject({ role: 'assistant' })
+    const args =
+      call?.role === 'assistant'
+        ? JSON.parse(call.tool_calls?.[0].function.arguments ?? '{}')
+        : {}
+    expect(args.items[0].prompt).toBe(prompt)
+    expect(String(now?.transcript[0].content)).toContain('gallery preset')
+  })
+})
+
+describe('a ratio picked for a message', () => {
+  test('reaches the planner with the message, and only then', async () => {
+    const fetchMock = vi.fn(async () => reply('ok'))
+    vi.stubGlobal('fetch', fetchMock)
+    const p = createProject()
+    send(p.id, { text: 'a banner', refs: [], ratio: '16:9' })
+    await waitFor(() => expect(activeRun(p.id)).toBeNull())
+    send(p.id, { text: 'one more', refs: [] })
+    await waitFor(() => expect(activeRun(p.id)).toBeNull())
+
+    const turns = (findProject(p.id)?.transcript ?? []).flatMap((m) =>
+      m.role === 'user' ? [String(m.content)] : []
+    )
+    expect(turns[0]).toContain('aspect ratio of this request to 16:9')
+    expect(turns[1]).not.toContain('aspect ratio')
+    expect(findProject(p.id)?.messages[0]).toMatchObject({ ratio: '16:9' })
+  })
+})
+
+describe('retrying the step that failed after the pictures were drawn', () => {
+  test('a plan made now waits for the user', async () => {
+    const plan = {
+      title: 'again',
+      items: [{ label: 'again', prompt: 'a cup', ratio: '1:1' }],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => reply('', { name: 'propose_plan', args: plan }))
+    )
+    const p = project('retry-after-draw')
+    p.messages = [
+      {
+        id: 'user',
+        role: 'user',
+        mode: 'agent',
+        at: 1,
+        text: 'a cup',
+        refs: [],
+      },
+      {
+        id: 'agent',
+        role: 'agent',
+        mode: 'agent',
+        status: 'error',
+        startedAt: 1,
+        cost: 0,
+        parts: [
+          { id: 'pg', type: 'progress', groupId: 'g', items: [] },
+          { id: 'err', type: 'error', kind: 'network' },
+        ],
+      },
+    ]
+    p.transcript = [{ role: 'user', content: 'a cup' }]
+    useBearDrawStore.getState().init(1, [p])
+
+    retryStep(p.id, 'agent')
+    await waitFor(() =>
+      expect(findProject(p.id)?.messages[1]).toMatchObject({
+        status: 'waiting',
+      })
+    )
+    const agent = findProject(p.id)?.messages[1]
+    const card =
+      agent?.role === 'agent'
+        ? agent.parts.find((x) => x.type === 'plan')
+        : null
+    expect(card).toMatchObject({ state: 'pending' })
   })
 })

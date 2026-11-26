@@ -120,13 +120,12 @@ describe('Composer sending', () => {
     expect(box).toHaveValue('①杯身换成白色')
   })
 
-  it('sends the trimmed text in Agent mode when Enter is pressed, then clears', async () => {
+  it('sends the trimmed text when Enter is pressed, then clears', async () => {
     const { onSend, box, user } = setup()
     await user.type(box, '  给保温杯做主图  ')
     await user.keyboard('{Enter}')
     expect(onSend).toHaveBeenCalledWith({
       text: '给保温杯做主图',
-      mode: 'agent',
       refs: [],
     })
     expect(box).toHaveValue('')
@@ -157,7 +156,6 @@ describe('Composer sending', () => {
       await user.click(screen.getByRole('button', { name: 'Send' }))
       expect(onSend).toHaveBeenCalledWith({
         text: '第一行\n第二行',
-        mode: 'agent',
         refs: [],
       })
     } finally {
@@ -185,14 +183,12 @@ describe('Composer sending', () => {
 })
 
 describe('Composer with a 玩法 that needs a photo', () => {
-  it('switches to Image mode, fills the prompt and asks for the photo', () => {
+  it('sets its ratio, fills the prompt and asks for the photo', () => {
     const { ref, box } = setup('home')
     act(() => ref.current?.applyPreset(portrait))
-    expect(useBearDrawStore.getState().prefs).toMatchObject({
-      mode: 'image',
-      ratio: '3:4',
-      count: 1,
-    })
+    expect(
+      screen.getByRole('button', { name: 'Aspect ratio 3:4' })
+    ).toBeVisible()
     expect(box).toHaveValue(portrait.prompt)
     expect(screen.getByRole('button', { name: 'Add your photo' })).toBeVisible()
   })
@@ -209,9 +205,85 @@ describe('Composer with a 玩法 that needs a photo', () => {
     await user.keyboard('{Enter}')
     expect(onSend).toHaveBeenCalledWith({
       text: portrait.prompt,
-      mode: 'image',
       refs: [photo],
       presetId: 'id-photo',
+      presetTitle: '证件照',
+      ratio: '3:4',
     })
+    // the next message starts from 自动 again
+    expect(screen.getByRole('button', { name: 'Aspect ratio' })).toBeVisible()
+  })
+
+  it('leaves the brand kit out while the 玩法 is on, and × gives its ratio back', async () => {
+    useBearDrawStore.setState({
+      brandKit: {
+        name: '山野',
+        colors: ['#112233'],
+        fonts: '',
+        tone: '',
+        points: [],
+        logo: null,
+        notes: '',
+      },
+    })
+    const { ref, box, user } = setup('home')
+    expect(screen.getByText('Brand: 山野')).toBeVisible()
+    act(() => ref.current?.applyPreset(portrait))
+    expect(screen.queryByText('Brand: 山野')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Remove this preset' }))
+    expect(box).toHaveValue('')
+    expect(screen.getByText('Brand: 山野')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Aspect ratio' })).toBeVisible()
+  })
+})
+
+describe('Composer with a skill picked over a 玩法', () => {
+  it('drops the 玩法 and the ratio it brought, and keeps a ratio picked by hand', async () => {
+    const { ref, user } = setup('home')
+    act(() => ref.current?.applyPreset(portrait))
+    act(() => ref.current?.setSkill('taobao-main-set'))
+    expect(screen.queryByText('Preset: 证件照')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Aspect ratio' })).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Aspect ratio' }))
+    await user.click(screen.getByRole('button', { name: '4:3' }))
+    act(() => ref.current?.setSkill('white-background'))
+    expect(
+      screen.getByRole('button', { name: 'Aspect ratio 4:3' })
+    ).toBeVisible()
+  })
+})
+
+describe('Composer ratio', () => {
+  it('has no mode switch: the bar holds +, the ratio and the thinking effort', () => {
+    setup()
+    expect(
+      screen.queryByRole('button', { name: /Agent|Image mode/ })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Aspect ratio' })).toBeVisible()
+  })
+
+  it('a picked ratio goes with one message, then is 自动 again', async () => {
+    const { onSend, box, user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Aspect ratio' }))
+    await user.click(screen.getByRole('button', { name: '16:9' }))
+    // picking closes the panel and shows the ratio on the chip
+    expect(screen.queryByRole('button', { name: '9:16' })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Aspect ratio 16:9' })
+    ).toBeVisible()
+
+    await user.type(box, '一张横幅')
+    await user.keyboard('{Enter}')
+    expect(onSend).toHaveBeenLastCalledWith({
+      text: '一张横幅',
+      refs: [],
+      ratio: '16:9',
+    })
+
+    await user.type(box, '再来一张')
+    await user.keyboard('{Enter}')
+    expect(onSend).toHaveBeenLastCalledWith({ text: '再来一张', refs: [] })
   })
 })

@@ -67,6 +67,7 @@ function ModeLine(props: { message: UserMessageData }) {
     )
     if (img.transparent) bits.push(t('Transparent background'))
   }
+  if (m.ratio) bits.push(m.ratio)
   if (m.brand) bits.push(t('Brand kit applied'))
   if (m.presetId) bits.push(t('From the gallery'))
   if (!bits.length) return null
@@ -85,7 +86,9 @@ export const UserMessage = memo(function UserMessage(props: {
 }) {
   const m = props.message
   const skill = useSkillName(m.skillId)
-  const hasBubble = Boolean(m.text || skill || m.image || m.brand || m.presetId)
+  const hasBubble = Boolean(
+    m.text || skill || m.image || m.ratio || m.brand || m.presetId
+  )
   return (
     <div className='bd-u'>
       {m.refs.length > 0 && (

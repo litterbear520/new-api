@@ -25,7 +25,10 @@ import type { DrawErrorKind, DrawImage } from '@/features/draw/types'
  * page's 「网页画图」 token, exactly like the classic page.
  */
 
-/** Agent: plans, asks, uses skills. Image: draws exactly what you typed. */
+/**
+ * Every message goes to the planner now ('agent'). 'image' stays for
+ * messages from before 2026-11-26, sent in the old Image mode.
+ */
 export type Mode = 'agent' | 'image'
 
 /** Aspect ratios the image models follow when the prompt names them. */
@@ -59,28 +62,21 @@ export type Attachment = ImageRef & {
 export type Effort = 'low' | 'medium' | 'high' | 'xhigh'
 
 export type Prefs = {
-  mode: Mode
   /**
    * 「最新」: the planner is the page's current default. Picking a planner
    * by hand turns it off.
    */
   auto: boolean
-  /** Chat model that plans in Agent mode. */
+  /** Chat model that plans. */
   brain: string
   /** How long the planner thinks (sent as reasoning_effort). */
   effort: Effort
   /**
-   * Image model for Agent plans and for the Image mode. Not the user's
-   * choice: the recommended one, or the first the account has.
+   * Image model for every picture. Not the user's choice: the recommended
+   * one, or the first the account has.
    */
   image: string
-  /** Image mode only. */
-  ratio: Ratio
-  /** Image mode only: 1–4 pictures per message. */
-  count: number
-  /** Image mode only: transparent background. */
-  transparent: boolean
-  /** Agent mode: apply the brand kit. */
+  /** Apply the brand kit. */
   brand: boolean
 }
 
@@ -397,9 +393,12 @@ export type UserMessage = {
   skillId?: string
   /** The brand kit was applied. */
   brand?: boolean
-  /** Sent from a 玩法 card. */
+  /** Sent from a 玩法 card, with the card's title. */
   presetId?: string
-  /** Image mode settings at send time. */
+  presetTitle?: string
+  /** The ratio picked for this message; left out when the planner chooses. */
+  ratio?: Ratio
+  /** Messages from before 2026-11-26, sent in the old Image mode. */
   image?: { model: string; ratio: Ratio; count: number; transparent: boolean }
 }
 

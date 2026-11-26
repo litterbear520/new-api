@@ -24,8 +24,6 @@ import {
   type SetStateAction,
 } from 'react'
 
-import { useBearDrawStore } from '@/stores/bear-draw-store'
-
 import { RATIOS } from '../../constants'
 import type { GalleryItem } from '../../data/gallery'
 import type { Attachment, Ratio } from '../../types'
@@ -63,10 +61,11 @@ export function useComposerHandle(
   write: (value: string, caret: number) => void,
   setSkillId: (id: string | null) => void,
   setPreset: Dispatch<SetStateAction<Preset | null>>,
+  setRatio: (ratio: Ratio) => void,
+  leavePreset: () => void,
   addRefs: (list: Attachment[]) => boolean,
   addFiles: (files: File[]) => Promise<unknown>
 ) {
-  const setPrefs = useBearDrawStore((s) => s.setPrefs)
   useImperativeHandle(
     ref,
     () => ({
@@ -87,31 +86,20 @@ export function useComposerHandle(
       },
       setSkill: (id) => {
         setSkillId(id)
-        if (id && useBearDrawStore.getState().prefs.mode !== 'agent') {
-          setPrefs({ mode: 'agent' })
-        }
+        if (id) leavePreset()
         taRef.current?.focus({ preventScroll: true })
       },
-      // a 玩法: Image mode, its ratio, its prompt; maybe a photo first
+      // a 玩法: its ratio, its prompt; maybe a photo first
       applyPreset: (item) => {
-        const modeBefore = useBearDrawStore.getState().prefs.mode
-        // a 玩法 is one opaque picture, whatever the last message used
-        setPrefs({
-          mode: 'image',
-          count: 1,
-          transparent: false,
-          ...(isRatio(item.ratio) ? { ratio: item.ratio } : {}),
-        })
+        setRatio(isRatio(item.ratio) ? item.ratio : 'auto')
         setSkillId(null)
-        setPreset((earlier) => ({
+        setPreset({
           id: item.id,
           title: item.title,
           needsPhoto: Boolean(item.needsPhoto),
           hint: cleanHint(item.inputHint),
           prompt: item.prompt,
-          // a second 玩法 over the first: still the mode from before both
-          modeBefore: earlier?.modeBefore ?? modeBefore,
-        }))
+        })
         write(item.prompt, 0)
         const ta = taRef.current
         if (ta) {
@@ -129,6 +117,15 @@ export function useComposerHandle(
         taRef.current?.focus({ preventScroll: true })
       },
     }),
-    [taRef, write, setSkillId, setPreset, addRefs, addFiles, setPrefs]
+    [
+      taRef,
+      write,
+      setSkillId,
+      setPreset,
+      setRatio,
+      leavePreset,
+      addRefs,
+      addFiles,
+    ]
   )
 }
