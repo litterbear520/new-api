@@ -29,11 +29,12 @@ import type {
   Attachment,
   Mode,
   Part,
+  PlanItem,
   Project,
   QuestionAnswer,
   UserMessage,
 } from '../types'
-import { applyAdLawFixes } from './adlaw'
+import { applyAdLawFixes, findPromptAdLaw } from './adlaw'
 import { finishTurn, refreshResult } from './agent/finish'
 import { drawnPictures, drawPlan, lostInput, setPlanState } from './agent/plan'
 import {
@@ -49,12 +50,15 @@ import {
 import { findSkill, loadSkillForModel } from './agent/skills'
 import { userTurnText } from './agent/transcript'
 import { storeFiles, storePicture } from './attachments'
+import type { MarkInfo } from './canvas/types'
 import { imageTurns, runImageTurn, titleFrom } from './image-turn'
+import { markSpots } from './mark-spots'
 import {
   cancelRetries,
   drawPicture,
   estimatePicture as estimate,
 } from './pictures'
+import { planTexts, replacePlanText } from './plan-text'
 import {
   addMessage,
   addPart,
@@ -430,8 +434,12 @@ export function decide(
     clearLiveIfIdle(projectId)
     return
   }
+  // What this press draws: everything ticked, or only the first of it.
+  const firstOn = found.part.items.find((it) => it.on)
+  const drawing: PlanItem[] =
+    decision === 'first' && firstOn ? [firstOn] : found.part.items
   const now = findProject(projectId)
-  const lost = now ? lostInput(now, found.part) : null
+  const lost = now ? lostInput(now, { ...found.part, items: drawing }) : null
   if (lost) {
     setPlanState(projectId, partId, 'cancelled')
     setLive(projectId, 'think')
@@ -441,6 +449,18 @@ export function decide(
     }).then(() => clearLiveIfIdle(projectId))
     return
   }
+  // 只画第一张: the rest wait until the user has seen it.
+  const held =
+    decision === 'first'
+      ? found.part.items
+          .filter((it) => it.on)
+          .slice(1)
+          .map((it) => it.label)
+      : []
+  // The planner only knows the words it wrote: tell it what the user made of them.
+  const changed = found.part.items
+    .filter((it) => it.on && it.edited)
+    .map((it) => ({ label: it.label, text: planTexts(it.prompt) }))
   if (decision === 'first') {
     let first = true
     editPart(projectId, partId, 'plan', (x) => ({
@@ -470,7 +490,12 @@ export function decide(
       projectId,
       messageId,
       callId,
-      { status: 'drawn', ...drawn },
+      {
+        status: 'drawn',
+        ...drawn,
+        ...(held.length ? { preview_first: true, not_drawn: held } : {}),
+        ...(changed.length ? { user_changed_text: changed } : {}),
+      },
       drawnPictures(projectId, drawn)
     ).then(() => clearLiveIfIdle(projectId))
   })
@@ -491,6 +516,45 @@ export function togglePlanItem(
           items: x.items.map((it) => (it.id === itemId ? { ...it, on } : it)),
         }
   )
+}
+
+/**
+ * Changes one of the strings a planned picture will show, while the plan
+ * waits. The advertising-law check runs again on the new words.
+ */
+export function editPlanText(
+  projectId: string,
+  partId: string,
+  itemId: string,
+  index: number,
+  text: string
+): void {
+  editPart(projectId, partId, 'plan', (x) => {
+    if (x.state !== 'pending') return x
+    const items = x.items.map((it) =>
+      it.id === itemId
+        ? {
+            ...it,
+            prompt: replacePlanText(it.prompt, index, text),
+            edited: true,
+          }
+        : it
+    )
+    if (items.every((it, i) => it.prompt === x.items[i].prompt)) return x
+    return {
+      ...x,
+      items,
+      adlawFixed: false,
+      adlaw: items.flatMap((it) =>
+        findPromptAdLaw(it.prompt).map((m) => ({
+          itemId: it.id,
+          word: m.word,
+          fix: m.fix,
+          reason: m.reason,
+        }))
+      ),
+    }
+  })
 }
 
 /** Replaces the words the advertising law forbids in a waiting plan. */
@@ -666,13 +730,21 @@ export function storeAttachments(files: File[]): Promise<Attachment[]> {
 export async function storeMarked(
   projectId: string,
   nodeId: string,
-  png: Blob
+  png: Blob,
+  marks: MarkInfo[] = []
 ): Promise<Attachment | null> {
   const node = findProject(projectId)?.nodes.find((n) => n.id === nodeId)
   if (!node) return null
   const stored = await storePicture(png).catch(() => null)
   if (!stored) return null
-  return { ...stored, nodeId, label: node.label, marked: true }
+  const spots = markSpots(marks, node.w, node.h)
+  return {
+    ...stored,
+    nodeId,
+    label: node.label,
+    marked: true,
+    ...(spots.length ? { spots } : {}),
+  }
 }
 
 /** Rough USD for one picture before it is drawn (model, edit or not). */

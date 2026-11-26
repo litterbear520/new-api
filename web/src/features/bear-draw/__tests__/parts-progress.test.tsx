@@ -86,6 +86,8 @@ describe('ProgressGrid', () => {
       balanceUsd: null,
       busy: true,
       openCanvas,
+      editedPair: () => null,
+      compare: vi.fn(),
       exportGroup: vi.fn(),
       setComposerText: vi.fn(),
       focusComposer: vi.fn(),

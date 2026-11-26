@@ -39,6 +39,7 @@ export type CanvasLabels = {
   edit: string
   cite: string
   compare: string
+  compareSource: string
   download: string
   copyPrompt: string
   more: string
@@ -68,6 +69,10 @@ export type CanvasLabels = {
   markRemoveLabel: (n: number) => string
   clear: string
   markDone: string
+  markUndo: string
+  markShape: string
+  markFree: string
+  markBox: string
   noPrompt: string
   promptCopied: string
   copyFailed: string
@@ -114,6 +119,7 @@ export const DEFAULT_LABELS: CanvasLabels = {
   edit: 'Keep editing',
   cite: 'Add to chat',
   compare: 'Compare',
+  compareSource: 'Compare with original',
   download: 'Download',
   copyPrompt: 'Copy description',
   more: 'More',
@@ -143,6 +149,10 @@ export const DEFAULT_LABELS: CanvasLabels = {
   markRemoveLabel: (n) => `Remove area ${n}`,
   clear: 'Clear',
   markDone: 'Done circling',
+  markUndo: 'Undo',
+  markShape: 'Mark shape',
+  markFree: 'Free-hand',
+  markBox: 'Box',
   noPrompt: 'This picture has no description',
   promptCopied: 'Description copied',
   copyFailed: 'Copy failed; please copy it by hand',

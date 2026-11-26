@@ -168,7 +168,7 @@ export type CanvasStateInput = {
 export type SelectionKind = 'group' | 'image' | 'multi'
 
 /**
- * Built-in action ids: edit, mark, compare, download, copy-prompt, more,
+ * Built-in action ids: edit, mark, compare, compare-source, download, copy-prompt, more,
  * retry, delete, export, fit, rename, fit-all, zoom-100, upload, drop-files
  * (also pasted files) and mark-done. Pages may add their own.
  */

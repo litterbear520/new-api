@@ -8597,6 +8597,13 @@
     "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Đo trên máy chủ: từ lúc nhận yêu cầu của bạn đến khi mô hình gửi về dữ liệu luồng đầu tiên. Không tính thời gian mạng của chính bạn.",
     "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Token đầu ra ÷ (thời lượng − token đầu), đo trên máy chủ. Thời lượng chỉ ghi theo giây chẵn nên đây là ước tính. Chỉ tính các yêu cầu dạng luồng có ít nhất 100 token đầu ra và ít nhất 2 giây sau token đầu.",
     "Add to chat": "Thêm vào trò chuyện",
-    "Looked at {{names}}": "Đã xem {{names}}"
+    "Looked at {{names}}": "Đã xem {{names}}",
+    "Compare with original": "So sánh với ảnh gốc",
+    "Mark shape": "Hình dạng đánh dấu",
+    "Free-hand": "Vẽ tự do",
+    "Box": "Khung chữ nhật",
+    "Details of “{{label}}”": "Chi tiết của “{{label}}”",
+    "Words on the picture": "Chữ trên ảnh",
+    "Words on the picture, line {{n}}": "Chữ trên ảnh, dòng {{n}}"
   }
 }

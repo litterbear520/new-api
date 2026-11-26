@@ -28,6 +28,7 @@ import type {
   Skill,
   UserMessage,
 } from '../../types'
+import { spotsText } from '../mark-spots'
 
 /*
  * The planner's conversation is kept in OpenAI chat format. User turns
@@ -85,7 +86,7 @@ async function pictureUrl(
 /** What a picture attached to a message is, for the planner. */
 export function describeRef(ref: Attachment, n: number): string {
   if (ref.marked) {
-    return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(${ref.nodeId ?? ''}) with red numbered circles marking where to change (a guide only), ${sizeNote(ref.w, ref.h)}.`
+    return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(${ref.nodeId ?? ''}) with red numbered circles marking where to change (a guide only), ${sizeNote(ref.w, ref.h)}.${ref.spots?.length ? ` The circles: ${spotsText(ref.spots)}.` : ''}`
   }
   if (ref.nodeId) {
     return `Picture ${n}: the canvas picture「${ref.label ?? ''}」(id ${ref.nodeId}), ${sizeNote(ref.w, ref.h)}.`

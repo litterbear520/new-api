@@ -16,11 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Archive, CornerDownRight, Palette } from 'lucide-react'
+import { Archive, Columns2, CornerDownRight, Palette } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { useMoney } from '@/features/draw/hooks/use-money'
+import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import type { Part } from '../../types'
 import { duration } from './format'
@@ -46,6 +47,13 @@ export function ResultPart(props: { part: ResultPartData }) {
     bits.push(t('{{count}} stopped (not charged)', { count: r.stopped }))
   }
   const groupId = r.groupId
+  // Follows the canvas: the button goes when either picture does.
+  const pairKey = useBearDrawStore(() => {
+    const pair = groupId && r.done > 0 ? actions.editedPair(groupId) : null
+    return pair ? `${pair.from} ${pair.to}` : ''
+  })
+  const [from, to] = pairKey.split(' ')
+  const pair = pairKey ? { from, to } : null
   return (
     <div className='bd-res'>
       <div className='bd-res-l'>
@@ -69,6 +77,18 @@ export function ResultPart(props: { part: ResultPartData }) {
             <Palette aria-hidden='true' />
             {t('Open on the canvas')}
           </Button>
+          {pair && (
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              className='bd-cb bd-cb-ghost'
+              onClick={() => actions.compare(pair.from, pair.to)}
+            >
+              <Columns2 aria-hidden='true' />
+              {t('Compare with original')}
+            </Button>
+          )}
           {r.done > 0 && (
             <Button
               type='button'

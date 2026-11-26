@@ -8597,6 +8597,13 @@
     "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Измеряется на сервере: от получения вашего запроса до первых потоковых данных от модели. Ваше собственное сетевое время не учитывается.",
     "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Токены вывода ÷ (длительность − первый токен), измеряется на сервере. Длительность записывается в целых секундах, поэтому это оценка. Только потоковые запросы с не менее чем 100 токенами вывода и не менее 2 секунд после первого токена.",
     "Add to chat": "Добавить в чат",
-    "Looked at {{names}}": "Посмотрел {{names}}"
+    "Looked at {{names}}": "Посмотрел {{names}}",
+    "Compare with original": "Сравнить с оригиналом",
+    "Mark shape": "Форма метки",
+    "Free-hand": "От руки",
+    "Box": "Рамка",
+    "Details of “{{label}}”": "Подробности: «{{label}}»",
+    "Words on the picture": "Текст на изображении",
+    "Words on the picture, line {{n}}": "Текст на изображении, строка {{n}}"
   }
 }

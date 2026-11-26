@@ -51,6 +51,8 @@ export type Attachment = ImageRef & {
   label?: string
   /** A copy of the node with the red marks drawn on it (圈选). */
   marked?: boolean
+  /** Where each red mark is: its centre in percent of the picture. */
+  spots?: Array<{ n: number; x: number; y: number }>
 }
 
 /** What the composer remembers between visits (localStorage). */
@@ -167,6 +169,8 @@ export type CanvasNode = {
     size?: string
     /** Uploaded by the user (not drawn). */
     upload?: boolean
+    /** The canvas picture this one was edited from. */
+    parentId?: string
   }
 }
 
@@ -219,6 +223,8 @@ export type InputRole =
 export type PlanInput = { node?: string; ref?: number; role: InputRole }
 
 export type PlanItem = {
+  /** The user changed its words on the plan card. */
+  edited?: boolean
   id: string
   label: string
   /** The full description sent to the image model (without the ratio hint). */

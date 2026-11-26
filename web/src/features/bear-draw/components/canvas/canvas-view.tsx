@@ -27,6 +27,8 @@ export type CanvasViewHandle = {
   /** Moves the camera to these frames or pictures and selects them. */
   focus: (ids: string[]) => void
   fit: () => void
+  /** Opens 对比 on two pictures; false while either is not there or not ready. */
+  compare: (a: string, b: string) => boolean
 }
 
 /**
@@ -48,6 +50,16 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(
           cv.select(ids)
         },
         fit: () => view.cvRef.current?.fit(),
+        compare: (a, b) => {
+          const cv = view.cvRef.current
+          const ready = (id: string) => {
+            const n = cv?.getNode(id)
+            return n?.type === 'image' && n.status === 'ready' && !!n.src
+          }
+          if (!cv || !ready(a) || !ready(b)) return false
+          cv.compare(a, b)
+          return true
+        },
       }),
       [view.cvRef]
     )

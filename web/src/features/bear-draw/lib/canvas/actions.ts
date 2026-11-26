@@ -103,6 +103,13 @@ export function createActions(c: Ctx) {
         if (p.nodes.length === 2) c.fx.compare(p.nodes[0].id, p.nodes[1].id)
         else if (p.node) startPick(p.node.id)
         break
+      case 'compare-source': {
+        const from = String(p.node?.meta.parentId ?? '')
+        if (p.node && c.nodes.get(from)?.status === 'ready') {
+          c.fx.compare(from, p.node.id)
+        }
+        break
+      }
       case 'download':
         for (const n of p.nodes) if (n.status === 'ready' && n.src) download(n)
         break

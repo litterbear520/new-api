@@ -607,6 +607,65 @@ For commercial licensing, please contact support@quantumnous.com
   min-width: 0;
   line-height: 1.4;
 }
+.bd .bd-plan-m {
+  padding: 0;
+  text-align: left;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.bd-plan-m b svg {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-left: 4px;
+  vertical-align: -2px;
+  color: var(--bd-ink3);
+  transition: rotate 0.16s var(--bd-ease);
+}
+.bd-plan-it.is-open .bd-plan-m b svg {
+  rotate: 180deg;
+}
+.bd-plan-more {
+  grid-column: 2 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 2px 0 4px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--bd-ink2);
+}
+.bd-plan-more p {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bd-plan-texts {
+  display: grid;
+  gap: 6px;
+}
+.bd-plan-texts > span {
+  font-size: 12px;
+  color: var(--bd-ink3);
+}
+.bd-plan-texts input {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--bd-bd);
+  background: var(--bd-s1);
+  color: var(--bd-ink);
+  font-size: 13px;
+}
+.bd-plan-texts input:focus-visible {
+  outline: 2px solid var(--bd-accent);
+  outline-offset: -1px;
+}
+.bd-plan-texts q {
+  color: var(--bd-ink);
+}
 .bd-plan-m b {
   overflow: hidden;
   text-overflow: ellipsis;

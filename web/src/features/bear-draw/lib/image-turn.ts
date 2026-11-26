@@ -33,6 +33,7 @@ import type {
 } from '../types'
 import { finishTurn } from './agent/finish'
 import { composePrompt, MARKED_ROLE } from './agent/plan'
+import { editedNode } from './lineage'
 import { drawPicture } from './pictures'
 import { addGroup, addMessage, addPart, edit } from './project-edit'
 
@@ -114,6 +115,7 @@ export async function runImageTurn(
     ratio: settings.ratio,
   }
   const groupId = newId('g')
+  const parentId = editedNode(user.refs)
   const [w, h] = ratioSize(settings.ratio)
   const nodes: CanvasNode[] = []
   const items: ProgressItem[] = []
@@ -128,7 +130,11 @@ export async function runImageTurn(
       w,
       h,
       label,
-      meta: { model: settings.model, prompt: user.text },
+      meta: {
+        model: settings.model,
+        prompt: user.text,
+        ...(parentId ? { parentId } : {}),
+      },
     })
     items.push({
       id: newId('it'),

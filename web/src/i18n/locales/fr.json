@@ -8597,6 +8597,13 @@
     "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "Mesuré sur le serveur : de la réception de votre requête aux premières données renvoyées en flux par le modèle. Votre propre temps réseau n’est pas inclus.",
     "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "Tokens de sortie ÷ (durée − 1er token), mesuré sur le serveur. La durée est enregistrée en secondes entières : c’est donc une estimation. Uniquement les requêtes en flux avec au moins 100 tokens de sortie et au moins 2 secondes après le 1er token.",
     "Add to chat": "Ajouter au chat",
-    "Looked at {{names}}": "A regardé {{names}}"
+    "Looked at {{names}}": "A regardé {{names}}",
+    "Compare with original": "Comparer avec l'original",
+    "Mark shape": "Forme du repère",
+    "Free-hand": "Main levée",
+    "Box": "Rectangle",
+    "Details of “{{label}}”": "Détails de « {{label}} »",
+    "Words on the picture": "Texte sur l'image",
+    "Words on the picture, line {{n}}": "Texte sur l'image, ligne {{n}}"
   }
 }

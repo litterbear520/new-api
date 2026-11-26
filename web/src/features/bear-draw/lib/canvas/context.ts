@@ -166,6 +166,8 @@ export type MarkGesture = {
   type: 'mark'
   n: NodeRec
   pts: UV[]
+  /** Where the stroke began, for a box. */
+  from: UV
   last: Point
   path: SVGPathElement
   halo: SVGPathElement
@@ -277,6 +279,7 @@ export type Fx = {
   startMark: (n: NodeRec, pt: Point) => void
   markMove: (g: MarkGesture, pt: Point) => void
   markEnd: (g: MarkGesture) => void
+  undoMark: () => void
   clearMarks: (id?: string) => void
   renderPanel: () => void
   act: (id: string, extra?: Partial<ActionPayload>) => void
@@ -325,6 +328,8 @@ export type Ctx = {
   hoverG: string | null
   /** Picked for 对比; the next picture clicked is compared with it. */
   pick: string | null
+  /** 圈选 draws free-hand circles or boxes. */
+  markShape: 'free' | 'box'
   raf: number
   camAnim: number
   timers: {

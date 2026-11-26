@@ -28,6 +28,7 @@ import { SKIPPED_PICTURES_TEXT, storeFailedText } from '../../lib/attachments'
 import type { MarkInfo } from '../../lib/canvas/types'
 import { storeMarked, uploadToCanvas } from '../../lib/engine'
 import { exportGroup } from '../../lib/export'
+import { editedPair } from '../../lib/lineage'
 import type { ProjectLayout } from '../../types'
 import type { ComposerHandle } from '../composer/composer'
 import type { PartActions } from '../parts/part-actions'
@@ -41,6 +42,8 @@ type Options = {
   composerRef: RefObject<ComposerHandle | null>
   /** Centre the canvas on pictures once it is there. */
   focusCanvas: (ids?: string[]) => void
+  /** Open 对比 on two pictures once the canvas is there. */
+  compareOnCanvas: (a: string, b: string) => void
   /** Shows or hides the canvas sheet (narrow cards; not remembered). */
   setSheet: (on: boolean) => void
   balanceUsd: number | null
@@ -58,6 +61,7 @@ export function useProjectActions(o: Options) {
   // called below, so the hooks depend on the functions themselves
   const focusCanvas = o.focusCanvas
   const setSheet = o.setSheet
+  const compareOnCanvas = o.compareOnCanvas
   const goHome = o.goHome
 
   /** On a narrow card only the sheet changes; elsewhere the project keeps it. */
@@ -138,7 +142,9 @@ export function useProjectActions(o: Options) {
 
   const onMarked = useCallback(
     async (nodeId: string, png: Blob, marks?: MarkInfo[]) => {
-      const att = await storeMarked(o.projectId, nodeId, png).catch(() => null)
+      const att = await storeMarked(o.projectId, nodeId, png, marks).catch(
+        () => null
+      )
       if (!att) {
         toast.error(t('Could not keep the circled picture. Try again.'))
         return
@@ -188,6 +194,11 @@ export function useProjectActions(o: Options) {
       balanceUsd: o.balanceUsd,
       busy: o.busy,
       openCanvas,
+      editedPair: (groupId) => editedPair(findProject(o.projectId), groupId),
+      compare: (a, b) => {
+        openCanvas()
+        compareOnCanvas(a, b)
+      },
       exportGroup: (groupId) => void packGroup(groupId),
       setComposerText: (text) => {
         o.composerRef.current?.setText(text)
@@ -200,6 +211,8 @@ export function useProjectActions(o: Options) {
       o.balanceUsd,
       o.busy,
       openCanvas,
+      compareOnCanvas,
+      o.projectId,
       packGroup,
       o.composerRef,
       focusComposer,

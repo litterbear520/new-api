@@ -8597,6 +8597,13 @@
     "Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.": "在伺服器上測量：從收到你的請求，到模型送回第一段串流資料。不含你自己的網路時間。",
     "Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.": "輸出 token ÷（耗時 − 首字），在伺服器上測量。耗時只記到整秒，所以是估算值。只計算串流請求，且輸出不少於 100 token、首字之後至少 2 秒。",
     "Add to chat": "引用到對話",
-    "Looked at {{names}}": "看了{{names}}"
+    "Looked at {{names}}": "看了{{names}}",
+    "Compare with original": "對比原圖",
+    "Mark shape": "標記形狀",
+    "Free-hand": "自由圈",
+    "Box": "矩形框",
+    "Details of “{{label}}”": "「{{label}}」的詳情",
+    "Words on the picture": "圖上的字",
+    "Words on the picture, line {{n}}": "圖上的字，第 {{n}} 行"
   }
 }

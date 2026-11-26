@@ -905,6 +905,26 @@ For commercial licensing, please contact support@quantumnous.com
   width: 14px;
   height: 14px;
 }
+.bd-cv-pn-shapes {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  margin: 0 0 8px;
+  border-radius: 9px;
+  background: var(--bd-hov);
+}
+.bd-cv-pn-shapes button {
+  flex: 1;
+  height: 26px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--bd-ink2);
+}
+.bd-cv-pn-shapes button[aria-pressed='true'] {
+  background: var(--bd-cv-menu-bg);
+  color: var(--bd-ink);
+  box-shadow: 0 0 0 1px var(--bd-cv-glass-bd);
+}
 .bd-cv-pn-ft {
   display: flex;
   justify-content: flex-end;

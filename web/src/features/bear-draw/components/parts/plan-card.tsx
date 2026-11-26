@@ -17,7 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { RotateCcw, Sparkles, Wallet, X } from 'lucide-react'
+import { ChevronDown, RotateCcw, Sparkles, Wallet, X } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -26,7 +27,8 @@ import { useMoney } from '@/features/draw/hooks/use-money'
 import { cn } from '@/lib/utils'
 
 import { IMAGE_MODEL_META } from '../../constants'
-import { decide, togglePlanItem } from '../../lib/engine'
+import { decide, editPlanText, togglePlanItem } from '../../lib/engine'
+import { planSummary, planTexts } from '../../lib/plan-text'
 import type { AgentStatus, Part, PlanItem } from '../../types'
 import { ModelIcon } from '../model-icon'
 import { planTotal } from './format'
@@ -40,21 +42,34 @@ function PlanRow(props: {
   n: number
   pending: boolean
   onToggle: () => void
+  /** Changes the nth string the picture will show. */
+  onText: (index: number, text: string) => void
 }) {
   const { t } = useTranslation()
   const money = useMoney()
   const it = props.item
   const meta = IMAGE_MODEL_META[it.model]
   const sub = [it.size, it.note].filter(Boolean).join(' · ')
+  const [open, setOpen] = useState(false)
+  const texts = open ? planTexts(it.prompt) : []
   return (
-    <li className={cn('bd-plan-it', !it.on && 'is-off')}>
+    <li className={cn('bd-plan-it', !it.on && 'is-off', open && 'is-open')}>
       <span className='bd-plan-n bd-num' aria-hidden='true'>
         {props.n}
       </span>
-      <span className='bd-plan-m'>
-        <b>{it.label}</b>
+      <button
+        type='button'
+        className='bd-plan-m'
+        aria-expanded={open}
+        aria-label={t('Details of “{{label}}”', { label: it.label })}
+        onClick={() => setOpen(!open)}
+      >
+        <b>
+          {it.label}
+          <ChevronDown aria-hidden='true' />
+        </b>
         {sub && <span>{sub}</span>}
-      </span>
+      </button>
       <Tip label={meta?.name ?? it.model}>
         <span className='bd-plan-model'>
           <ModelIcon model={it.model} size={13} />
@@ -79,6 +94,45 @@ function PlanRow(props: {
         >
           {it.on ? <X aria-hidden='true' /> : <RotateCcw aria-hidden='true' />}
         </Button>
+      )}
+      {open && (
+        <div className='bd-plan-more'>
+          <p>{planSummary(it.prompt)}</p>
+          {texts.length > 0 && (
+            <div className='bd-plan-texts'>
+              <span>{t('Words on the picture')}</span>
+              {texts.map((text, i) =>
+                props.pending ? (
+                  <input
+                    // the words change under the same position
+                    // oxlint-disable-next-line react/no-array-index-key
+                    key={`${i}:${text}`}
+                    defaultValue={text}
+                    maxLength={120}
+                    aria-label={t('Words on the picture, line {{n}}', {
+                      n: i + 1,
+                    })}
+                    onBlur={(e) => {
+                      // Empty words are not saved: show what stays.
+                      if (!e.currentTarget.value.trim()) {
+                        e.currentTarget.value = text
+                      }
+                      props.onText(i, e.currentTarget.value)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                        e.currentTarget.blur()
+                      }
+                    }}
+                  />
+                ) : (
+                  // oxlint-disable-next-line react/no-array-index-key
+                  <q key={`${i}:${text}`}>{text}</q>
+                )
+              )}
+            </div>
+          )}
+        </div>
       )}
     </li>
   )
@@ -151,6 +205,9 @@ export function PlanCard(props: {
             pending={pending}
             onToggle={() =>
               togglePlanItem(props.projectId, part.id, it.id, !it.on)
+            }
+            onText={(index, text) =>
+              editPlanText(props.projectId, part.id, it.id, index, text)
             }
           />
         ))}

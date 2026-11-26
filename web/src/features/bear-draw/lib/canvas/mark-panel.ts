@@ -45,20 +45,23 @@ export function createMarkPanel(c: Ctx) {
   function body(n: NodeRec | null, marks: MarkRec[]): string {
     const L = c.L
     if (!n) return `<p class="bd-cv-pn-empty">${esc(L.markPickFirst)}</p>`
+    const shape = (id: 'free' | 'box', label: string) =>
+      `<button type="button" data-pn="shape" data-shape="${id}" aria-pressed="${c.markShape === id}">${esc(label)}</button>`
+    const shapes = `<div class="bd-cv-pn-shapes" role="group" aria-label="${esc(L.markShape)}">${shape('free', L.markFree)}${shape('box', L.markBox)}</div>`
     if (!marks.length) {
-      return `<p class="bd-cv-pn-empty">${esc(L.markEmpty)}</p>`
+      return `${shapes}<p class="bd-cv-pn-empty">${esc(L.markEmpty)}</p>`
     }
     const items = marks.map(
       (m) =>
         `<li><span class="bd-cv-pn-n">${m.n}</span><input data-mk="${m.n}" value="${esc(m.note)}" placeholder="${esc(L.markNote)}" maxlength="80" aria-label="${esc(L.markNoteLabel(m.n))}"><button type="button" data-pn="del" data-n="${m.n}" title="${esc(L.markRemove)}" aria-label="${esc(L.markRemoveLabel(m.n))}">${ICONS.x}</button></li>`
     )
-    return `<ol class="bd-cv-pn-list bd-cv-scroll">${items.join('')}</ol>`
+    return `${shapes}<ol class="bd-cv-pn-list bd-cv-scroll">${items.join('')}</ol>`
   }
 
   function footer(marks: MarkRec[]): string {
     const L = c.L
     const off = marks.length ? '' : ' disabled'
-    return `<div class="bd-cv-pn-ft"><button type="button" data-pn="clear"${off}>${esc(L.clear)}</button><button type="button" class="is-primary" data-pn="done"${off}>${ICONS.check}<span>${esc(L.markDone)}</span></button></div>`
+    return `<div class="bd-cv-pn-ft"><button type="button" data-pn="undo"${off}>${esc(L.markUndo)}</button><button type="button" data-pn="clear"${off}>${esc(L.clear)}</button><button type="button" class="is-primary" data-pn="done"${off}>${ICONS.check}<span>${esc(L.markDone)}</span></button></div>`
   }
 
   function renderPanel() {
@@ -100,15 +103,18 @@ export function createMarkPanel(c: Ctx) {
 
   async function marksDone(n: NodeRec, btn: HTMLButtonElement | null) {
     if (!n.marks.length) return
+    // The marks as they are now: the picture and the positions sent with
+    // it come from the same ones, whatever is undone while it encodes.
+    const p = pub(n)
+    const marks = n.marks.map((m) => ({ ...m }))
     if (btn) btn.disabled = true
     let res: Burned = { blob: null, marksOnly: true }
     try {
-      res = await burnMarks(n.src, n.w, n.h, n.marks)
+      res = await burnMarks(n.src, n.w, n.h, marks)
     } catch (err) {
       report(err)
     }
     if (!c.alive) return
-    const p = pub(n)
     c.fx.act('mark-done', {
       ids: [n.id],
       kind: 'image',
@@ -170,6 +176,11 @@ export function createMarkPanel(c: Ctx) {
     const k = b.dataset.pn
     if (k === 'close') {
       c.fx.setTool('select')
+    } else if (k === 'shape') {
+      c.markShape = b.dataset.shape === 'box' ? 'box' : 'free'
+      renderPanel()
+    } else if (k === 'undo') {
+      c.fx.undoMark()
     } else if (k === 'clear') {
       c.fx.clearMarks()
     } else if (k === 'del' && n) {

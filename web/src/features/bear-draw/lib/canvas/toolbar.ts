@@ -32,6 +32,8 @@ export function imageActions(L: CanvasLabels): ActionSpec[] {
     { id: 'edit', label: L.edit, icon: ICONS.sparkles, primary: true },
     { id: 'mark', label: L.mark, icon: ICONS.lasso },
     { id: 'compare', label: L.compare, icon: ICONS.compare },
+    // Only on a picture edited from one that is still here (toolbarList).
+    { id: 'compare-source', label: L.compareSource, icon: ICONS.compareSource },
     { id: 'download', label: L.download, icon: ICONS.download },
     { id: 'copy-prompt', label: L.copyPrompt, icon: ICONS.copy },
     { id: 'more', label: L.more, icon: ICONS.more, iconOnly: true },
@@ -100,8 +102,11 @@ export function toolbarList(c: Ctx, kind: SelectionKind): ActionSpec[] {
   }
   const n = selNode(c)
   if (!n) return []
-  const list = (c.o.imageActions ?? imageActions(c.L)).filter((a) =>
-    (a.statuses ?? ['ready']).includes(n.status)
+  const parent = c.nodes.get(String(n.meta.parentId ?? ''))
+  const list = (c.o.imageActions ?? imageActions(c.L)).filter(
+    (a) =>
+      (a.statuses ?? ['ready']).includes(n.status) &&
+      (a.id !== 'compare-source' || parent?.status === 'ready')
   )
   if (!list.length && n.status === 'failed') return failedActions(c.L)
   return list

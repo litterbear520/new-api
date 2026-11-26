@@ -451,6 +451,12 @@ export function lostInput(p: Project, plan: PlanPart): string | null {
   return null
 }
 
+/** The canvas picture an item edits: its base, or an attached canvas picture named by ref. */
+function parentOf(it: PlanItem, refs: Attachment[]): string | undefined {
+  const target = it.inputs?.find((x) => x.role === 'edit_target')
+  return it.base ?? (target?.ref ? refs[target.ref - 1]?.nodeId : undefined)
+}
+
 /** Puts the plan's frames on the canvas and draws every ticked item. */
 export async function drawPlan(
   projectId: string,
@@ -489,7 +495,12 @@ export async function drawPlan(
       w,
       h,
       label: it.label,
-      meta: { model: it.model, prompt: it.prompt, size: it.size },
+      meta: {
+        model: it.model,
+        prompt: it.prompt,
+        size: it.size,
+        ...(parentOf(it, refs) ? { parentId: parentOf(it, refs) } : {}),
+      },
     })
     items.push({
       id: it.id,

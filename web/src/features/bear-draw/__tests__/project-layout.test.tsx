@@ -70,6 +70,7 @@ function actions(narrow: boolean, layout?: ProjectLayout) {
       narrow,
       composerRef: { current: composer },
       focusCanvas,
+      compareOnCanvas: vi.fn(),
       setSheet,
       balanceUsd: 5,
       busy: false,

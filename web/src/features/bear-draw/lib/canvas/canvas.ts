@@ -72,6 +72,7 @@ export function createCanvas(
     hoverId: null,
     hoverG: null,
     pick: null,
+    markShape: 'free',
     raf: 0,
     camAnim: 0,
     timers: { mov: 0, ch: 0, flow: 0, toast: 0, focus: 0, settle: 0 },

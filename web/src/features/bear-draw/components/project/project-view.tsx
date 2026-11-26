@@ -94,6 +94,7 @@ function ProjectScreen(props: { project: Project }) {
     narrow,
     composerRef,
     focusCanvas: canvas.request,
+    compareOnCanvas: canvas.compare,
     setSheet,
     balanceUsd: env.balanceUsd,
     busy,

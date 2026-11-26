@@ -26,6 +26,10 @@ export type PartActions = {
   busy: boolean
   /** Opens the canvas; with ids (pictures or a set), centres on them. */
   openCanvas: (ids?: string[]) => void
+  /** The edited picture of a set and the one it came from, if there is one pair. */
+  editedPair: (groupId: string) => { from: string; to: string } | null
+  /** Opens the canvas with 对比 on two pictures. */
+  compare: (a: string, b: string) => void
   /** Packs a set's finished pictures for download. */
   exportGroup: (groupId: string) => void
   /** Puts text in the composer, e.g. a suggestion. */
@@ -41,6 +45,8 @@ export const PartActionsContext = createContext<PartActions>({
   balanceUsd: null,
   busy: false,
   openCanvas: noop,
+  editedPair: () => null,
+  compare: noop,
   exportGroup: noop,
   setComposerText: noop,
   focusComposer: noop,

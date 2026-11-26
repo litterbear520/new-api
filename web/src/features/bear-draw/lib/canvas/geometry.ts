@@ -146,6 +146,58 @@ export function pathD(pts: UV[], closed: boolean, vh: number): string {
   return closed ? `${d}Z` : d
 }
 
+/** Points per side of a box mark: enough for pathD to keep its sides straight. */
+const BOX_STEPS = 8
+
+/**
+ * A box mark between two corners, as a closed stroke that starts in the
+ * middle of its top side (so pathD rounds all four corners alike).
+ */
+export function boxStroke(a: UV, b: UV): UV[] {
+  const u0 = Math.min(a[0], b[0])
+  const u1 = Math.max(a[0], b[0])
+  const v0 = Math.min(a[1], b[1])
+  const v1 = Math.max(a[1], b[1])
+  const corners: UV[] = [
+    [(u0 + u1) / 2, v0],
+    [u1, v0],
+    [u1, v1],
+    [u0, v1],
+    [u0, v0],
+    [(u0 + u1) / 2, v0],
+  ]
+  const pts: UV[] = []
+  for (let i = 0; i < corners.length - 1; i++) {
+    const [pu, pv] = corners[i]
+    const [qu, qv] = corners[i + 1]
+    for (let k = 0; k < BOX_STEPS; k++) {
+      const t = k / BOX_STEPS
+      pts.push([
+        Number((pu + (qu - pu) * t).toFixed(4)),
+        Number((pv + (qv - pv) * t).toFixed(4)),
+      ])
+    }
+  }
+  return pts
+}
+
+/**
+ * A finished box on a picture shown dw × dh at scale s. Null when it is
+ * too small to be meant (a click).
+ */
+export function finishBox(
+  a: UV,
+  b: UV,
+  dw: number,
+  dh: number,
+  s: number
+): MarkState | null {
+  const bw = Math.abs(b[0] - a[0]) * dw * s
+  const bh = Math.abs(b[1] - a[1]) * dh * s
+  if (Math.min(bw, bh) < 6 || Math.max(bw, bh) < 10) return null
+  return { pts: boxStroke(a, b), closed: true, note: '' }
+}
+
 /** Where a mark's number badge sits: its top-left corner. */
 export function markAnchor(pts: UV[]): UV {
   let u0 = 1

@@ -22,6 +22,10 @@ import type { CanvasViewHandle } from '../canvas/canvas-view'
 
 export type CanvasHandle = CanvasViewHandle
 
+/** 对比 asked for from the chat waits this long for its pictures: 20 × 0.4 s. */
+const COMPARE_TRIES = 20
+const COMPARE_WAIT_MS = 400
+
 /** The canvas pane slides open in 0.32 s; centre on pictures after that. */
 const PANE_MS = 340
 
@@ -38,19 +42,30 @@ export function useCanvasFocus() {
   const [box] = useState(() => ({
     handle: null as CanvasHandle | null,
     pending: null as string[] | null,
+    compare: null as [string, string] | null,
+    tries: 0,
     timer: 0,
   }))
 
   const flush = useCallback(
     (ms: number) => {
       window.clearTimeout(box.timer)
-      box.timer = window.setTimeout(() => {
+      const tick = () => {
         const ids = box.pending
+        const pair = box.compare
         const handle = box.handle
-        if (!ids || !handle) return
+        if (!handle) return
         box.pending = null
-        handle.focus(ids)
-      }, ms)
+        if (ids) handle.focus(ids)
+        if (!pair) return
+        // Pictures of a canvas that just opened load from storage first.
+        if (handle.compare(pair[0], pair[1]) || ++box.tries > COMPARE_TRIES) {
+          box.compare = null
+        } else {
+          box.timer = window.setTimeout(tick, COMPARE_WAIT_MS)
+        }
+      }
+      box.timer = window.setTimeout(tick, ms)
     },
     [box]
   )
@@ -73,7 +88,20 @@ export function useCanvasFocus() {
     [box, flush]
   )
 
+  /** Open 对比 on two pictures now, or once the canvas is there. */
+  const compare = useCallback(
+    (a: string, b: string) => {
+      box.compare = [a, b]
+      box.tries = 0
+      if (box.handle) flush(0)
+    },
+    [box, flush]
+  )
+
   useEffect(() => () => window.clearTimeout(box.timer), [box])
 
-  return useMemo(() => ({ setHandle, request }), [setHandle, request])
+  return useMemo(
+    () => ({ setHandle, request, compare }),
+    [setHandle, request, compare]
+  )
 }

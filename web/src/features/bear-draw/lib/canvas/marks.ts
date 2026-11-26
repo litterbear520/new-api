@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import type { Ctx, MarkGesture, NodeRec } from './context'
 import { SVG_NS } from './dom'
-import { clamp, finishStroke, pathD } from './geometry'
+import { boxStroke, clamp, finishBox, finishStroke, pathD } from './geometry'
 import { markNode, markRec, toWorld } from './query'
 import type { Point, UV } from './types'
 
@@ -73,15 +73,23 @@ export function createMarks(c: Ctx) {
     const halo = svgPath('bd-cv-mk-halo')
     const path = svgPath('bd-cv-mk')
     svg.append(halo, path)
-    c.G = { type: 'mark', n, pts: [uv(n, pt)], last: pt, path, halo }
+    const from = uv(n, pt)
+    c.G = { type: 'mark', n, pts: [from], from, last: pt, path, halo }
     c.fx.invalidate()
   }
 
   function markMove(G: MarkGesture, pt: Point) {
     if (Math.hypot(pt.x - G.last.x, pt.y - G.last.y) < 2) return
     G.last = pt
-    G.pts.push(uv(G.n, pt))
-    const d = pathD(G.pts, false, (1000 * G.n.dh) / G.n.dw)
+    const at = uv(G.n, pt)
+    const box = c.markShape === 'box'
+    if (box) G.pts = [G.from, at]
+    else G.pts.push(at)
+    const d = pathD(
+      box ? boxStroke(G.from, at) : G.pts,
+      box,
+      (1000 * G.n.dh) / G.n.dw
+    )
     G.path.setAttribute('d', d)
     G.halo.setAttribute('d', d)
   }
@@ -90,7 +98,10 @@ export function createMarks(c: Ctx) {
     const n = G.n
     G.path.remove()
     G.halo.remove()
-    const stroke = finishStroke(G.pts, n.dw, n.dh, c.cam.s)
+    const stroke =
+      c.markShape === 'box'
+        ? finishBox(G.from, G.pts.at(-1) ?? G.from, n.dw, n.dh, c.cam.s)
+        : finishStroke(G.pts, n.dw, n.dh, c.cam.s)
     if (!stroke) {
       renderMarks(n)
       return
@@ -111,5 +122,15 @@ export function createMarks(c: Ctx) {
     c.fx.changed()
   }
 
-  return { renderMarks, startMark, markMove, markEnd, clearMarks }
+  /** Takes back the newest mark of the picture being marked. */
+  function undoMark() {
+    const n = markNode(c)
+    if (!n?.marks.length) return
+    n.marks.pop()
+    renderMarks(n)
+    c.fx.renderPanel()
+    c.fx.changed()
+  }
+
+  return { renderMarks, startMark, markMove, markEnd, clearMarks, undoMark }
 }
