@@ -160,11 +160,12 @@ export async function prepareImage(
 /** Whether any pixel of the small copy lets the background through. */
 function seesThrough(
   ctx: CanvasRenderingContext2D,
-  canvas: HTMLCanvasElement
+  canvas: HTMLCanvasElement,
+  below = 250
 ): boolean {
   try {
     const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 3; i < data.length; i += 4) if (data[i] < 250) return true
+    for (let i = 3; i < data.length; i += 4) if (data[i] < below) return true
   } catch {
     // a canvas that cannot be read back: treat the picture as opaque
   }
@@ -193,6 +194,38 @@ export { canvasBlob }
  */
 export async function copyBlob(blob: Blob): Promise<Blob> {
   return new Blob([await blob.arrayBuffer()], { type: blob.type })
+}
+
+/** Long side of a picture sent along with an edit. */
+export const UPLOAD_MAX_PX = 2048
+
+/**
+ * The copy of a picture that goes out with an edit: a JPEG (0.92, long side
+ * at most 2048) when nothing in it is transparent, about a sixth of the PNG
+ * to upload with the same result (measured 11-26). A picture with
+ * transparency, or one the browser cannot redraw, goes out as it is.
+ */
+export async function uploadCopy(blob: Blob): Promise<Blob> {
+  const same = () => copyBlob(blob)
+  try {
+    const src = await decode(blob)
+    const k = Math.min(1, UPLOAD_MAX_PX / Math.max(src.width, src.height))
+    if (blob.type === 'image/jpeg' && k === 1) {
+      if ('close' in src) src.close()
+      return await same()
+    }
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(src.width * k))
+    canvas.height = Math.max(1, Math.round(src.height * k))
+    const ctx = canvas.getContext('2d')
+    ctx?.drawImage(src, 0, 0, canvas.width, canvas.height)
+    if ('close' in src) src.close()
+    // Any transparency at all keeps the picture as it is.
+    if (!ctx || seesThrough(ctx, canvas, 255)) return await same()
+    return await canvasBlob(canvas, 'image/jpeg', 0.92)
+  } catch {
+    return same()
+  }
 }
 
 /** A small JPEG (white behind transparency) for the planner to look at. */

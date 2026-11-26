@@ -20,7 +20,7 @@ import { DrawApiError, requestImage } from '@/features/draw/api'
 import { costFromUsage, priceTokens } from '@/features/draw/lib/cost'
 import { DrawKeyError, getDrawKey } from '@/features/draw/lib/draw-key'
 import {
-  copyBlob,
+  uploadCopy,
   prepareImage,
   primeImageUrls,
 } from '@/features/draw/lib/images'
@@ -183,7 +183,7 @@ async function inputImages(ids: string[]) {
     const stored = await getImageBlob(id, 'full')
     let blob: Blob | null = null
     try {
-      blob = stored && (await copyBlob(stored))
+      blob = stored && (await uploadCopy(stored))
     } catch {
       blob = null
     }
