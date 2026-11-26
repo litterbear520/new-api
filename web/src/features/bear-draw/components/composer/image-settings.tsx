@@ -120,12 +120,7 @@ export function ImageSettings(props: {
           ))}
         </div>
         <div className='bd-set-sw'>
-          <span>
-            <span>{t('Transparent background')}</span>
-            <small>
-              {t('A PNG with no background, for stickers and cut-outs')}
-            </small>
-          </span>
+          <span>{t('Transparent background')}</span>
           <Switch
             checked={transparent}
             aria-label={t('Transparent background')}

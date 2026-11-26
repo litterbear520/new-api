@@ -111,14 +111,12 @@ export function PlusMenu(props: PlusMenuProps) {
         <MenuRow
           icon={<Upload />}
           label={t('Upload pictures')}
-          desc={t('Product shots, references or a logo')}
           onClick={props.onUpload}
         />
         {agent && (
           <MenuRow
             icon={<BookOpen />}
             label={t('Use a skill…')}
-            desc={t('Or type / in the box')}
             kbd='/'
             onClick={props.onSkill}
           />
@@ -136,7 +134,6 @@ export function PlusMenu(props: PlusMenuProps) {
             <MenuRow
               icon={<FileUp />}
               label={t('Import a skill')}
-              desc={t('From a SKILL.md file')}
               onClick={() => openDialog('import-skill')}
             />
             <DropdownMenuSeparator />
@@ -147,7 +144,6 @@ export function PlusMenu(props: PlusMenuProps) {
                   ? t('Brand kit: {{name}}', { name: brandKit.name })
                   : t('Set up a brand kit')
               }
-              desc={t('Upload once, and every set stays on brand')}
               onClick={() => openDialog('brand')}
             />
           </>

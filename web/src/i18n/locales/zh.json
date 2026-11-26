@@ -8043,7 +8043,7 @@
     "Do not draw “{{label}}”": "不画「{{label}}」",
     "Draw “{{label}}” again": "把「{{label}}」加回来",
     "Not drawn, not charged": "没画，没扣钱",
-    "Only a few pictures, so it started right away": "张数少，直接开始了",
+    "Only a few pictures, so it started right away": "已自动开始",
     "Started drawing": "已开始",
     "Starting over with what you said": "按你的新要求重来",
     "Drawing plan": "方案",
@@ -8622,6 +8622,9 @@
     "Redraw “{{label}}”": "重画“{{label}}”",
     "Drag a box on the picture around what to change. You can box several places.": "在图上拖框标出要改的地方，可标多处。",
     "Reload": "重新加载",
-    "Skip this one": "跳过这题"
+    "Skip this one": "跳过这题",
+    "From open-source prompt collections on GitHub; authors are in the details.": "收录自 GitHub 上的开源提示词合集，作者见详情。",
+    "Kept only in this browser on this device.": "只存在这台设备的浏览器里。",
+    "Saved only on this device.": "只存在这台设备上。"
   }
 }

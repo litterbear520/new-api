@@ -150,9 +150,7 @@ export function NewSkillDialog(props: NewSkillDialogProps) {
       open={props.open}
       onOpenChange={props.onOpenChange}
       title={props.seed?.text ? t('Save as my own skill') : t('New skill')}
-      description={t(
-        'Saved only on this device; pick it in Agent mode like any other skill.'
-      )}
+      description={t('Saved only on this device.')}
       contentClassName='bd-pop bd-dlg bd-dlg-lg'
       titleClassName='bd-dlg-t'
       footer={

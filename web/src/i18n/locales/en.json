@@ -8622,6 +8622,9 @@
     "Redraw “{{label}}”": "Redraw “{{label}}”",
     "Drag a box on the picture around what to change. You can box several places.": "Drag a box on the picture around what to change. You can box several places.",
     "Reload": "Reload",
-    "Skip this one": "Skip this one"
+    "Skip this one": "Skip this one",
+    "From open-source prompt collections on GitHub; authors are in the details.": "From open-source prompt collections on GitHub; authors are in the details.",
+    "Kept only in this browser on this device.": "Kept only in this browser on this device.",
+    "Saved only on this device.": "Saved only on this device."
   }
 }

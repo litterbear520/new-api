@@ -71,7 +71,6 @@ export function Hero(props: HeroProps) {
     <section className='bd-hero'>
       <h1 className='bd-greet'>{greeting}</h1>
       <p className='bd-sub'>
-        {t('Say your idea; the bear plans and draws a whole set for you.')}
         <a className='bd-link' href={DRAW_GUIDE_URL}>
           {t('Usage guide')}
         </a>

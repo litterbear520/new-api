@@ -61,7 +61,7 @@ export function GalleryPanel(props: { onUse: (item: GalleryItem) => void }) {
     <>
       <p className='bd-muted bd-feed-note'>
         {t(
-          'Click one to see its prompt and use it in one go. Collected from open-source prompt collections on GitHub; authors are in the details.'
+          'From open-source prompt collections on GitHub; authors are in the details.'
         )}
       </p>
       {gallery.status === 'loading' && <WallPlaceholder />}

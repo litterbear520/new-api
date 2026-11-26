@@ -8622,6 +8622,9 @@
     "Redraw “{{label}}”": "Vẽ lại “{{label}}”",
     "Drag a box on the picture around what to change. You can box several places.": "Kéo một khung trên ảnh quanh chỗ cần sửa. Có thể khoanh nhiều chỗ.",
     "Reload": "Tải lại",
-    "Skip this one": "Bỏ qua câu này"
+    "Skip this one": "Bỏ qua câu này",
+    "From open-source prompt collections on GitHub; authors are in the details.": "Từ các bộ sưu tập prompt mã nguồn mở trên GitHub; tác giả có trong chi tiết.",
+    "Kept only in this browser on this device.": "Chỉ lưu trong trình duyệt này trên thiết bị này.",
+    "Saved only on this device.": "Chỉ lưu trên thiết bị này."
   }
 }

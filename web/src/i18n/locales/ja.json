@@ -8622,6 +8622,9 @@
     "Redraw “{{label}}”": "「{{label}}」を描き直す",
     "Drag a box on the picture around what to change. You can box several places.": "変更したい部分を画像上でドラッグして囲みます。複数か所を囲めます。",
     "Reload": "再読み込み",
-    "Skip this one": "この質問をスキップ"
+    "Skip this one": "この質問をスキップ",
+    "From open-source prompt collections on GitHub; authors are in the details.": "GitHub のオープンソースのプロンプト集より。作者は詳細に記載。",
+    "Kept only in this browser on this device.": "このデバイスのこのブラウザにのみ保存されます。",
+    "Saved only on this device.": "このデバイスにのみ保存されます。"
   }
 }

@@ -242,9 +242,7 @@ export function BrandKitDialog(props: DialogProps) {
       open={props.open}
       onOpenChange={props.onOpenChange}
       title={t('Brand kit')}
-      description={t(
-        'Kept only in this browser on this device. In Agent mode every set uses it.'
-      )}
+      description={t('Kept only in this browser on this device.')}
       contentClassName='bd-pop bd-dlg bd-dlg-lg'
       titleClassName='bd-dlg-t'
       footer={

@@ -70,11 +70,6 @@ export function BrandKitPreview(props: { draft: BrandKitDraft }) {
           ))}
         </div>
       </div>
-      <p className='bd-bk-note'>
-        {t(
-          'Every time it draws, the bear writes these into the prompt: these colours, this type style, the logo in a fitting place, and your selling points first in the copy.'
-        )}
-      </p>
     </div>
   )
 }

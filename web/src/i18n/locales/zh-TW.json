@@ -8622,6 +8622,9 @@
     "Redraw “{{label}}”": "重畫「{{label}}」",
     "Drag a box on the picture around what to change. You can box several places.": "在圖上拖出一個框，框住要改的地方，可以框多處。",
     "Reload": "重新載入",
-    "Skip this one": "跳過這題"
+    "Skip this one": "跳過這題",
+    "From open-source prompt collections on GitHub; authors are in the details.": "收錄自 GitHub 上的開源提示詞合集，作者見詳情。",
+    "Kept only in this browser on this device.": "只存在這台裝置的瀏覽器裡。",
+    "Saved only on this device.": "只存在這台裝置上。"
   }
 }

@@ -8622,6 +8622,9 @@
     "Redraw “{{label}}”": "Redessiner « {{label}} »",
     "Drag a box on the picture around what to change. You can box several places.": "Tracez un cadre sur l’image autour de ce qu’il faut changer. Vous pouvez en tracer plusieurs.",
     "Reload": "Recharger",
-    "Skip this one": "Passer celle-ci"
+    "Skip this one": "Passer celle-ci",
+    "From open-source prompt collections on GitHub; authors are in the details.": "Issu de collections de prompts open source sur GitHub ; auteurs dans les détails.",
+    "Kept only in this browser on this device.": "Conservé uniquement dans ce navigateur, sur cet appareil.",
+    "Saved only on this device.": "Enregistré uniquement sur cet appareil."
   }
 }

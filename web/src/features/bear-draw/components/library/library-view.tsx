@@ -91,11 +91,6 @@ export function LibraryView(props: { tab?: string; skillId?: string }) {
               {t('Draw pictures')}
             </Link>
             <h1>{t('Skills')}</h1>
-            <p className='bd-muted'>
-              {t(
-                'A skill is a written way of working: what to ask you, which pictures to make, how to write each prompt. You can read every one, and import your own.'
-              )}
-            </p>
           </div>
           <div className='bd-lib-act'>
             <Button

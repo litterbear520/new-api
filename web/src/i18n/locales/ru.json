@@ -8622,6 +8622,9 @@
     "Redraw “{{label}}”": "Перерисовать «{{label}}»",
     "Drag a box on the picture around what to change. You can box several places.": "Обведите рамкой то, что нужно изменить. Рамок может быть несколько.",
     "Reload": "Обновить",
-    "Skip this one": "Пропустить этот"
+    "Skip this one": "Пропустить этот",
+    "From open-source prompt collections on GitHub; authors are in the details.": "Из открытых коллекций промптов на GitHub; авторы указаны в деталях.",
+    "Kept only in this browser on this device.": "Хранится только в этом браузере на этом устройстве.",
+    "Saved only on this device.": "Сохраняется только на этом устройстве."
   }
 }
