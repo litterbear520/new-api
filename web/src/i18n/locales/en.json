@@ -8623,6 +8623,7 @@
     "Faster": "Faster",
     "Finer": "Finer",
     "Slower, costs more": "Slower, costs more",
-    "Failures are free": "Failures are free"
+    "Failures are free": "Failures are free",
+    "Fast models return the base model name. This request ran on Fast.": "Fast models return the base model name. This request ran on Fast."
   }
 }

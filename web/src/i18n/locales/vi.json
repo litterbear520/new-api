@@ -8623,6 +8623,7 @@
     "Faster": "Nhanh hơn",
     "Finer": "Kỹ hơn",
     "Slower, costs more": "Chậm và tốn hơn",
-    "Failures are free": "Lỗi không tính phí"
+    "Failures are free": "Lỗi không tính phí",
+    "Fast models return the base model name. This request ran on Fast.": "Mô hình Fast trả về tên mô hình gốc. Yêu cầu này đã chạy ở chế độ Fast."
   }
 }

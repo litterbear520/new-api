@@ -8623,6 +8623,7 @@
     "Faster": "より速い",
     "Finer": "より丁寧",
     "Slower, costs more": "遅く高コスト",
-    "Failures are free": "失敗分は無料"
+    "Failures are free": "失敗分は無料",
+    "Fast models return the base model name. This request ran on Fast.": "Fast モデルは基本モデル名を返します。このリクエストは Fast で処理されました。"
   }
 }

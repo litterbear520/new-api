@@ -8623,6 +8623,7 @@
     "Faster": "Быстрее",
     "Finer": "Тщательнее",
     "Slower, costs more": "Медленнее и дороже",
-    "Failures are free": "Неудачи бесплатны"
+    "Failures are free": "Неудачи бесплатны",
+    "Fast models return the base model name. This request ran on Fast.": "Модели Fast возвращают имя базовой модели. Этот запрос выполнен в режиме Fast."
   }
 }

@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { describe, expect, test } from 'vitest'
 
 import {
+  isCodexFastResponse,
   isResponseModelMismatch,
   type ResponseModelObservation,
 } from '../response-model'
@@ -86,5 +87,47 @@ describe('isResponseModelMismatch', () => {
   test('returns false without an observation or a returned model', () => {
     expect(isResponseModelMismatch(undefined)).toBe(false)
     expect(isResponseModelMismatch(observation(''))).toBe(false)
+  })
+})
+
+describe('Codex Fast responses', () => {
+  test.each([
+    ['gpt-6.2-sol-fast', 'gpt-6.2-sol-fast', 'gpt-6.2-sol'],
+    ['gpt-6-astra-fast', 'gpt-6-astra-fast', 'GPT-6-Astra'],
+    ['gpt-6.2-astra-fast', 'team_a/gpt-6.2-astra-fast', 'gpt-6.2-astra'],
+    ['gpt-6.1-sol-fast', 'gpt-6.1-sol-fast', 'gpt-6.1-sol-2026-09-01'],
+  ])(
+    '%s answered as the base model is Fast, not a mismatch',
+    (requested, upstream, returned) => {
+      const fast = observation(returned, {
+        requested_model: requested,
+        upstream_model: upstream,
+      })
+      expect(isResponseModelMismatch(fast)).toBe(false)
+      expect(isCodexFastResponse(fast)).toBe(true)
+    }
+  )
+
+  test.each([
+    ['gpt-6.2-sol-fast', 'gpt-6.2-astra', 'a different GPT model'],
+    ['grok-4-fast', 'grok-4', 'a -fast name that is not a Codex model'],
+    ['gpt-6.2-sol-fast', 'gpt-6.2', 'a shorter name'],
+  ])('%s answered as %s stays a mismatch (%s)', (requested, returned) => {
+    const other = observation(returned, {
+      requested_model: requested,
+      upstream_model: requested,
+    })
+    expect(isResponseModelMismatch(other)).toBe(true)
+    expect(isCodexFastResponse(other)).toBe(false)
+  })
+
+  test('plain models and missing observations are not Fast', () => {
+    expect(isCodexFastResponse(undefined)).toBe(false)
+    expect(isCodexFastResponse(observation('requested'))).toBe(false)
+    expect(
+      isCodexFastResponse(
+        observation('', { requested_model: 'gpt-6.2-sol-fast' })
+      )
+    ).toBe(false)
   })
 })

@@ -31,7 +31,10 @@ import { getLobeIcon } from '@/lib/lobe-icon'
 import { resolveModelProvider } from '@/lib/model-provider'
 import { cn } from '@/lib/utils'
 
-import { isResponseModelMismatch } from '../lib/response-model'
+import {
+  isCodexFastResponse,
+  isResponseModelMismatch,
+} from '../lib/response-model'
 import type { LogOtherData } from '../types'
 import { DetailRow } from './dialogs/log-detail-layout'
 
@@ -262,6 +265,13 @@ export function ResponseModelDetails(props: {
         <p className='text-muted-foreground text-xs'>
           {t(
             'The upstream returned a model name different from both the requested and upstream models. Aliases or dated versions may also cause this; this warning alone does not prove model substitution.'
+          )}
+        </p>
+      )}
+      {isCodexFastResponse(props.observation) && (
+        <p className='text-muted-foreground text-xs'>
+          {t(
+            'Fast models return the base model name. This request ran on Fast.'
           )}
         </p>
       )}

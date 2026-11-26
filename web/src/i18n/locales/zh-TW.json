@@ -8623,6 +8623,7 @@
     "Faster": "更快",
     "Finer": "更細",
     "Slower, costs more": "更慢更貴",
-    "Failures are free": "失敗不扣錢"
+    "Failures are free": "失敗不扣錢",
+    "Fast models return the base model name. This request ran on Fast.": "Fast 模型回傳的是基礎模型名稱，這筆請求已按 Fast 處理。"
   }
 }

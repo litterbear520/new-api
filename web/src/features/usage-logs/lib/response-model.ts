@@ -29,7 +29,8 @@ export type ResponseModelObservation = NonNullable<
  * compatible when it starts with the requested or upstream model (dated
  * versions, variants) or ends with it (provider paths such as
  * "deepseek/deepseek-v4.1-flash"). Nothing is stored; every row is judged
- * with the current rule.
+ * with the current rule. A Codex Fast request answered under its base model
+ * name is not a mismatch either (see isCodexFastResponse).
  */
 export function isResponseModelMismatch(
   observation: ResponseModelObservation | undefined
@@ -41,11 +42,34 @@ export function isResponseModelMismatch(
     observation.requested_model,
     observation.upstream_model,
   ]) {
-    const expected = (candidate ?? '').toLowerCase()
-    if (expected === '') continue
-    if (returned.startsWith(expected) || returned.endsWith(expected)) {
-      return false
-    }
+    if (isCompatibleName(returned, candidate)) return false
   }
-  return true
+  return !isCodexFastResponse(observation)
+}
+
+// Codex Fast names: "<base>-fast" runs the base model with service_tier
+// "priority", so the upstream answers with the base name. A dedicated
+// channel may add an account prefix ("team_a/...").
+const CODEX_FAST_NAME = /^(?:.*\/)?(gpt-.+)-fast$/i
+
+/**
+ * True when a Codex Fast request came back under its base model name, which
+ * is the expected answer for Fast and not a model substitution.
+ */
+export function isCodexFastResponse(
+  observation: ResponseModelObservation | undefined
+): boolean {
+  if (!observation) return false
+  const returned = (observation.returned_model ?? '').toLowerCase()
+  if (returned.trim() === '') return false
+  return [observation.requested_model, observation.upstream_model].some(
+    (candidate) =>
+      isCompatibleName(returned, CODEX_FAST_NAME.exec(candidate ?? '')?.[1])
+  )
+}
+
+function isCompatibleName(returned: string, candidate: string | undefined) {
+  const expected = (candidate ?? '').toLowerCase()
+  if (expected === '') return false
+  return returned.startsWith(expected) || returned.endsWith(expected)
 }

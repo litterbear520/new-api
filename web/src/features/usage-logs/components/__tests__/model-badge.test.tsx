@@ -430,3 +430,32 @@ it.each([
     ).not.toBeInTheDocument()
   }
 )
+
+it('shows a Codex Fast row answered by its base model without a warning', async () => {
+  const user = userEvent.setup()
+  render(
+    <ModelBadge
+      modelName='gpt-6.2-sol-fast'
+      responseModel={{
+        requested_model: 'gpt-6.2-sol-fast',
+        upstream_model: 'gpt-6.2-sol-fast',
+        returned_model: 'gpt-6.2-sol',
+      }}
+    />
+  )
+  expect(screen.queryByText(/^Response model:/)).not.toBeInTheDocument()
+  const trigger = screen.getByRole('button', {
+    name: 'Model: gpt-6.2-sol-fast',
+  })
+  expect(trigger).toHaveTextContent(/gpt-6\.2-sol-fast$/)
+  await user.click(trigger)
+  expect(await screen.findByText('gpt-6.2-sol')).toBeVisible()
+  expect(
+    screen.getByText(
+      'Fast models return the base model name. This request ran on Fast.'
+    )
+  ).toBeVisible()
+  expect(
+    screen.queryByText(/this warning alone does not prove model substitution/)
+  ).not.toBeInTheDocument()
+})
