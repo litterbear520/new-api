@@ -109,6 +109,9 @@ const WAS_DEFAULT_IMAGE = new Set([
   DEFAULT_PREFS.image,
 ])
 
+/** Planners that were the page's default at some time. */
+const WAS_DEFAULT_BRAIN = new Set(['gpt-6-luna', DEFAULT_PREFS.brain])
+
 export function readPrefs(): Prefs {
   const saved = readJson(STORAGE_KEYS.prefs) as Partial<Prefs> | null
   const p = { ...DEFAULT_PREFS, ...saved }
@@ -119,7 +122,7 @@ export function readPrefs(): Prefs {
     saved != null &&
     saved.auto == null &&
     ((typeof saved.image === 'string' && !WAS_DEFAULT_IMAGE.has(saved.image)) ||
-      (typeof saved.brain === 'string' && saved.brain !== DEFAULT_PREFS.brain))
+      (typeof saved.brain === 'string' && !WAS_DEFAULT_BRAIN.has(saved.brain)))
   const auto = p.auto !== false && !pickedBefore
   const own = (v: unknown, fallback: string) =>
     !auto && typeof v === 'string' && v ? v : fallback

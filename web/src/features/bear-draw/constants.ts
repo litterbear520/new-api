@@ -45,7 +45,12 @@ export const CURRENT_IMAGE_MODELS = [
   'gpt-image-2.6-sunburst',
   'gpt-image-2.6-flare',
 ]
-export const DEFAULT_BRAIN = 'gpt-6-luna'
+/**
+ * The planner. Codex has its main model call the image tool, and its
+ * catalogue leads with this one; gpt-6-luna (the default until 11-26)
+ * missed look-alike characters in its checks and often gave no follow-ups.
+ */
+export const DEFAULT_BRAIN = 'gpt-6.2-sol'
 
 /** Image models we know: names and the menu note (i18n keys). */
 export const IMAGE_MODEL_META: Record<
@@ -87,23 +92,23 @@ export const IMAGE_MODEL_META: Record<
 export const BRAIN_META: Array<{ id: string; note: string; tag?: 'default' }> =
   [
     {
-      id: 'gpt-6-luna',
-      note: 'Cheap and quick, fine for everyday sets',
+      id: 'gpt-6.2-sol',
+      note: 'Plans more carefully, writes finer prompts',
       tag: 'default',
     },
-    { id: 'gpt-6.2-sol', note: 'Plans more carefully, writes finer prompts' },
+    { id: 'gpt-6-luna', note: 'Cheap and quick, fine for everyday sets' },
     { id: 'gemini-3.8-flash', note: 'Reads reference pictures more closely' },
     { id: 'claude-sonnet-4-6', note: 'More refined copywriting' },
   ]
 
 /** When the chosen brain is down before it says anything, try these in order. */
 export const BRAIN_FALLBACKS = [
+  'gpt-6.2-sol',
+  'gpt-6.1-sol',
   'gpt-6-luna',
   'gpt-5.6-luna',
   'gemini-3-flash',
   'gemini-3.8-flash',
-  'gpt-6.2-sol',
-  'gpt-6.1-sol',
 ]
 
 /** Not offered as a brain: image models and other non-chat models. */

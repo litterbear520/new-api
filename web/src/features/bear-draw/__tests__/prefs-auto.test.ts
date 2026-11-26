@@ -34,7 +34,8 @@ afterEach(() => {
 
 describe('自动 in the model preferences', () => {
   it('is on for prefs saved before it existed that kept the old defaults', () => {
-    save({ image: 'gpt-image-2.5-sunburst', brain: DEFAULT_PREFS.brain })
+    // 2.5 Sunburst and gpt-6-luna: the defaults of their time
+    save({ image: 'gpt-image-2.5-sunburst', brain: 'gpt-6-luna' })
     expect(readPrefs()).toMatchObject({
       auto: true,
       image: DEFAULT_PREFS.image,
@@ -52,11 +53,11 @@ describe('自动 in the model preferences', () => {
   })
 
   it('off keeps the models the user picked', () => {
-    save({ auto: false, image: 'gpt-image-2.6-flare', brain: 'gpt-6.2-sol' })
+    save({ auto: false, image: 'gpt-image-2.6-flare', brain: 'gpt-6-luna' })
     expect(readPrefs()).toMatchObject({
       auto: false,
       image: 'gpt-image-2.6-flare',
-      brain: 'gpt-6.2-sol',
+      brain: 'gpt-6-luna',
     })
   })
 

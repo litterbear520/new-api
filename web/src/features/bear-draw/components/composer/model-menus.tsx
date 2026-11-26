@@ -220,7 +220,7 @@ function BrainRow(props: { model: BrainModelOption }) {
 }
 
 /**
- * The planner, folded into one row 「思考模型 gpt-6-luna」: the picked ones
+ * The planner, folded into one row 「规划模型 gpt-6.2-sol」: the picked ones
  * first, every other chat model under 「更多模型」.
  */
 function BrainModels(props: {
