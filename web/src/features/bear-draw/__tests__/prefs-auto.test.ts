@@ -32,51 +32,53 @@ afterEach(() => {
   useBearDrawStore.setState({ prefs: { ...DEFAULT_PREFS } })
 })
 
-describe('自动 in the model preferences', () => {
-  it('is on for prefs saved before it existed that kept the old defaults', () => {
+describe('「最新」 and the thinking effort', () => {
+  it('prefs saved before it existed follow the page when they kept the old defaults', () => {
     // 2.5 Sunburst and gpt-6-luna: the defaults of their time
     save({ image: 'gpt-image-2.5-sunburst', brain: 'gpt-6-luna' })
     expect(readPrefs()).toMatchObject({
       auto: true,
       image: DEFAULT_PREFS.image,
       brain: DEFAULT_PREFS.brain,
+      effort: 'medium',
     })
   })
 
-  it('stays off for prefs saved before it existed with models picked by hand', () => {
+  it('a planner picked by hand before it existed stays', () => {
     save({ image: 'gpt-image-2.6-flare', brain: 'claude-sonnet-4-6' })
     expect(readPrefs()).toMatchObject({
       auto: false,
-      image: 'gpt-image-2.6-flare',
       brain: 'claude-sonnet-4-6',
+      // the image model is no longer the user's to pick
+      image: DEFAULT_PREFS.image,
     })
   })
 
-  it('off keeps the models the user picked', () => {
-    save({ auto: false, image: 'gpt-image-2.6-flare', brain: 'gpt-6-luna' })
-    expect(readPrefs()).toMatchObject({
-      auto: false,
-      image: 'gpt-image-2.6-flare',
-      brain: 'gpt-6-luna',
-    })
+  it('keeps a saved effort and drops one it does not know', () => {
+    save({ effort: 'xhigh' })
+    expect(readPrefs().effort).toBe('xhigh')
+    save({ effort: 'ultra' })
+    expect(readPrefs().effort).toBe('medium')
   })
 
-  it('goes off when a model is picked by hand, and back on restores the defaults', () => {
+  it('picking a planner leaves 最新, and 最新 brings the default back', () => {
     const { setPrefs } = useBearDrawStore.getState()
-    setPrefs({ image: 'gpt-image-2.6-flare' })
+    setPrefs({ brain: 'gpt-6-luna' })
     expect(useBearDrawStore.getState().prefs).toMatchObject({
       auto: false,
-      image: 'gpt-image-2.6-flare',
+      brain: 'gpt-6-luna',
     })
     setPrefs({ auto: true })
     expect(useBearDrawStore.getState().prefs).toMatchObject({
       auto: true,
-      image: DEFAULT_PREFS.image,
       brain: DEFAULT_PREFS.brain,
     })
-    // other settings leave it alone
-    setPrefs({ ratio: '1:1', transparent: true })
-    expect(useBearDrawStore.getState().prefs.auto).toBe(true)
+    // the effort is its own setting
+    setPrefs({ effort: 'high' })
+    expect(useBearDrawStore.getState().prefs).toMatchObject({
+      auto: true,
+      effort: 'high',
+    })
   })
 })
 

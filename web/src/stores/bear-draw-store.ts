@@ -103,34 +103,32 @@ function writeJson(key: string, value: unknown): boolean {
 const userKey = (key: string, uid: number | null) =>
   uid == null ? key : `${key}.${uid}`
 
-/** Image models that were the page's default at some time. */
-const WAS_DEFAULT_IMAGE = new Set([
-  'gpt-image-2.5-sunburst',
-  DEFAULT_PREFS.image,
-])
-
 /** Planners that were the page's default at some time. */
 const WAS_DEFAULT_BRAIN = new Set(['gpt-6-luna', DEFAULT_PREFS.brain])
+const EFFORT_IDS = new Set<unknown>(['low', 'medium', 'high', 'xhigh'])
 
 export function readPrefs(): Prefs {
   const saved = readJson(STORAGE_KEYS.prefs) as Partial<Prefs> | null
   const p = { ...DEFAULT_PREFS, ...saved }
-  // Prefs saved before 自动 existed have no `auto`. Models someone picked
-  // by hand stay theirs; the defaults of then (2.5 Sunburst until 11-06)
-  // were nobody's pick, and follow the page.
+  // Prefs saved before 「最新」 existed have no `auto`. A planner someone
+  // picked by hand stays theirs; the defaults of then were nobody's pick,
+  // and follow the page.
   const pickedBefore =
     saved != null &&
     saved.auto == null &&
-    ((typeof saved.image === 'string' && !WAS_DEFAULT_IMAGE.has(saved.image)) ||
-      (typeof saved.brain === 'string' && !WAS_DEFAULT_BRAIN.has(saved.brain)))
+    typeof saved.brain === 'string' &&
+    !WAS_DEFAULT_BRAIN.has(saved.brain)
   const auto = p.auto !== false && !pickedBefore
-  const own = (v: unknown, fallback: string) =>
-    !auto && typeof v === 'string' && v ? v : fallback
   return {
     mode: p.mode === 'image' ? 'image' : 'agent',
     auto,
-    brain: own(p.brain, DEFAULT_PREFS.brain),
-    image: own(p.image, DEFAULT_PREFS.image),
+    brain:
+      !auto && typeof p.brain === 'string' && p.brain
+        ? p.brain
+        : DEFAULT_PREFS.brain,
+    effort: EFFORT_IDS.has(p.effort) ? p.effort : DEFAULT_PREFS.effort,
+    // the image model is the page's choice (index.tsx fits it to the account)
+    image: DEFAULT_PREFS.image,
     ratio: RATIOS.includes(p.ratio) ? p.ratio : DEFAULT_PREFS.ratio,
     count: Math.min(MAX_COUNT, Math.max(1, Math.round(Number(p.count) || 1))),
     transparent: p.transparent === true,
@@ -199,9 +197,8 @@ export const useBearDrawStore = create<State & Actions>()((set, get) => ({
     const prefs = { ...get().prefs, ...patch }
     if (patch.auto === true) {
       prefs.brain = DEFAULT_PREFS.brain
-      prefs.image = DEFAULT_PREFS.image
-    } else if (patch.brain != null || patch.image != null) {
-      // a model picked by hand
+    } else if (patch.brain != null) {
+      // a planner picked by hand
       prefs.auto = false
     }
     writeJson(STORAGE_KEYS.prefs, prefs)

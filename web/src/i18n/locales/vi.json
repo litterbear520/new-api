@@ -8625,6 +8625,15 @@
     "Skip this one": "Bỏ qua câu này",
     "From open-source prompt collections on GitHub; authors are in the details.": "Từ các bộ sưu tập prompt mã nguồn mở trên GitHub; tác giả có trong chi tiết.",
     "Kept only in this browser on this device.": "Chỉ lưu trong trình duyệt này trên thiết bị này.",
-    "Saved only on this device.": "Chỉ lưu trên thiết bị này."
+    "Saved only on this device.": "Chỉ lưu trên thiết bị này.",
+    "Latest": "Mới nhất",
+    "Extra high": "Rất cao",
+    "Thinking effort: {{level}}": "Mức suy nghĩ: {{level}}",
+    "Model: {{name}}": "Mô hình: {{name}}",
+    "Think": "Suy nghĩ",
+    "Faster": "Nhanh hơn",
+    "Finer": "Kỹ hơn",
+    "Slower, costs more": "Chậm và tốn hơn",
+    "Failures are free": "Lỗi không tính phí"
   }
 }

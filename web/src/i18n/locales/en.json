@@ -8625,6 +8625,15 @@
     "Skip this one": "Skip this one",
     "From open-source prompt collections on GitHub; authors are in the details.": "From open-source prompt collections on GitHub; authors are in the details.",
     "Kept only in this browser on this device.": "Kept only in this browser on this device.",
-    "Saved only on this device.": "Saved only on this device."
+    "Saved only on this device.": "Saved only on this device.",
+    "Latest": "Latest",
+    "Extra high": "Extra high",
+    "Thinking effort: {{level}}": "Thinking effort: {{level}}",
+    "Model: {{name}}": "Model: {{name}}",
+    "Think": "Think",
+    "Faster": "Faster",
+    "Finer": "Finer",
+    "Slower, costs more": "Slower, costs more",
+    "Failures are free": "Failures are free"
   }
 }

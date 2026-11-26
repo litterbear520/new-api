@@ -56,16 +56,23 @@ export type Attachment = ImageRef & {
 }
 
 /** What the composer remembers between visits (localStorage). */
+export type Effort = 'low' | 'medium' | 'high' | 'xhigh'
+
 export type Prefs = {
   mode: Mode
   /**
-   * The page picks the models (the recommended image model, the default
-   * planner). Picking a model by hand turns it off.
+   * 「最新」: the planner is the page's current default. Picking a planner
+   * by hand turns it off.
    */
   auto: boolean
   /** Chat model that plans in Agent mode. */
   brain: string
-  /** Image model for Agent plans and for the Image mode. */
+  /** How long the planner thinks (sent as reasoning_effort). */
+  effort: Effort
+  /**
+   * Image model for Agent plans and for the Image mode. Not the user's
+   * choice: the recommended one, or the first the account has.
+   */
   image: string
   /** Image mode only. */
   ratio: Ratio

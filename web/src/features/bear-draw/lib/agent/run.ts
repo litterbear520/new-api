@@ -22,9 +22,15 @@ import { ChatRequestError } from '@/features/bear-chat/lib/stream'
 import { useAuthStore } from '@/stores/auth-store'
 import { findProject, newId, useBearDrawStore } from '@/stores/bear-draw-store'
 
-import { BRAIN_FALLBACKS, MAX_STEPS } from '../../constants'
+import { BRAIN_FALLBACKS, MAX_STEPS, TAKES_EFFORT } from '../../constants'
 import { SKILLS } from '../../data/skills'
-import type { ApiMessage, ApiToolCall, LiveState, Part } from '../../types'
+import type {
+  ApiMessage,
+  ApiToolCall,
+  Effort,
+  LiveState,
+  Part,
+} from '../../types'
 import { picturesEnv } from '../pictures'
 import {
   addCost,
@@ -78,6 +84,11 @@ type Run = {
   drew?: boolean
   /** The planner was asked once to end with suggest_next. */
   nudged?: boolean
+  /**
+   * The thinking effort this turn was sent with: a change made for the next
+   * message does not reach the steps of this one.
+   */
+  effort: Effort
 }
 
 const runs = new Map<string, Run>()
@@ -147,7 +158,9 @@ function modelChain(): string[] {
     (m, i, all) =>
       all.indexOf(m) === i && (!chatModels.length || chatModels.includes(m))
   )
-  return list.length ? list : [chosen]
+  if (list.length) return list
+  // none of ours is open to this account: any chat model it has
+  return chatModels.length ? [chatModels[0]] : [chosen]
 }
 
 function allSkills() {
@@ -232,6 +245,7 @@ async function step(run: Run): Promise<StepOutcome> {
       const result = await streamStep(
         {
           model,
+          ...(TAKES_EFFORT.test(model) ? { reasoning_effort: run.effort } : {}),
           stream: true,
           stream_options: { include_usage: true },
           messages,
@@ -566,6 +580,7 @@ export function newRun(projectId: string, messageId: string): Run {
     ctrl: new AbortController(),
     stopped: false,
     steps: 0,
+    effort: useBearDrawStore.getState().prefs.effort,
   }
 }
 

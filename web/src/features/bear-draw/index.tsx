@@ -31,6 +31,7 @@ import { DialogHost } from './components/dialogs/dialog-bus'
 import { HomeView } from './components/home/home-view'
 import { useViewStartsAtTop } from './components/home/use-home'
 import { loadLibraryView, loadProjectView } from './components/lazy-views'
+import { DEFAULT_IMAGE_MODEL } from './constants'
 import { useBearDrawAlerts } from './hooks/use-alerts'
 import {
   type BearDrawEnv,
@@ -87,13 +88,17 @@ function useEngineEnv(env: BearDrawEnv) {
   useEffect(() => {
     setAgentModels(env.brainModels.map((m) => m.id))
   }, [env.brainModels])
-  // 自动 means a model this account can draw with: when it lacks the
-  // recommended one, the first it has (the list is best first).
+  // The image model is not the user's to pick: the recommended one, or the
+  // first this account has (the list is best first).
   useEffect(() => {
     const { prefs } = useBearDrawStore.getState()
     const ids = env.imageModels.map((m) => m.id)
-    if (prefs.auto && ids.length && !ids.includes(prefs.image)) {
-      useBearDrawStore.setState({ prefs: { ...prefs, image: ids[0] } })
+    if (!ids.length) return
+    const image = ids.includes(DEFAULT_IMAGE_MODEL)
+      ? DEFAULT_IMAGE_MODEL
+      : ids[0]
+    if (image !== prefs.image) {
+      useBearDrawStore.setState({ prefs: { ...prefs, image } })
     }
   }, [env.imageModels])
 }

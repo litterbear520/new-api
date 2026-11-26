@@ -1,0 +1,667 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/*
+ * 思考强度: the chip on the composer bar and the slider in its panel
+ * (design: Gemini 4 Neon). Every motion here is a transform or an opacity,
+ * and nothing runs while the slider rests.
+ */
+.bd,
+.bd-pop {
+  --es-out: cubic-bezier(0.2, 0.85, 0.25, 1);
+  --es-spring: cubic-bezier(0.22, 1.24, 0.36, 1);
+  --es-track-bg: #f1f1ef;
+  --es-track-bd: rgb(15 23 42 / 0.08);
+  --es-tick: rgb(15 23 42 / 0.16);
+  --es-tick-hi: rgb(109 92 231 / 0.42);
+  --es-pip: rgb(15 23 42 / 0.26);
+  --es-pip-hi: rgb(109 92 231 / 0.58);
+  --es-pip-on: rgb(255 255 255 / 0.8);
+  --es-pip-low-on: rgb(15 23 42 / 0.44);
+  --es-thumb-bg: #fff;
+  --es-thumb-bd: rgb(15 23 42 / 0.16);
+  --es-thumb-shadow: 0 2px 6px rgb(15 23 42 / 0.18);
+  --es-fill-low: #cdd2dc;
+  --es-fill-medium: linear-gradient(90deg, #4f7fe4, #346cd9);
+  --es-fill-high: linear-gradient(90deg, #3c6fe3, #2494d8);
+  --es-fill-xhigh: linear-gradient(
+    90deg,
+    oklch(0.62 0.17 256),
+    oklch(0.68 0.14 222) 52%,
+    oklch(0.61 0.18 292)
+  );
+  --es-c-low: #666a73;
+  --es-c-medium: #2f6ce0;
+  --es-c-high: #1978c4;
+  --es-c-xhigh: #6552e0;
+  --es-badge-low: rgb(15 23 42 / 0.06);
+  --es-badge-medium: rgb(47 108 224 / 0.1);
+  --es-badge-high: rgb(25 120 196 / 0.11);
+  --es-badge-xhigh: rgb(101 82 224 / 0.12);
+  --es-rim: rgb(101 82 224 / 0.48);
+  --es-chip-xhigh-bg: rgb(101 82 224 / 0.08);
+  --es-chip-xhigh-bd: rgb(101 82 224 / 0.3);
+}
+.dark .bd,
+.dark .bd-pop {
+  --es-track-bg: #1b1b1a;
+  --es-track-bd: rgb(255 255 255 / 0.1);
+  --es-tick: rgb(255 255 255 / 0.16);
+  --es-tick-hi: rgb(176 152 255 / 0.48);
+  --es-pip: rgb(255 255 255 / 0.26);
+  --es-pip-hi: rgb(186 164 255 / 0.65);
+  --es-pip-on: rgb(255 255 255 / 0.85);
+  --es-pip-low-on: rgb(255 255 255 / 0.72);
+  --es-thumb-bg: #f6f6f3;
+  --es-thumb-bd: rgb(255 255 255 / 0.82);
+  --es-thumb-shadow: 0 2px 8px rgb(0 0 0 / 0.46);
+  --es-fill-low: #44454a;
+  --es-fill-medium: linear-gradient(90deg, #3c6fd4, #4c86ee);
+  --es-fill-high: linear-gradient(90deg, #4479eb, #35b0e6);
+  --es-fill-xhigh: linear-gradient(
+    90deg,
+    oklch(0.64 0.17 256),
+    oklch(0.76 0.13 216) 50%,
+    oklch(0.68 0.17 292)
+  );
+  --es-c-low: #b8bac2;
+  --es-c-medium: #77aef7;
+  --es-c-high: #54c4f0;
+  --es-c-xhigh: #b69eff;
+  --es-badge-low: rgb(255 255 255 / 0.08);
+  --es-badge-medium: rgb(110 168 245 / 0.15);
+  --es-badge-high: rgb(84 196 240 / 0.16);
+  --es-badge-xhigh: rgb(182 158 255 / 0.18);
+  --es-rim: rgb(162 142 255 / 0.56);
+  --es-chip-xhigh-bg: rgb(150 130 255 / 0.16);
+  --es-chip-xhigh-bd: rgb(172 154 255 / 0.38);
+}
+
+/* ---------- the chip: 「思考 中 ⌄」 ---------- */
+.bd-effort-chip {
+  position: relative;
+  gap: 4px;
+}
+.bd-effort-chip > i {
+  color: var(--bd-ink3);
+  font-style: normal;
+}
+.bd-effort-chip > b {
+  color: var(--bd-ink);
+  font-weight: 600;
+}
+.bd-effort-chip[data-level='low'] > b {
+  color: var(--bd-ink2);
+}
+.bd-effort-chip[data-level='high'] > b {
+  color: var(--es-c-high);
+}
+.bd-effort-chip[data-level='xhigh'] > b {
+  color: var(--es-c-xhigh);
+}
+/* 极高 costs time and money: the chip keeps saying so while it is set */
+.bd-effort-chip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--es-chip-xhigh-bd);
+  border-radius: inherit;
+  background: var(--es-chip-xhigh-bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--es-out);
+}
+.bd-effort-chip[data-level='xhigh']::after {
+  opacity: 1;
+}
+.bd-effort-chip > .bd-chev {
+  transition: transform 0.18s var(--es-out);
+}
+.bd-effort-chip[data-popup-open] > .bd-chev {
+  transform: rotate(180deg);
+}
+
+/* ---------- the panel: one height for both views ---------- */
+.bd-effort {
+  gap: 0;
+  height: 172px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+/* a planner without a thinking effort: the model row alone, or its list */
+.bd-effort[data-plain] {
+  height: auto;
+  max-height: 172px;
+}
+.bd-effort[data-plain] .bd-effort-model {
+  border-bottom: 0;
+}
+.bd-effort-model {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: 44px;
+  flex: none;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 1px solid var(--bd-bd);
+  background: transparent;
+  color: var(--bd-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.bd-effort-model > i {
+  color: var(--bd-ink3);
+  font-size: 12px;
+  font-style: normal;
+}
+.bd-effort-model > b {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bd-effort-model > span {
+  color: var(--bd-ink3);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.bd-effort-model > svg {
+  width: 14px;
+  height: 14px;
+  margin-inline-start: auto;
+  flex: none;
+  color: var(--bd-ink3);
+  transition: transform 0.15s var(--es-out);
+}
+.bd-effort-model:hover {
+  background: var(--bd-hov);
+}
+.bd-effort-model:hover > svg {
+  transform: translate3d(2px, 0, 0);
+}
+.bd-effort-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.bd-effort-back,
+.bd-effort-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  flex: none;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--bd-ink);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: start;
+  cursor: pointer;
+}
+.bd-effort-back {
+  height: 30px;
+  color: var(--bd-ink3);
+  font-size: 12px;
+}
+.bd-effort-row {
+  justify-content: space-between;
+  height: 34px;
+}
+.bd-effort-back:hover,
+.bd-effort-row:hover {
+  background: var(--bd-hov);
+}
+.bd-effort-back > svg {
+  width: 14px;
+  height: 14px;
+}
+.bd-effort-row > svg {
+  width: 16px;
+  height: 16px;
+}
+.bd-effort-model:focus-visible,
+.bd-effort-back:focus-visible,
+.bd-effort-row:focus-visible {
+  outline: 2px solid var(--bd-ink);
+  outline-offset: -2px;
+}
+
+/* ---------- the slider ---------- */
+.bd-es {
+  padding: 13px 16px 15px;
+}
+.bd-es-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 13px;
+  color: var(--bd-ink2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.bd-es-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  line-height: 1;
+}
+.bd-es[data-level='low'] .bd-es-badge {
+  background: var(--es-badge-low);
+  color: var(--es-c-low);
+}
+.bd-es[data-level='medium'] .bd-es-badge {
+  background: var(--es-badge-medium);
+  color: var(--es-c-medium);
+}
+.bd-es[data-level='high'] .bd-es-badge {
+  background: var(--es-badge-high);
+  color: var(--es-c-high);
+}
+.bd-es[data-level='xhigh'] .bd-es-badge {
+  background: var(--es-badge-xhigh);
+  color: var(--es-c-xhigh);
+}
+/* 6 px above and below the track: a 44 px target for a finger */
+.bd-es-wrap {
+  position: relative;
+  margin: -6px 0;
+  padding: 6px 0;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bd-es-wrap:focus-visible {
+  outline: none;
+}
+.bd-es-track {
+  position: relative;
+  height: 32px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid var(--es-track-bd);
+  border-radius: 16px;
+  background: var(--es-track-bg);
+}
+.bd-es-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border: 1.25px solid var(--es-rim);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s var(--es-out);
+}
+.bd-es[data-level='xhigh'] .bd-es-rim {
+  opacity: 1;
+}
+/* the thumb's centre travels from 16 px to width − 16 px */
+.bd-es-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 15px;
+  right: 15px;
+  pointer-events: none;
+}
+.bd-es-ticks {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bd-es-ticks > i {
+  width: 1px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--es-tick);
+  opacity: 0.72;
+}
+/* past 高 the scale changes: taller, violet */
+.bd-es-ticks > i[data-over] {
+  height: 7px;
+  background: var(--es-tick-hi);
+  opacity: 0.9;
+}
+.bd-es-ticks > i[data-major] {
+  opacity: 0;
+}
+/* the fill is one full-width pill that slides in from the left */
+.bd-es-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  transform: translate3d(calc((var(--p, 0.333333) - 1) * 100%), 0, 0);
+  transition: transform 0.22s var(--es-spring);
+}
+.bd-es-fill-body {
+  position: absolute;
+  top: -1px;
+  right: -16px;
+  bottom: -1px;
+  width: calc(100% + 32px);
+  overflow: hidden;
+  border-radius: 16px;
+}
+.bd-es-fill-body > i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.2s var(--es-out);
+}
+.bd-es-fill-body > i[data-of='low'] {
+  background: var(--es-fill-low);
+}
+.bd-es-fill-body > i[data-of='medium'] {
+  background: var(--es-fill-medium);
+}
+.bd-es-fill-body > i[data-of='high'] {
+  background: var(--es-fill-high);
+}
+.bd-es-fill-body > i[data-of='xhigh'] {
+  background: var(--es-fill-xhigh);
+}
+.bd-es[data-level='low'] .bd-es-fill-body > i[data-of='low'],
+.bd-es[data-level='medium'] .bd-es-fill-body > i[data-of='medium'],
+.bd-es[data-level='high'] .bd-es-fill-body > i[data-of='high'],
+.bd-es[data-level='xhigh'] .bd-es-fill-body > i[data-of='xhigh'] {
+  opacity: 1;
+}
+.bd-es-glint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 44%;
+  background: linear-gradient(
+    105deg,
+    transparent 12%,
+    rgb(255 255 255 / 0.55) 48%,
+    rgb(255 255 255 / 0.14) 68%,
+    transparent 88%
+  );
+  opacity: 0;
+  transform: translate3d(-120%, 0, 0);
+  pointer-events: none;
+}
+.bd-es-pips {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.bd-es-pips > i {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--at) * 100%);
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: var(--es-pip);
+  opacity: 0.88;
+  transition:
+    transform 0.18s var(--es-out),
+    opacity 0.18s var(--es-out);
+}
+.bd-es-pips > i[data-pos='0'] {
+  --at: 0;
+}
+.bd-es-pips > i[data-pos='1'] {
+  --at: 0.333333;
+}
+.bd-es-pips > i[data-pos='2'] {
+  --at: 0.666667;
+}
+/* the 极高 stop is a hollow ring */
+.bd-es-pips > i[data-pos='3'] {
+  --at: 1;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border: 1.4px solid var(--es-pip-hi);
+  background: transparent;
+}
+.bd-es-pips > i[data-passed] {
+  background: var(--es-pip-on);
+  opacity: 0.94;
+  transform: scale(1.1);
+}
+.bd-es-pips > i[data-pos='3'][data-passed] {
+  border-color: var(--es-pip-on);
+  background: transparent;
+}
+.bd-es[data-level='low'] .bd-es-pips > i[data-passed] {
+  background: var(--es-pip-low-on);
+}
+/* outside the track's clip, so the focus rings and the ripple show whole */
+.bd-es-thumb-rail {
+  position: absolute;
+  top: 6px;
+  right: 16px;
+  bottom: 6px;
+  left: 16px;
+  z-index: 5;
+  pointer-events: none;
+}
+.bd-es-mover {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--p, 0.333333) * 100%), 0, 0);
+  transition: transform 0.22s var(--es-spring);
+}
+/* a drag follows the pointer at once; the layer hint lasts as long as it */
+.bd-es-wrap[data-dragging] .bd-es-fill,
+.bd-es-wrap[data-dragging] .bd-es-mover {
+  transition: none;
+  will-change: transform;
+}
+.bd-es-ripple,
+.bd-es-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+}
+.bd-es-ripple {
+  border: 1.5px solid var(--es-c-medium);
+  opacity: 0;
+  pointer-events: none;
+}
+.bd-es[data-level='low'] .bd-es-ripple {
+  border-color: var(--es-c-low);
+}
+.bd-es[data-level='high'] .bd-es-ripple {
+  border-color: var(--es-c-high);
+}
+.bd-es[data-level='xhigh'] .bd-es-ripple {
+  border-color: var(--es-c-xhigh);
+}
+.bd-es-thumb {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--es-thumb-bd);
+  background: var(--es-thumb-bg);
+  box-shadow: var(--es-thumb-shadow);
+  transition: transform 0.14s var(--es-spring);
+}
+.bd-es-wrap:hover .bd-es-thumb {
+  transform: scale(1.04);
+}
+.bd-es-wrap[data-dragging] .bd-es-thumb {
+  transform: scale(1.09);
+}
+/* keyboard focus: two rings (the panel's colour, then ink), clear on any fill */
+.bd-es-thumb::before,
+.bd-es-thumb::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+  transition:
+    opacity 0.15s var(--es-out),
+    transform 0.15s var(--es-out);
+}
+.bd-es-thumb::before {
+  inset: -3.5px;
+  border: 2px solid var(--popover, var(--bd-s1));
+}
+.bd-es-thumb::after {
+  inset: -5.5px;
+  border: 2px solid var(--bd-ink);
+}
+.bd-es-wrap:focus-visible .bd-es-thumb::before,
+.bd-es-wrap:focus-visible .bd-es-thumb::after {
+  opacity: 1;
+  transform: scale(1);
+}
+/* the core: a dot that grows with the effort; 极高 adds a ring around it */
+.bd-es-core {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+.bd-es-core > i {
+  grid-area: 1 / 1;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.5);
+  transition:
+    transform 0.2s var(--es-spring),
+    opacity 0.18s var(--es-out);
+}
+.bd-es-core > i[data-of='low'] {
+  background: var(--es-c-low);
+}
+.bd-es-core > i[data-of='medium'] {
+  background: var(--es-c-medium);
+}
+.bd-es-core > i[data-of='high'] {
+  background: var(--es-c-high);
+}
+.bd-es-core > i[data-of='xhigh'] {
+  background: linear-gradient(
+    135deg,
+    oklch(0.6 0.18 256),
+    oklch(0.62 0.19 292)
+  );
+}
+.bd-es-core > i[data-of='orbit'] {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--es-c-xhigh);
+  transform: scale(0.65);
+}
+.bd-es[data-level='low'] .bd-es-core > i[data-of='low'] {
+  opacity: 0.72;
+  transform: scale(0.62);
+}
+.bd-es[data-level='medium'] .bd-es-core > i[data-of='medium'] {
+  opacity: 0.94;
+  transform: scale(0.8);
+}
+.bd-es[data-level='high'] .bd-es-core > i[data-of='high'] {
+  opacity: 1;
+  transform: scale(0.96);
+}
+.bd-es[data-level='xhigh'] .bd-es-core > i[data-of='xhigh'] {
+  opacity: 1;
+  transform: scale(0.76);
+}
+.bd-es[data-level='xhigh'] .bd-es-core > i[data-of='orbit'] {
+  opacity: 0.9;
+  transform: scale(1);
+}
+/* the stop names, under their pips; a click goes there */
+.bd-es-stops {
+  position: relative;
+  height: 24px;
+  margin: 8px 16px 0;
+}
+.bd-es-stops > button {
+  position: absolute;
+  top: 0;
+  left: calc(var(--at) * 100%);
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bd-ink3);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translate3d(-50%, 0, 0);
+}
+.bd-es-stops > button[data-pos='0'] {
+  --at: 0;
+}
+.bd-es-stops > button[data-pos='1'] {
+  --at: 0.333333;
+}
+.bd-es-stops > button[data-pos='2'] {
+  --at: 0.666667;
+}
+.bd-es-stops > button[data-pos='3'] {
+  --at: 1;
+}
+.bd-es-stops > button:hover {
+  color: var(--bd-ink2);
+}
+.bd-es-stops > button[aria-pressed='true'] {
+  color: var(--bd-ink);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-effort-chip::after,
+  .bd-effort-chip > .bd-chev,
+  .bd-effort-model > svg,
+  .bd-es *,
+  .bd-es *::before,
+  .bd-es *::after {
+    transition: none;
+  }
+}

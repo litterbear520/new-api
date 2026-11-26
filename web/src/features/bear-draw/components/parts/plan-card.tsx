@@ -165,7 +165,7 @@ function StateLine(props: { state: PlanPart['state'] }) {
 }
 
 /**
- * The plan before drawing: every picture with its size, model and price,
+ * The plan before drawing: every picture with its size and price,
  * the total, flagged words, and 开始画 / 只画第一张 / 取消 while it waits.
  */
 export function PlanCard(props: {
@@ -204,18 +204,13 @@ export function PlanCard(props: {
           )}
         </span>
         <span className='bd-plan-sum bd-num'>
-          {oneModel && (
-            <Tip label={IMAGE_MODEL_META[oneModel]?.name ?? oneModel}>
-              <span className='bd-plan-model'>
-                <ModelIcon model={oneModel} size={13} />
-                {IMAGE_MODEL_META[oneModel]?.short ?? oneModel}
-              </span>
-            </Tip>
-          )}
-          {t('Pictures: {{count}} · about {{cost}} · failures are free', {
-            count: on.length,
-            cost: money.cost(total),
-          })}
+          {pending
+            ? // the buttons below say how many and how much
+              t('Failures are free')
+            : t('Pictures: {{count}} · about {{cost}} · failures are free', {
+                count: on.length,
+                cost: money.cost(total),
+              })}
         </span>
       </div>
       {part.note && <p className='bd-plan-note'>{part.note}</p>}

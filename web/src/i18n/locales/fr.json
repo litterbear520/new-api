@@ -8625,6 +8625,15 @@
     "Skip this one": "Passer celle-ci",
     "From open-source prompt collections on GitHub; authors are in the details.": "Issu de collections de prompts open source sur GitHub ; auteurs dans les détails.",
     "Kept only in this browser on this device.": "Conservé uniquement dans ce navigateur, sur cet appareil.",
-    "Saved only on this device.": "Enregistré uniquement sur cet appareil."
+    "Saved only on this device.": "Enregistré uniquement sur cet appareil.",
+    "Latest": "Dernier",
+    "Extra high": "Très élevé",
+    "Thinking effort: {{level}}": "Effort de réflexion : {{level}}",
+    "Model: {{name}}": "Modèle : {{name}}",
+    "Think": "Réflexion",
+    "Faster": "Plus rapide",
+    "Finer": "Plus fin",
+    "Slower, costs more": "Plus lent, plus cher",
+    "Failures are free": "Les échecs sont gratuits"
   }
 }

@@ -23,7 +23,6 @@ import { useTranslation } from 'react-i18next'
 import { useImageUrl } from '@/features/draw/hooks/use-image-url'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
-import { IMAGE_MODEL_META } from '../../constants'
 import { skillById } from '../../data/skills'
 import type { Attachment, UserMessage as UserMessageData } from '../../types'
 
@@ -54,7 +53,7 @@ function RefThumb(props: { attachment: Attachment }) {
   )
 }
 
-/** 「图像 · Sunburst · 4:3 · 2 张」, the brand kit, a 玩法 card. */
+/** 「图像 · 4:3 · 2 张」, the brand kit, a 玩法 card. */
 function ModeLine(props: { message: UserMessageData }) {
   const { t } = useTranslation()
   const m = props.message
@@ -63,7 +62,6 @@ function ModeLine(props: { message: UserMessageData }) {
     const img = m.image
     bits.push(
       t('Image mode'),
-      IMAGE_MODEL_META[img.model]?.short ?? img.model,
       img.ratio === 'auto' ? t('Any ratio') : img.ratio,
       t('×{{count}}', { count: img.count })
     )

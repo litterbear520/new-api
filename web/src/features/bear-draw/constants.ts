@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import type { Prefs, Ratio } from './types'
+import type { Effort, Prefs, Ratio } from './types'
 
 export { DRAW_GUIDE_URL, DRAW_TOKEN_NAME } from '@/features/draw/constants'
 
@@ -86,8 +86,8 @@ export const IMAGE_MODEL_META: Record<
 }
 
 /**
- * Chat models offered as the agent's brain, best first; notes are i18n keys.
- * Any other chat model the user can call is listed after these.
+ * Chat models known as planners, best first; notes are i18n keys (the
+ * picker lists PLANNERS; use-env marks these as featured).
  */
 export const BRAIN_META: Array<{ id: string; note: string; tag?: 'default' }> =
   [
@@ -100,6 +100,44 @@ export const BRAIN_META: Array<{ id: string; note: string; tag?: 'default' }> =
     { id: 'gemini-3.8-flash', note: 'Reads reference pictures more closely' },
     { id: 'claude-sonnet-4-6', note: 'More refined copywriting' },
   ]
+
+/** The planners offered under 「最新」, best first, with the names shown. */
+export const PLANNERS: Array<{ id: string; name: string }> = [
+  { id: 'gpt-6.2-sol', name: 'GPT-6.2 Sol' },
+  { id: 'gpt-6.2-astra', name: 'GPT-6.2 Astra' },
+  { id: 'gpt-6-luna', name: 'GPT-6 Luna' },
+]
+
+/** Thinking efforts, lightest first; labels are i18n keys. */
+export const EFFORTS: Array<{ id: Effort; label: string }> = [
+  { id: 'low', label: 'Low' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'high', label: 'High' },
+  { id: 'xhigh', label: 'Extra high' },
+]
+
+/** What each stop costs, in two to four characters (i18n keys). */
+export const EFFORT_COST: Record<Effort, string> = {
+  low: 'Faster',
+  medium: 'Balanced',
+  high: 'Finer',
+  xhigh: 'Slower, costs more',
+}
+
+/**
+ * Models whose thinking effort can be set: they get `reasoning_effort`, and
+ * the slider shows for them. The others get the request without it.
+ */
+export const TAKES_EFFORT = /^gpt-[56]/
+
+/**
+ * What 「最新」 plans with on this account: the best of the fallback order
+ * it can call, else any chat model it has.
+ */
+export function latestPlanner(available: string[]): string {
+  if (!available.length) return DEFAULT_BRAIN
+  return BRAIN_FALLBACKS.find((id) => available.includes(id)) ?? available[0]
+}
 
 /** When the chosen brain is down before it says anything, try these in order. */
 export const BRAIN_FALLBACKS = [
@@ -171,6 +209,7 @@ export const DEFAULT_PREFS: Prefs = {
   mode: 'agent',
   auto: true,
   brain: DEFAULT_BRAIN,
+  effort: 'medium',
   image: DEFAULT_IMAGE_MODEL,
   ratio: 'auto',
   count: 1,

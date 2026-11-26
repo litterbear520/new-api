@@ -8625,6 +8625,15 @@
     "Skip this one": "この質問をスキップ",
     "From open-source prompt collections on GitHub; authors are in the details.": "GitHub のオープンソースのプロンプト集より。作者は詳細に記載。",
     "Kept only in this browser on this device.": "このデバイスのこのブラウザにのみ保存されます。",
-    "Saved only on this device.": "このデバイスにのみ保存されます。"
+    "Saved only on this device.": "このデバイスにのみ保存されます。",
+    "Latest": "最新",
+    "Extra high": "最高",
+    "Thinking effort: {{level}}": "思考の強さ：{{level}}",
+    "Model: {{name}}": "モデル：{{name}}",
+    "Think": "思考",
+    "Faster": "より速い",
+    "Finer": "より丁寧",
+    "Slower, costs more": "遅く高コスト",
+    "Failures are free": "失敗分は無料"
   }
 }

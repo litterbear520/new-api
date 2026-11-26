@@ -28,8 +28,8 @@ import { useBearDrawStore } from '@/stores/bear-draw-store'
 import { useBearDrawEnv } from '../../hooks/use-env'
 import { estimatePicture } from '../../lib/engine'
 import { ModeMenu, PlusMenu } from './bar-menus'
+import { EffortMenu } from './effort-menu'
 import { ImageSettings } from './image-settings'
-import { ImageModelMenu, ModelPrefs } from './model-menus'
 
 type BarProps = {
   variant: 'home' | 'dock'
@@ -77,7 +77,7 @@ function LowBalance() {
   )
 }
 
-/** Under the text: + and the mode on the left; models and send on the right. */
+/** Under the text: + and the mode on the left; thinking effort and send on the right. */
 export function ComposerBar(props: BarProps) {
   const { t } = useTranslation()
   const money = useMoney()
@@ -104,7 +104,7 @@ export function ComposerBar(props: BarProps) {
         {image && <ImageSettings cost={cost} />}
       </div>
       <div className='bd-comp-r'>
-        {image ? <ImageModelMenu /> : <ModelPrefs />}
+        {!image && <EffortMenu />}
         {cost && props.variant === 'home' && (
           <Tip
             label={t(

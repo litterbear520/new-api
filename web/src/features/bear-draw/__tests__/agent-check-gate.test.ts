@@ -175,3 +175,39 @@ test('the planner is asked for suggestions only once', async () => {
   // the plan, the plain answer, the answer to the one reminder
   expect(streamStep).toHaveBeenCalledTimes(3)
 })
+
+test('the planner request carries the thinking effort the user set', async () => {
+  useBearDrawStore.getState().setPrefs({ effort: 'high' })
+  vi.mocked(streamStep).mockImplementation(async () => ({
+    text: 'Hello.',
+    toolCalls: [],
+    finish: 'stop',
+    usage: null,
+  }))
+
+  await loop(newRun('gate-test', 'agent'))
+
+  expect(vi.mocked(streamStep).mock.calls[0][0]).toMatchObject({
+    model: 'gpt-6-luna',
+    reasoning_effort: 'high',
+  })
+})
+
+test('a turn keeps the thinking effort it started with', async () => {
+  useBearDrawStore.getState().setPrefs({ effort: 'low' })
+  const run = newRun('gate-test', 'agent')
+  // set for the next message while this one is on its way
+  useBearDrawStore.getState().setPrefs({ effort: 'xhigh' })
+  vi.mocked(streamStep).mockImplementation(async () => ({
+    text: 'Hello.',
+    toolCalls: [],
+    finish: 'stop',
+    usage: null,
+  }))
+
+  await loop(run)
+
+  expect(vi.mocked(streamStep).mock.calls[0][0]).toMatchObject({
+    reasoning_effort: 'low',
+  })
+})

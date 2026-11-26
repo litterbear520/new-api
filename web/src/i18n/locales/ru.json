@@ -8625,6 +8625,15 @@
     "Skip this one": "Пропустить этот",
     "From open-source prompt collections on GitHub; authors are in the details.": "Из открытых коллекций промптов на GitHub; авторы указаны в деталях.",
     "Kept only in this browser on this device.": "Хранится только в этом браузере на этом устройстве.",
-    "Saved only on this device.": "Сохраняется только на этом устройстве."
+    "Saved only on this device.": "Сохраняется только на этом устройстве.",
+    "Latest": "Новейшая",
+    "Extra high": "Макс.",
+    "Thinking effort: {{level}}": "Глубина размышления: {{level}}",
+    "Model: {{name}}": "Модель: {{name}}",
+    "Think": "Думать",
+    "Faster": "Быстрее",
+    "Finer": "Тщательнее",
+    "Slower, costs more": "Медленнее и дороже",
+    "Failures are free": "Неудачи бесплатны"
   }
 }
