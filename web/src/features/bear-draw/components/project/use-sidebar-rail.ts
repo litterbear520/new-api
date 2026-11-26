@@ -48,11 +48,12 @@ function mark(on: boolean): void {
 let pendingRestore = 0
 
 /**
- * While a project is open the console sidebar folds to its icon rail, so
- * the chat and the canvas get the room. Leaving the project unfolds it
- * again, unless the user opened or closed it themselves in the meantime.
+ * While a project shows its canvas (`on`) the console sidebar folds to its
+ * icon rail, so the chat and the canvas get the room. Closing the canvas or
+ * leaving the project unfolds it again, unless the user opened or closed it
+ * themselves in the meantime.
  */
-export function useSidebarRail(): void {
+export function useSidebarRail(on: boolean): void {
   const sidebar = useSidebar()
   const [box] = useState(() => ({
     sidebar,
@@ -74,6 +75,18 @@ export function useSidebarRail(): void {
   }, [box, sidebar.open])
 
   useEffect(() => {
+    if (!on) {
+      // Folded by a project that is gone (the tab was closed with the canvas
+      // open) and the canvas is closed now: unfold it.
+      const s = box.sidebar
+      if (!s.isMobile && !s.open && marked()) {
+        pendingRestore = window.setTimeout(() => {
+          mark(false)
+          box.sidebar.setOpen(true)
+        }, 0)
+      }
+      return
+    }
     window.clearTimeout(pendingRestore)
     const s = box.sidebar
     if (s.isMobile) return
@@ -92,5 +105,5 @@ export function useSidebarRail(): void {
         box.sidebar.setOpen(true)
       }, 0)
     }
-  }, [box])
+  }, [box, on])
 }

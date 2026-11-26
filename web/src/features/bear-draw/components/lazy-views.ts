@@ -25,6 +25,20 @@ For commercial licensing, please contact support@quantumnous.com
 
 export const loadProjectView = () => import('./project/project-view')
 export const loadLibraryView = () => import('./library/library-view')
+/**
+ * The canvas is closed until the user opens it, so its code is a chunk of
+ * its own: a project opens on the chat alone.
+ */
+export const loadCanvasPane = () => import('./project/canvas-pane')
+
+let warmingCanvas: Promise<unknown> | null = null
+
+/** Starts the canvas chunk, so 画布 opens at once when it is pressed. */
+export function warmCanvas(): void {
+  warmingCanvas ??= loadCanvasPane().catch(() => {
+    warmingCanvas = null
+  })
+}
 
 let warming: Promise<unknown> | null = null
 

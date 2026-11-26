@@ -8604,6 +8604,24 @@
     "Box": "Rectangle",
     "Details of “{{label}}”": "Détails de « {{label}} »",
     "Words on the picture": "Texte sur l'image",
-    "Words on the picture, line {{n}}": "Texte sur l'image, ligne {{n}}"
+    "Words on the picture, line {{n}}": "Texte sur l'image, ligne {{n}}",
+    "Older models": "Anciens modèles",
+    "Planning model": "Modèle de planification",
+    "More models": "Plus de modèles",
+    "Model preferences: auto": "Préférences de modèle : auto",
+    "Model preferences: {{image}}": "Préférences de modèle : {{image}}",
+    "Best quality; text and edits come out more exact": "Meilleure qualité ; texte et retouches plus précis",
+    "The lighter model, for everyday pictures": "Le modèle léger, pour les images de tous les jours",
+    "First one only · about {{cost}}": "La première seulement · env. {{cost}}",
+    "Brand kit deleted": "Kit de marque supprimé",
+    "Save and use again": "Enregistrer et réactiver",
+    "Could not load the drawing models": "Impossible de charger les modèles de dessin",
+    "Check the network, then load them again.": "Vérifiez le réseau, puis rechargez.",
+    "Keep editing “{{label}}”": "Continuer à modifier « {{label}} »",
+    "Download “{{label}}”": "Télécharger « {{label}} »",
+    "Redraw “{{label}}”": "Redessiner « {{label}} »",
+    "Drag a box on the picture around what to change. You can box several places.": "Tracez un cadre sur l’image autour de ce qu’il faut changer. Vous pouvez en tracer plusieurs.",
+    "Reload": "Recharger",
+    "Skip this one": "Passer celle-ci"
   }
 }

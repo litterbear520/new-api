@@ -105,7 +105,13 @@ describe('GalleryWall', () => {
       .map((f) => f.querySelector('img') as HTMLImageElement)
     const top = imgs.filter((img) => img.getAttribute('loading') === 'eager')
     expect(top).toHaveLength(4)
-    for (const img of top) expect(img).toHaveAttribute('fetchpriority', 'high')
+    // only the first two ask for a high priority; none says "auto"
+    expect(
+      imgs.filter((img) => img.getAttribute('fetchpriority') === 'high')
+    ).toHaveLength(2)
+    expect(
+      imgs.filter((img) => img.hasAttribute('fetchpriority'))
+    ).toHaveLength(2)
     expect(
       imgs.filter((img) => img.getAttribute('loading') === 'lazy')
     ).toHaveLength(4)

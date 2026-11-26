@@ -35,6 +35,9 @@ import { CanvasView } from '../canvas/canvas-view'
 import { openDialog } from '../dialogs/dialog-bus'
 import type { CanvasHandle } from './use-canvas-focus'
 
+// only an open canvas needs these: they load with its chunk
+import '../../css/canvas.css'
+
 /**
  * Night sky behind the canvas under the night sea (the chat page's sky,
  * without the sea), drawn once: a twinkling sky would repaint the whole
@@ -124,17 +127,12 @@ export function CanvasPane(props: {
   onMarked: (nodeId: string, png: Blob, marks?: MarkInfo[]) => void
   onUpload: (files: File[]) => void
   onExport: (groupId: string) => void
-  onNothingToExport: () => void
 }) {
   const { t } = useTranslation()
   const money = useMoney()
   const kit = useBearDrawStore((s) => s.brandKit)
   const p = props.project
-  const exportLast = () => {
-    const groupId = lastFinishedGroup(p)
-    if (groupId) props.onExport(groupId)
-    else props.onNothingToExport()
-  }
+  const finished = lastFinishedGroup(p)
   return (
     <section className='bd-cvp' aria-label={t('Canvas')} hidden={props.hidden}>
       {props.dark && <CanvasSky />}
@@ -192,16 +190,18 @@ export function CanvasPane(props: {
             </Button>
           </Tip>
         )}
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='bd-cvp-act'
-          onClick={exportLast}
-        >
-          <Archive aria-hidden='true' />
-          {t('Export')}
-        </Button>
+        {finished && (
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='bd-cvp-act'
+            onClick={() => props.onExport(finished)}
+          >
+            <Archive aria-hidden='true' />
+            {t('Export')}
+          </Button>
+        )}
       </div>
     </section>
   )

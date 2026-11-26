@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { ArrowRight, ExternalLink, Info, Sparkles, Upload } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -109,6 +110,8 @@ function Body(props: {
     transparent: false,
   })
   const foreign = foreignModel(it)
+  // 「用这个提示词」 takes the language being read
+  const [alt, setAlt] = useState<string | null>(null)
 
   return (
     <div className='bd-gd'>
@@ -136,7 +139,7 @@ function Body(props: {
         {it.why ? (
           <DialogDescription className='bd-gd-why'>{it.why}</DialogDescription>
         ) : null}
-        <GalleryPrompt item={it} />
+        <GalleryPrompt item={it} onAlt={setAlt} />
         <dl className='bd-gd-meta'>
           <dt>{t('Aspect ratio')}</dt>
           <dd>{it.ratio === 'auto' ? t('Follows the original') : it.ratio}</dd>
@@ -170,7 +173,7 @@ function Body(props: {
           <Button
             type='button'
             className='bd-btn-ink bd-gd-use'
-            onClick={() => props.onUse(it)}
+            onClick={() => props.onUse(alt ? { ...it, prompt: alt } : it)}
           >
             <Sparkles aria-hidden='true' />
             {t('Use this prompt')}

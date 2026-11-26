@@ -110,7 +110,7 @@ export function shownPictures(
   const head =
     why === 'asked'
       ? 'The canvas pictures you asked to see, in this order:'
-      : 'The pictures just drawn, in this order. Compare the text in each one with the text you asked for, character by character, and check the product and whatever an edit had to keep. Then tell the user in a sentence or two (name what is wrong, if anything) and call suggest_next:'
+      : 'The pictures just drawn, in this order. Compare the text in each one with the text you asked for, character by character, and check the product and whatever an edit had to keep. Then tell the user in a sentence or two (name what is wrong, if anything). Whether or not you found a problem, end by calling suggest_next:'
   const lines = list.map(
     (n) =>
       `- ${n.id}「${n.label}」, ${sizeNote(n.img?.w ?? 0, n.img?.h ?? 0, px)}`

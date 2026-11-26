@@ -85,6 +85,8 @@ describe('ProgressGrid', () => {
     const actions: PartActions = {
       balanceUsd: null,
       busy: true,
+      exporting: null,
+      editPicture: vi.fn(),
       openCanvas,
       editedPair: () => null,
       compare: vi.fn(),

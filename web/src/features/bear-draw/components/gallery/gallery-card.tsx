@@ -30,6 +30,8 @@ type GalleryCardProps = {
   sizes: string
   /** In the wall's top row: loads at once, before the rest. */
   top: boolean
+  /** One of the first two covers of the top row. */
+  lead?: boolean
   onTopLoaded?: () => void
   onOpen: (item: GalleryItem) => void
   onUse: (item: GalleryItem) => void
@@ -58,8 +60,11 @@ export const GalleryCard = memo(function GalleryCard(props: GalleryCardProps) {
             }
             sizes={props.sizes}
             alt=''
+            // The top row loads at once. Only its first two covers ask for
+            // a high priority (one of them is the page's largest paint on a
+            // common screen); more than that and they compete with each other.
             loading={props.top ? 'eager' : 'lazy'}
-            fetchPriority={props.top ? 'high' : 'auto'}
+            fetchPriority={props.lead ? 'high' : undefined}
             decoding='async'
             onLoad={props.onTopLoaded}
             onError={props.onTopLoaded}

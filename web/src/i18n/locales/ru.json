@@ -8604,6 +8604,24 @@
     "Box": "Рамка",
     "Details of “{{label}}”": "Подробности: «{{label}}»",
     "Words on the picture": "Текст на изображении",
-    "Words on the picture, line {{n}}": "Текст на изображении, строка {{n}}"
+    "Words on the picture, line {{n}}": "Текст на изображении, строка {{n}}",
+    "Older models": "Прежние модели",
+    "Planning model": "Модель планирования",
+    "More models": "Другие модели",
+    "Model preferences: auto": "Настройки модели: авто",
+    "Model preferences: {{image}}": "Настройки модели: {{image}}",
+    "Best quality; text and edits come out more exact": "Лучшее качество; текст и правки точнее",
+    "The lighter model, for everyday pictures": "Облегчённая модель для повседневных картинок",
+    "First one only · about {{cost}}": "Только первую · около {{cost}}",
+    "Brand kit deleted": "Бренд-кит удалён",
+    "Save and use again": "Сохранить и включить снова",
+    "Could not load the drawing models": "Не удалось загрузить модели рисования",
+    "Check the network, then load them again.": "Проверьте сеть и загрузите снова.",
+    "Keep editing “{{label}}”": "Продолжить правку «{{label}}»",
+    "Download “{{label}}”": "Скачать «{{label}}»",
+    "Redraw “{{label}}”": "Перерисовать «{{label}}»",
+    "Drag a box on the picture around what to change. You can box several places.": "Обведите рамкой то, что нужно изменить. Рамок может быть несколько.",
+    "Reload": "Обновить",
+    "Skip this one": "Пропустить этот"
   }
 }

@@ -31,7 +31,12 @@ import { toast } from 'sonner'
 
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
-import { estimatePicture, isBusy, type SendInput } from '../../lib/engine'
+import {
+  estimatePicture,
+  hasQueued,
+  isBusy,
+  type SendInput,
+} from '../../lib/engine'
 import type { Preset } from './composer-chips'
 import { findSkill, getExamples, useRotation } from './examples'
 import { insertTrigger, replaceTrigger } from './trigger'
@@ -43,7 +48,8 @@ export type ComposerProps = {
   variant: 'home' | 'dock'
   projectId?: string
   busy?: boolean
-  onSend: (input: SendInput) => void
+  /** False when the message was not taken: the box keeps what was written. */
+  onSend: (input: SendInput) => boolean | void
   onStop?: () => void
   /** Meteors in the sky (home, plain dark): the bear has noticed them */
   notice?: boolean
@@ -92,6 +98,13 @@ export function useComposer(
   const busy =
     mode === 'agent' &&
     (props.busy ?? (props.projectId ? isBusy(props.projectId) : false))
+  // Image mode: pictures still waiting for their turn can be stopped while
+  // the box is empty (with text in it, the button sends).
+  const queued = useBearDrawStore((s) =>
+    props.projectId
+      ? hasQueued(s.projects.find((p) => p.id === props.projectId))
+      : false
+  )
   const skill = findSkill(skillId, mySkills)
   const examples = useMemo(() => getExamples(t), [t])
   const exampleOn = props.variant === 'home' && mode === 'agent' && !skill
@@ -171,7 +184,7 @@ export function useComposer(
     const input: SendInput = { text: text.trim(), mode, refs }
     if (mode === 'agent' && skill) input.skillId = skill.id
     if (preset) input.presetId = preset.id
-    props.onSend(input)
+    if (props.onSend(input) === false) return
     setText('')
     setSkillId(null)
     setPreset(null)
@@ -212,7 +225,23 @@ export function useComposer(
     }
   }
 
-  useComposerHandle(ref, taRef, write, setSkillId, setPreset, att.add)
+  useComposerHandle(
+    ref,
+    taRef,
+    write,
+    setSkillId,
+    setPreset,
+    att.add,
+    att.addFiles
+  )
+
+  /** 「×」 on the 玩法: its untouched text and the mode it brought go too. */
+  const clearPreset = () => {
+    if (!preset) return
+    if (text === preset.prompt) setText('')
+    if (mode !== preset.modeBefore) setPrefs({ mode: preset.modeBefore })
+    setPreset(null)
+  }
 
   return {
     mode,
@@ -223,12 +252,13 @@ export function useComposer(
     skill,
     clearSkill: () => setSkillId(null),
     preset,
-    clearPreset: () => setPreset(null),
+    clearPreset,
     example,
     turn,
     att,
     needPhoto,
     ready: !busy && !needPhoto && hasBody,
+    canStop: busy || (mode === 'image' && queued && !hasBody),
     estimate: one == null ? null : one * count,
     picker,
     taRef,

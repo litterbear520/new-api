@@ -116,6 +116,10 @@ export function createMarks(c: Ctx) {
   function clearMarks(id?: string) {
     const n = id == null ? markNode(c) : (c.nodes.get(String(id)) ?? null)
     if (!n) return
+    // 「清空」 in the panel can be taken back with 撤销; a clear by id is the
+    // page's own (the marks were sent)
+    c.markCleared =
+      id == null && n.marks.length ? { id: n.id, marks: n.marks } : null
     n.marks = []
     renderMarks(n)
     if (c.tool === 'mark') c.fx.renderPanel()
@@ -125,8 +129,16 @@ export function createMarks(c: Ctx) {
   /** Takes back the newest mark of the picture being marked. */
   function undoMark() {
     const n = markNode(c)
-    if (!n?.marks.length) return
-    n.marks.pop()
+    if (!n) return
+    const cleared = c.markCleared
+    if (!n.marks.length && cleared?.id === n.id) {
+      n.marks = cleared.marks
+    } else if (n.marks.length) {
+      n.marks.pop()
+    } else {
+      return
+    }
+    c.markCleared = null
     renderMarks(n)
     c.fx.renderPanel()
     c.fx.changed()

@@ -27,7 +27,8 @@ import type { CanvasNode, ImageRef, Project } from '../types'
 import { makeZip, type ZipFile } from './zip'
 
 /*
- * 「打包下载」: a frame's finished pictures as one ZIP, each cut to its
+ * 「下载」/「打包下载」: a frame's finished pictures (one as itself, several
+ * as one ZIP), each cut to its
  * delivery size (800×800 for a Taobao main picture) and named by platform
  * and use, ready to upload.
  */
@@ -174,10 +175,18 @@ function download(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 
+/** Lets the page paint and take input between two pictures of a long job. */
+function yieldToMain(): Promise<void> {
+  const s = (globalThis as { scheduler?: { yield?: () => Promise<void> } })
+    .scheduler
+  if (typeof s?.yield === 'function') return s.yield()
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 /**
- * Downloads a frame's finished pictures, in frame order, as
- * `${group.title}.zip`. Pictures that can't be read are left out.
- * Returns how many went in (0: nothing downloaded).
+ * Downloads a frame's finished pictures, in frame order: one picture as
+ * itself, several as `${group.title}.zip`. Pictures that can't be read are
+ * left out. Returns how many went in (0: nothing downloaded).
  */
 export async function exportGroup(
   project: Project,
@@ -191,6 +200,8 @@ export async function exportGroup(
   for (const id of group.children) {
     const node = byId.get(id)
     if (node?.status !== 'ready' || !node.img) continue
+    // cropping and encoding one picture is a long task: breathe between two
+    if (files.length) await yieldToMain()
     const pic = await render(node, node.img).catch(() => null)
     if (!pic) continue
     files.push({
@@ -206,6 +217,13 @@ export async function exportGroup(
     })
   }
   if (!files.length) return 0
+  if (files.length === 1) {
+    // nothing to unpack for a single picture
+    const one = files[0]
+    const type = one.name.endsWith('.png') ? 'image/png' : 'image/jpeg'
+    download(new Blob([one.data as BlobPart], { type }), one.name)
+    return 1
+  }
   download(makeZip(files), `${safeName(group.title, FALLBACK_NAME)}.zip`)
   return files.length
 }

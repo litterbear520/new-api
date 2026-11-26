@@ -16,7 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Archive, Columns2, CornerDownRight, Palette } from 'lucide-react'
+import {
+  Archive,
+  Columns2,
+  CornerDownRight,
+  Download,
+  Palette,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -52,6 +58,19 @@ export function ResultPart(props: { part: ResultPartData }) {
     const pair = groupId && r.done > 0 ? actions.editedPair(groupId) : null
     return pair ? `${pair.from} ${pair.to}` : ''
   })
+  // pictures deleted on the canvas since no longer count
+  const ready = useBearDrawStore((s) => {
+    if (!groupId) return 0
+    for (const p of s.projects) {
+      const g = p.groups.find((x) => x.id === groupId)
+      if (g) {
+        return p.nodes.filter(
+          (n) => g.children.includes(n.id) && n.status === 'ready'
+        ).length
+      }
+    }
+    return 0
+  })
   const [from, to] = pairKey.split(' ')
   const pair = pairKey ? { from, to } : null
   return (
@@ -65,7 +84,7 @@ export function ResultPart(props: { part: ResultPartData }) {
           })}
         </span>
       </div>
-      {groupId && (
+      {groupId && ready > 0 && (
         <div className='bd-res-a'>
           <Button
             type='button'
@@ -89,18 +108,21 @@ export function ResultPart(props: { part: ResultPartData }) {
               {t('Compare with original')}
             </Button>
           )}
-          {r.done > 0 && (
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              className='bd-cb bd-cb-ghost'
-              onClick={() => actions.exportGroup(groupId)}
-            >
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='bd-cb bd-cb-ghost'
+            disabled={actions.exporting != null}
+            onClick={() => actions.exportGroup(groupId)}
+          >
+            {ready > 1 ? (
               <Archive aria-hidden='true' />
-              {t('Download as a zip')}
-            </Button>
-          )}
+            ) : (
+              <Download aria-hidden='true' />
+            )}
+            {ready > 1 ? t('Download as a zip') : t('Download')}
+          </Button>
         </div>
       )}
       {r.suggestions.length > 0 && (

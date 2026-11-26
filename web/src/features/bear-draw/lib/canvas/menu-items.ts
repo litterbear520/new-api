@@ -46,6 +46,7 @@ const ON_TOOLBAR = new Set([
   'edit',
   'mark',
   'compare',
+  'compare-source',
   'download',
   'copy-prompt',
 ])
@@ -92,16 +93,28 @@ export function createMenuItems(c: Ctx) {
     }
     const fit: Entry = { id: 'fit', label: L.viewLarger, icon: ICONS.scan }
     if (n?.status === 'pending') return [fit, { sep: true }, del]
-    return [
+    const parent = c.nodes.get(String(n?.meta.parentId ?? ''))
+    const list: MenuItem[] = [
       { id: 'edit', label: L.edit, icon: ICONS.sparkles },
       { id: 'mark', label: L.markWhat, icon: ICONS.lasso, kbd: 'M' },
+    ]
+    // the same actions as the toolbar above the picture
+    if (parent?.status === 'ready') {
+      list.push({
+        id: 'compare-source',
+        label: L.compareSource,
+        icon: ICONS.compareSource,
+      })
+    }
+    list.push(
       { id: 'compare', label: L.compareWith, icon: ICONS.compare },
-      { id: 'download', label: L.download, icon: ICONS.download },
-      { id: 'copy-prompt', label: L.copyPrompt, icon: ICONS.copy },
-      { sep: true },
-      fit,
-      { ...del, kbd: '⌫' },
-    ] satisfies MenuItem[]
+      { id: 'download', label: L.download, icon: ICONS.download }
+    )
+    if (n?.meta.prompt) {
+      list.push({ id: 'copy-prompt', label: L.copyPrompt, icon: ICONS.copy })
+    }
+    list.push({ sep: true }, fit, { ...del, kbd: '⌫' })
+    return list
   }
 
   function menuItems(kind: SelectionKind | null): MenuItem[] {
@@ -126,7 +139,7 @@ export function createMenuItems(c: Ctx) {
     if (!n) return null
     const m = n.meta
     const bits = [
-      m.model,
+      m.model ? c.L.modelName(m.model) : null,
       m.cost != null ? costText(m.cost) : null,
       m.secs != null ? c.L.seconds(Math.round(m.secs)) : null,
     ].filter((b): b is string => !!b)
@@ -144,7 +157,14 @@ export function createMenuItems(c: Ctx) {
     const kind = selKind(c)
     let items = menuItems(kind)
     if (!c.o.contextMenu && kind === 'image') {
-      items = items.filter((it) => it.sep || !it.id || !ON_TOOLBAR.has(it.id))
+      // an edited picture's toolbar has 对比原图 only: 对比… stays in ⋯
+      const onBar = (id: string) =>
+        ON_TOOLBAR.has(id) &&
+        !(
+          id === 'compare' &&
+          items.some((it) => !it.sep && it.id === 'compare-source')
+        )
+      items = items.filter((it) => it.sep || !it.id || !onBar(it.id))
     }
     const at = p.anchor ?? { x: c.W / 2, y: c.H / 2 }
     c.fx.openMenu(

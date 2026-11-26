@@ -41,6 +41,8 @@ function PlanRow(props: {
   item: PlanItem
   n: number
   pending: boolean
+  /** The plan's pictures use different models: each row names its own. */
+  showModel: boolean
   onToggle: () => void
   /** Changes the nth string the picture will show. */
   onText: (index: number, text: string) => void
@@ -70,12 +72,14 @@ function PlanRow(props: {
         </b>
         {sub && <span>{sub}</span>}
       </button>
-      <Tip label={meta?.name ?? it.model}>
-        <span className='bd-plan-model'>
-          <ModelIcon model={it.model} size={13} />
-          {meta?.short ?? it.model}
-        </span>
-      </Tip>
+      {props.showModel && (
+        <Tip label={meta?.name ?? it.model}>
+          <span className='bd-plan-model'>
+            <ModelIcon model={it.model} size={13} />
+            {meta?.short ?? it.model}
+          </span>
+        </Tip>
+      )}
       <span className='bd-plan-c bd-num'>
         {it.est > 0 ? money.cost(it.est) : '—'}
       </span>
@@ -121,6 +125,14 @@ function PlanRow(props: {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                        e.currentTarget.blur()
+                      } else if (
+                        e.key === 'Escape' &&
+                        !e.nativeEvent.isComposing
+                      ) {
+                        // back to the words as they were
+                        e.stopPropagation()
+                        e.currentTarget.value = text
                         e.currentTarget.blur()
                       }
                     }}
@@ -171,6 +183,9 @@ export function PlanCard(props: {
     (props.status === 'waiting' || props.status === 'running')
   const on = part.items.filter((x) => x.on)
   const total = planTotal(part.items)
+  const models = [...new Set(part.items.map((x) => x.model))]
+  const oneModel = models.length === 1 ? models[0] : null
+  const first = on[0]
   const short = actions.balanceUsd != null && actions.balanceUsd < total
   const go = (decision: 'start' | 'first' | 'cancel') =>
     decide(props.projectId, part.id, decision)
@@ -189,6 +204,14 @@ export function PlanCard(props: {
           )}
         </span>
         <span className='bd-plan-sum bd-num'>
+          {oneModel && (
+            <Tip label={IMAGE_MODEL_META[oneModel]?.name ?? oneModel}>
+              <span className='bd-plan-model'>
+                <ModelIcon model={oneModel} size={13} />
+                {IMAGE_MODEL_META[oneModel]?.short ?? oneModel}
+              </span>
+            </Tip>
+          )}
           {t('Pictures: {{count}} · about {{cost}} · failures are free', {
             count: on.length,
             cost: money.cost(total),
@@ -203,6 +226,7 @@ export function PlanCard(props: {
             item={it}
             n={i + 1}
             pending={pending}
+            showModel={!oneModel}
             onToggle={() =>
               togglePlanItem(props.projectId, part.id, it.id, !it.on)
             }
@@ -218,6 +242,7 @@ export function PlanCard(props: {
         hits={part.adlaw}
         items={part.items}
         fixed={Boolean(part.adlawFixed)}
+        canUndo={Boolean(part.adlawUndo)}
         pending={pending}
       />
       {pending ? (
@@ -242,7 +267,11 @@ export function PlanCard(props: {
                 className='bd-cb bd-cb-line bd-cb-lg'
                 onClick={() => go('first')}
               >
-                {t('Only the first one')}
+                {first?.est
+                  ? t('First one only · about {{cost}}', {
+                      cost: money.cost(first.est),
+                    })
+                  : t('Only the first one')}
               </Button>
             )}
             <Button

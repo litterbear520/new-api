@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import type { TFunction } from 'i18next'
 
+import { IMAGE_MODEL_META } from '../../constants'
 import type { CanvasLabels } from '../../lib/canvas/labels'
 
 /** The canvas's UI text in the current language. */
@@ -66,6 +67,9 @@ export function canvasLabels(t: TFunction): CanvasLabels {
     markEmpty: t(
       'Draw a circle on the picture to mark what to change. You can circle several places.'
     ),
+    markEmptyBox: t(
+      'Drag a box on the picture around what to change. You can box several places.'
+    ),
     markNote: t('How to change this? (optional)'),
     markNoteLabel: (n) => t('How to change area {{n}}', { n }),
     markRemove: t('Remove this one'),
@@ -87,6 +91,7 @@ export function canvasLabels(t: TFunction): CanvasLabels {
     markWhat: t('Circle what to change'),
     compareWith: t('Compare…'),
     seconds: (count) => t('{{count}} s', { count }),
+    modelName: (id) => IMAGE_MODEL_META[id]?.name ?? id,
     fitAll: t('Fit all'),
     zoom100: t('Zoom to 100%'),
     zoomIn: t('Zoom in'),

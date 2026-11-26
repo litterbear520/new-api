@@ -26,7 +26,6 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -34,9 +33,11 @@ import {
   errorTitle,
   type ErrorFix,
 } from '@/features/bear-chat/lib/errors'
+import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { retryStep } from '../../lib/engine'
 import type { BrainErrorKind, Part } from '../../types'
+import { openModelMenu } from '../composer/model-menu-bus'
 import { usePartActions } from './part-actions'
 
 type ErrorPartData = Extract<Part, { type: 'error' }>
@@ -67,9 +68,20 @@ export function ErrorPart(props: {
   const fixes = FIXES[part.kind] ?? FIXES.other
   const view = { kind: part.kind, fixes }
   const has = (fix: ErrorFix) => fixes.includes(fix)
+  /** Opens the planner list of 模型偏好 (the menu is on the Agent bar). */
   const pickModel = () => {
+    const store = useBearDrawStore.getState()
+    if (store.prefs.mode !== 'agent') store.setPrefs({ mode: 'agent' })
     actions.focusComposer()
-    toast(t('Pick another model in the message box, then send again.'))
+    window.setTimeout(
+      () =>
+        openModelMenu({
+          section: 'brain',
+          // the step runs again with the model just picked
+          onPicked: () => retryStep(props.projectId, props.messageId),
+        }),
+      0
+    )
   }
   return (
     <div className='bd-err' role='alert'>

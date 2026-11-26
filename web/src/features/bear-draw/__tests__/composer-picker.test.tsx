@@ -30,6 +30,7 @@ vi.mock('../lib/engine', () => ({
   storeAttachments: vi.fn(async () => []),
   estimatePicture: vi.fn(() => 0.03),
   isBusy: vi.fn(() => false),
+  hasQueued: vi.fn(() => false),
 }))
 
 vi.mock('../hooks/use-env', () => {

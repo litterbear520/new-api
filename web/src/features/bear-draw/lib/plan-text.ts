@@ -80,7 +80,19 @@ export function replacePlanText(
             : whole
         )
       : part
-  return swap(prompt.slice(0, old.from)) + clean + swap(prompt.slice(old.to))
+  // `"岁末" (characters: 岁, 末)`: the spelling of the old words goes
+  const spelled = (part: string) =>
+    part.replace(/^(["”」』]?)[ \t]*\(characters:[^)\n]*\)/, '$1')
+  return (
+    swap(prompt.slice(0, old.from)) +
+    clean +
+    swap(spelled(prompt.slice(old.to)))
+  )
+}
+
+/** The prompt without any `(characters: …)` spelling (its words changed). */
+export function dropSpelling(prompt: string): string {
+  return prompt.replaceAll(/[ \t]*\(characters:[^)\n]*\)/g, '')
 }
 
 /** What the picture is, for the card: the request line, else the first line. */

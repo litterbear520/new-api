@@ -58,6 +58,11 @@ export type Attachment = ImageRef & {
 /** What the composer remembers between visits (localStorage). */
 export type Prefs = {
   mode: Mode
+  /**
+   * The page picks the models (the recommended image model, the default
+   * planner). Picking a model by hand turns it off.
+   */
+  auto: boolean
   /** Chat model that plans in Agent mode. */
   brain: string
   /** Image model for Agent plans and for the Image mode. */
@@ -340,6 +345,8 @@ export type Part =
       adlaw: AdLawHit[]
       /** The user replaced the flagged words. */
       adlawFixed?: boolean
+      /** The prompts 「全部替换」 changed, by item id: 撤销 puts them back. */
+      adlawUndo?: Record<string, string>
     }
   | {
       id: string
@@ -465,7 +472,7 @@ export type Project = {
   groups: CanvasGroup[]
   nodes: CanvasNode[]
   camera?: CanvasCamera | null
-  /** Chat and canvas, chat only or canvas only (remembered; unset = both). */
+  /** Chat and canvas, chat only or canvas only (remembered; unset = chat only). */
   layout?: ProjectLayout
   /** Copied from the classic drawing page. */
   migrated?: boolean

@@ -23,7 +23,7 @@ import {
   CornerDownLeft,
   MessageCircleQuestionMark,
 } from 'lucide-react'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -52,10 +52,14 @@ function collect(
   }))
 }
 
+/** How long a picked option shows before the card turns the page. */
+const TURN_MS = 180
+
 /**
  * The agent's questions before it plans (Lovart's 提问 card): one question
  * per page, options picked by click or by their letter or number, an
- * 「其他」 line for anything else, 跳过 or 提交.
+ * 「其他」 line for anything else. 跳过 leaves this question open and goes on;
+ * the answers given so far are sent with the last page.
  */
 function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
   const { t } = useTranslation()
@@ -65,6 +69,8 @@ function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
   const [picks, setPicks] = useState<string[][]>(() => items.map(() => []))
   const [others, setOthers] = useState<string[]>(() => items.map(() => ''))
   const otherRef = useRef<HTMLInputElement>(null)
+  const turn = useRef(0)
+  useEffect(() => () => window.clearTimeout(turn.current), [])
   const it = items[Math.min(page, items.length - 1)]
   if (!it) return null
   const last = page >= items.length - 1
@@ -80,18 +86,50 @@ function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
       next = on ? [] : [option]
     }
     setPicks((all) => all.map((x, i) => (i === page ? next : x)))
-    if (!it.multi && !on && !last) setPage(page + 1)
+    window.clearTimeout(turn.current)
+    if (!it.multi && !on) {
+      // one answer: what was typed under 「其他」 gives way to it
+      setOthers((all) => all.map((x, i) => (i === page ? '' : x)))
+      // the pick shows for a moment before the next question comes
+      if (!last) {
+        turn.current = window.setTimeout(() => setPage(page + 1), TURN_MS)
+      }
+    }
   }
 
-  const submit = () => {
-    const answers = collect(part, picks, others)
+  const submit = (skipThis = false) => {
+    const answers = collect(
+      part,
+      skipThis ? picks.map((x, i) => (i === page ? [] : x)) : picks,
+      skipThis ? others.map((x, i) => (i === page ? '' : x)) : others
+    )
     answer(
       props.projectId,
       part.id,
       answers.some((a) => a.answer) ? answers : 'skip'
     )
   }
-  const next = () => (last ? submit() : setPage(page + 1))
+  /** Turns to a page; a turn still waiting after a pick is dropped. */
+  const go = (to: number) => {
+    window.clearTimeout(turn.current)
+    setPage(to)
+  }
+  const next = () => {
+    window.clearTimeout(turn.current)
+    if (last) submit()
+    else setPage(page + 1)
+  }
+  /** 跳过: this question stays unanswered; the others keep their answers. */
+  const skip = () => {
+    window.clearTimeout(turn.current)
+    if (last) {
+      submit(true)
+      return
+    }
+    setPicks((all) => all.map((x, i) => (i === page ? [] : x)))
+    setOthers((all) => all.map((x, i) => (i === page ? '' : x)))
+    setPage(page + 1)
+  }
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.target instanceof HTMLInputElement || e.altKey || e.metaKey) return
@@ -130,7 +168,7 @@ function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
               className='bd-qa-pgb'
               aria-label={t('Previous question')}
               disabled={page === 0}
-              onClick={() => setPage(page - 1)}
+              onClick={() => go(page - 1)}
             >
               <ChevronLeft aria-hidden='true' />
             </Button>
@@ -144,7 +182,7 @@ function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
               className='bd-qa-pgb'
               aria-label={t('Next question')}
               disabled={last}
-              onClick={() => setPage(page + 1)}
+              onClick={() => go(page + 1)}
             >
               <ChevronRight aria-hidden='true' />
             </Button>
@@ -187,7 +225,12 @@ function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
               aria-label={t('Something else')}
               onChange={(e) => {
                 const v = e.target.value
+                window.clearTimeout(turn.current)
                 setOthers((all) => all.map((x, i) => (i === page ? v : x)))
+                // one answer: typing here takes the place of the option
+                if (!it.multi && v.trim() && chosen.length) {
+                  setPicks((all) => all.map((x, i) => (i === page ? [] : x)))
+                }
               }}
               onKeyDown={(e) => {
                 // Enter picks a candidate while an input method is composing
@@ -206,9 +249,9 @@ function QuestionsForm(props: { projectId: string; part: QuestionsPart }) {
           variant='outline'
           size='sm'
           className='bd-cb bd-cb-line'
-          onClick={() => answer(props.projectId, part.id, 'skip')}
+          onClick={skip}
         >
-          {t('Skip')}
+          {t('Skip this one')}
         </Button>
         <Button
           type='button'

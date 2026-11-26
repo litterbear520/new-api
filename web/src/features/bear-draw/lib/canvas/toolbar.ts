@@ -103,10 +103,18 @@ export function toolbarList(c: Ctx, kind: SelectionKind): ActionSpec[] {
   const n = selNode(c)
   if (!n) return []
   const parent = c.nodes.get(String(n.meta.parentId ?? ''))
+  const hasSource = parent?.status === 'ready'
+  let ready = 0
+  for (const x of c.nodes.values()) if (x.status === 'ready') ready++
   const list = (c.o.imageActions ?? imageActions(c.L)).filter(
     (a) =>
       (a.statuses ?? ['ready']).includes(n.status) &&
-      (a.id !== 'compare-source' || parent?.status === 'ready')
+      (a.id !== 'compare-source' || hasSource) &&
+      // an edited picture compares with its original (any other pair: the
+      // context menu); one picture alone has nothing to compare with
+      (a.id !== 'compare' || (!hasSource && ready > 1)) &&
+      // uploads have no description to copy
+      (a.id !== 'copy-prompt' || Boolean(n.meta.prompt))
   )
   if (!list.length && n.status === 'failed') return failedActions(c.L)
   return list

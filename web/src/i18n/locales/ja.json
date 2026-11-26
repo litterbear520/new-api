@@ -8604,6 +8604,24 @@
     "Box": "四角",
     "Details of “{{label}}”": "「{{label}}」の詳細",
     "Words on the picture": "画像内の文字",
-    "Words on the picture, line {{n}}": "画像内の文字、{{n}} 行目"
+    "Words on the picture, line {{n}}": "画像内の文字、{{n}} 行目",
+    "Older models": "旧モデル",
+    "Planning model": "プランニングモデル",
+    "More models": "その他のモデル",
+    "Model preferences: auto": "モデル設定：自動",
+    "Model preferences: {{image}}": "モデル設定：{{image}}",
+    "Best quality; text and edits come out more exact": "最高画質。文字と編集がより正確",
+    "The lighter model, for everyday pictures": "普段使いの軽量モデル",
+    "First one only · about {{cost}}": "1 枚目だけ · 約 {{cost}}",
+    "Brand kit deleted": "ブランドキットを削除しました",
+    "Save and use again": "保存して再び使う",
+    "Could not load the drawing models": "描画モデルを読み込めませんでした",
+    "Check the network, then load them again.": "ネットワークを確認して、もう一度読み込んでください。",
+    "Keep editing “{{label}}”": "「{{label}}」を続けて編集",
+    "Download “{{label}}”": "「{{label}}」をダウンロード",
+    "Redraw “{{label}}”": "「{{label}}」を描き直す",
+    "Drag a box on the picture around what to change. You can box several places.": "変更したい部分を画像上でドラッグして囲みます。複数か所を囲めます。",
+    "Reload": "再読み込み",
+    "Skip this one": "この質問をスキップ"
   }
 }

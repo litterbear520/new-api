@@ -61,6 +61,7 @@ function actions(narrow: boolean, layout?: ProjectLayout) {
     setSkill: vi.fn(),
     applyPreset: vi.fn(),
     addRefs: vi.fn(),
+    addFiles: vi.fn(),
   }
   const setSheet = vi.fn()
   const focusCanvas = vi.fn()
@@ -70,6 +71,7 @@ function actions(narrow: boolean, layout?: ProjectLayout) {
       narrow,
       composerRef: { current: composer },
       focusCanvas,
+      canvasOpening: vi.fn(),
       compareOnCanvas: vi.fn(),
       setSheet,
       balanceUsd: 5,
@@ -87,12 +89,24 @@ afterEach(() => {
 })
 
 describe('wide card: the project remembers chat, canvas or both', () => {
-  test('a project without a layout shows both, and the choice is saved', () => {
+  test('a project without a layout has its canvas closed, and the choice is saved', () => {
     const a = actions(false)
     expect(layout()).toBeUndefined()
+    // 在画布里查看 opens the canvas next to the chat: it was closed
+    act(() => a.act.current.parts.openCanvas(['n1']))
+    expect(layout()).toBe('split')
     act(() => a.act.current.setLayout('chat'))
     expect(layout()).toBe('chat')
     expect(a.setSheet).not.toHaveBeenCalled()
+  })
+
+  test('editing a picture in a project without a layout keeps the canvas closed', () => {
+    const a = actions(false)
+    act(() => a.act.current.parts.editPicture('n1'))
+    expect(a.composer.addRefs).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'i1', nodeId: 'n1' }),
+    ])
+    expect(layout()).toBeUndefined()
   })
 
   test('choosing the layout it already has does not touch the project', () => {

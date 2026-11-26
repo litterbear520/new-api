@@ -73,6 +73,7 @@ export function ImageSettings(props: {
           render={
             <button type='button' className='bd-chip bd-set-chip'>
               {ratioLabel} · {t('×{{count}}', { count })}
+              {transparent && ` · ${t('Transparent')}`}
               <ChevronDown className='bd-chev' aria-hidden='true' />
             </button>
           }

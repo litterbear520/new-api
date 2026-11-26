@@ -22,7 +22,7 @@ import { findProject, useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { drawPlan } from '../lib/agent/plan'
 import { resume } from '../lib/agent/run'
-import { decide, editPlanText } from '../lib/engine'
+import { decide, editPlanText, fixAdLaw, undoAdLaw } from '../lib/engine'
 import { planSummary, planTexts, replacePlanText } from '../lib/plan-text'
 import type { Part, PlanItem, Project } from '../types'
 
@@ -72,6 +72,14 @@ Style: flat`
     expect(planTexts(next)).toEqual(['1', '周末见', '2'])
     expect(next).toContain('put Image 1 on a shelf, price 10.')
     expect(planTexts(replacePlanText(prompt, 1, '周五见'))[1]).toBe('周五见')
+  })
+
+  it('lose their letter-by-letter spelling when they change', () => {
+    const spelled =
+      'Text (verbatim): "岁末钜惠" (characters: 岁, 末, 钜, 惠), bold'
+    expect(replacePlanText(spelled, 0, '开年优惠')).toBe(
+      'Text (verbatim): "开年优惠", bold'
+    )
   })
 
   it('come with one line that says what the picture is', () => {
@@ -258,5 +266,31 @@ describe('只画第一张', () => {
       status: 'not_drawn',
     })
     expect(planPart().state).toBe('cancelled')
+  })
+})
+
+describe('广告法 「全部替换」', () => {
+  const LAW = 'Text (verbatim): "全网第一" in bold type.'
+
+  it('can be taken back while the plan still waits', () => {
+    const p = project([item('a', { prompt: LAW }), item('b')])
+    const part = p.messages[0]
+    if (part.role !== 'agent' || part.parts[0].type !== 'plan') {
+      throw new Error('no plan')
+    }
+    part.parts[0].adlaw = [{ itemId: 'a', word: '第一', fix: '领先' }]
+    useBearDrawStore.getState().init(1, [p])
+
+    fixAdLaw('p', 'plan')
+    expect(planPart().adlawFixed).toBe(true)
+    expect(planPart().items[0].prompt).toContain('全网领先')
+    expect(planPart().items[1].prompt).toBe(PROMPT)
+
+    undoAdLaw('p', 'plan')
+    expect(planPart().adlawFixed).toBe(false)
+    expect(planPart().adlawUndo).toBeUndefined()
+    expect(planPart().items[0].prompt).toBe(LAW)
+    // the flagged words show again
+    expect(planPart().adlaw).toHaveLength(1)
   })
 })

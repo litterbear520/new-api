@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { t } from 'i18next'
+
 import { newId } from '@/stores/bear-draw-store'
 
 import type { AgentMessage, AgentStatus, Part } from '../../types'
@@ -44,6 +46,18 @@ export function resultFor(m: AgentMessage): Omit<ResultPart, 'id'> | null {
     }
   }
   if (!done && !failed && !stopped) return null
+  // The planner did not end with suggestions (it sometimes answers in plain
+  // text): pictures that failed still get their way back.
+  let suggestions = m.suggestions ?? []
+  if (!suggestions.length && failed && m.mode !== 'image') {
+    const labels = m.parts
+      .flatMap((part) => (part.type === 'progress' ? part.items : []))
+      .filter((it) => it.status === 'failed' || it.status === 'lost')
+      .map((it) => it.label)
+    suggestions = [...new Set(labels)]
+      .slice(0, 3)
+      .map((label) => t('Redraw “{{label}}”', { label }))
+  }
   // Time spent drawing, not time spent waiting for the user to confirm;
   // pictures that finished after ■ count until they arrived.
   const items = m.parts.flatMap((part) =>
@@ -63,7 +77,7 @@ export function resultFor(m: AgentMessage): Omit<ResultPart, 'id'> | null {
     cost: m.cost,
     secs: Math.max(1, Math.round((end - from) / 1000)),
     groupId,
-    suggestions: m.suggestions ?? [],
+    suggestions,
     compact: m.mode === 'image',
   }
 }

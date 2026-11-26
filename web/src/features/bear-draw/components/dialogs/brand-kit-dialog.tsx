@@ -66,6 +66,8 @@ function BrandKitEditor(props: { formId: string; onSaved: () => void }) {
     }
     const kit = kitFromDraft(draft)
     setBrandKit(kit)
+    // saving a kit that was switched off means it is wanted again
+    useBearDrawStore.getState().setPrefs({ brand: true })
     toast.success(
       t('Brand kit “{{name}}” saved; every set from now on uses it', {
         name: kit.name,
@@ -209,7 +211,24 @@ function BrandKitEditor(props: { formId: string; onSaved: () => void }) {
 export function BrandKitDialog(props: DialogProps) {
   const { t } = useTranslation()
   const hasKit = useBearDrawStore((s) => s.brandKit != null)
+  const on = useBearDrawStore((s) => s.prefs.brand)
   const formId = useId()
+  // 删除: the first press arms it, the second deletes
+  const [armed, setArmed] = useState(false)
+  // the dialog stays mounted: a closed one is not armed any more
+  if (!props.open && armed) setArmed(false)
+
+  const remove = () => {
+    if (!armed) {
+      setArmed(true)
+      return
+    }
+    const store = useBearDrawStore.getState()
+    store.setBrandKit(null)
+    store.setPrefs({ brand: true })
+    toast(t('Brand kit deleted'))
+    props.onOpenChange(false)
+  }
 
   const turnOff = () => {
     // Keep the kit (logo, colours, points); just stop applying it.
@@ -231,12 +250,23 @@ export function BrandKitDialog(props: DialogProps) {
       footer={
         <>
           {hasKit && (
+            <Button
+              type='button'
+              variant='ghost'
+              className={armed ? 'text-destructive' : undefined}
+              onClick={remove}
+              onBlur={() => setArmed(false)}
+            >
+              {armed ? t('Confirm delete') : t('Delete')}
+            </Button>
+          )}
+          {hasKit && on && (
             <Button type='button' variant='ghost' onClick={turnOff}>
               {t('Stop using the brand kit')}
             </Button>
           )}
           <Button type='submit' form={formId} className='bd-btn-ink'>
-            {t('Save')}
+            {hasKit && !on ? t('Save and use again') : t('Save')}
           </Button>
         </>
       }

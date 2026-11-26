@@ -45,6 +45,8 @@ export function useCanvasFocus() {
     compare: null as [string, string] | null,
     tries: 0,
     timer: 0,
+    /** A hidden canvas is coming back: nothing centres before this time. */
+    readyAt: 0,
   }))
 
   const flush = useCallback(
@@ -65,7 +67,9 @@ export function useCanvasFocus() {
           box.timer = window.setTimeout(tick, COMPARE_WAIT_MS)
         }
       }
-      box.timer = window.setTimeout(tick, ms)
+      // a pane that is still opening has no final size to centre in
+      const wait = Math.max(ms, box.readyAt - Date.now())
+      box.timer = window.setTimeout(tick, wait)
     },
     [box]
   )
@@ -98,10 +102,15 @@ export function useCanvasFocus() {
     [box, flush]
   )
 
+  /** The canvas pane was closed and is opening again (it stays mounted). */
+  const opening = useCallback(() => {
+    box.readyAt = Date.now() + (reduced() ? 30 : PANE_MS)
+  }, [box])
+
   useEffect(() => () => window.clearTimeout(box.timer), [box])
 
   return useMemo(
-    () => ({ setHandle, request, compare }),
-    [setHandle, request, compare]
+    () => ({ setHandle, request, compare, opening }),
+    [setHandle, request, compare, opening]
   )
 }

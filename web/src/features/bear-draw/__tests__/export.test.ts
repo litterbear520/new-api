@@ -195,7 +195,9 @@ describe('exportGroup', () => {
     )
     const count = await exportGroup(project(['n1', 'n3']), 'g1')
     expect(count).toBe(1)
-    expect(await savedText()).toContain('淘宝-1-细节图-1024x1024.jpg')
+    // one picture left: it downloads as itself, not as a ZIP
+    expect(savedName).toBe('淘宝-1-细节图-1024x1024.jpg')
+    expect(saved?.type).toBe('image/jpeg')
   })
 
   test('a picture kept only in memory (full storage) is still packed', async () => {

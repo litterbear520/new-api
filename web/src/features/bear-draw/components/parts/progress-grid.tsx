@@ -75,6 +75,7 @@ export function ProgressGrid(props: { projectId: string; part: ProgressPart }) {
             item={it}
             index={i}
             onOpen={(nodeId) => actions.openCanvas([nodeId])}
+            onEdit={actions.editPicture}
           />
         ))}
       </div>

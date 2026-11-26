@@ -40,6 +40,11 @@ export const CHAT_W = { min: 320, max: 560, initial: 400 }
 export const NARROW_CARD = 900
 
 export const DEFAULT_IMAGE_MODEL = 'gpt-image-2.6-sunburst'
+/** The current generation, listed first; the others fold under 旧版模型. */
+export const CURRENT_IMAGE_MODELS = [
+  'gpt-image-2.6-sunburst',
+  'gpt-image-2.6-flare',
+]
 export const DEFAULT_BRAIN = 'gpt-6-luna'
 
 /** Image models we know: names and the menu note (i18n keys). */
@@ -50,13 +55,13 @@ export const IMAGE_MODEL_META: Record<
   'gpt-image-2.6-sunburst': {
     name: 'GPT Image 2.6 Sunburst',
     short: 'Sunburst 2.6',
-    note: 'Positioned by OpenAI for quality and consistent edits',
+    note: 'Best quality; text and edits come out more exact',
     tag: 'recommended',
   },
   'gpt-image-2.6-flare': {
     name: 'GPT Image 2.6 Flare',
     short: 'Flare 2.6',
-    note: 'Positioned by OpenAI for speed',
+    note: 'The lighter model, for everyday pictures',
   },
   'gpt-image-2.5-sunburst': {
     name: 'GPT Image 2.5 Sunburst',
@@ -66,7 +71,7 @@ export const IMAGE_MODEL_META: Record<
   'gpt-image-2.5-flare': {
     name: 'GPT Image 2.5 Flare',
     short: 'Flare 2.5',
-    note: 'Positioned by OpenAI for speed',
+    note: 'Previous generation',
   },
   'gpt-image-2': {
     name: 'GPT Image 2',
@@ -159,6 +164,7 @@ export const TYPICAL_DEFAULT = { gen: [25, 40], edit: [34.5, 64] } as const
 
 export const DEFAULT_PREFS: Prefs = {
   mode: 'agent',
+  auto: true,
   brain: DEFAULT_BRAIN,
   image: DEFAULT_IMAGE_MODEL,
   ratio: 'auto',

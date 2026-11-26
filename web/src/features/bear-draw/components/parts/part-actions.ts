@@ -24,8 +24,12 @@ export type PartActions = {
   balanceUsd: number | null
   /** The agent of this project is thinking or drawing. */
   busy: boolean
+  /** The set being packed for download (its id), if any. */
+  exporting: string | null
   /** Opens the canvas; with ids (pictures or a set), centres on them. */
   openCanvas: (ids?: string[]) => void
+  /** Takes a canvas picture into the message as an @ reference (接着改). */
+  editPicture: (nodeId: string) => void
   /** The edited picture of a set and the one it came from, if there is one pair. */
   editedPair: (groupId: string) => { from: string; to: string } | null
   /** Opens the canvas with 对比 on two pictures. */
@@ -44,7 +48,9 @@ const noop = () => undefined
 export const PartActionsContext = createContext<PartActions>({
   balanceUsd: null,
   busy: false,
+  exporting: null,
   openCanvas: noop,
+  editPicture: noop,
   editedPair: () => null,
   compare: noop,
   exportGroup: noop,

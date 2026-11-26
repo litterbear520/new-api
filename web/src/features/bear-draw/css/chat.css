@@ -557,6 +557,9 @@ For commercial licensing, please contact support@quantumnous.com
   white-space: nowrap;
 }
 .bd-plan-sum {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   flex: none;
   white-space: nowrap;
 }
@@ -824,6 +827,55 @@ For commercial licensing, please contact support@quantumnous.com
   padding: 8px 12px;
   background: color-mix(in oklab, var(--bd-ok) 8%, transparent);
   border-color: color-mix(in oklab, var(--bd-ok) 24%, transparent);
+}
+/* 下载 and 接着改 on a finished picture in the chat */
+.bd-tile {
+  position: relative;
+}
+.bd-tile-acts {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.bd-tile:hover .bd-tile-acts,
+.bd-tile:focus-within .bd-tile-acts {
+  opacity: 1;
+}
+@media (hover: none) {
+  .bd-tile-acts {
+    opacity: 1;
+  }
+}
+.bd-tile-acts button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(17 24 39 / 0.62);
+  color: #fff;
+  cursor: pointer;
+}
+.bd-tile-acts button:focus-visible {
+  outline: 2px solid var(--bd-ink);
+  outline-offset: 2px;
+}
+.bd-tile-acts button:hover {
+  background: rgb(17 24 39 / 0.82);
+}
+.bd-tile-acts svg {
+  width: 15px;
+  height: 15px;
+}
+.bd .bd-law-undo {
+  margin-left: auto;
+  color: var(--bd-ink2);
 }
 .bd-law.is-fixed .bd-law-hd {
   font-size: 13px;

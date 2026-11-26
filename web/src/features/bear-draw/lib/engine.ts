@@ -58,7 +58,7 @@ import {
   drawPicture,
   estimatePicture as estimate,
 } from './pictures'
-import { planTexts, replacePlanText } from './plan-text'
+import { dropSpelling, planTexts, replacePlanText } from './plan-text'
 import {
   addMessage,
   addPart,
@@ -120,6 +120,21 @@ export function isBusy(projectId: string): boolean {
   const p = findProject(projectId)
   return Boolean(
     p?.messages.some((m) => m.role === 'agent' && m.status === 'running')
+  )
+}
+
+/** Pictures of this project wait for their turn: 停止 can still spare them. */
+export function hasQueued(p: Project | null | undefined): boolean {
+  return Boolean(
+    p?.messages.some(
+      (m) =>
+        m.role === 'agent' &&
+        m.parts.some(
+          (part) =>
+            part.type === 'progress' &&
+            part.items.some((it) => it.status === 'queued')
+        )
+    )
   )
 }
 
@@ -389,6 +404,36 @@ export function stop(projectId: string, opts?: { quiet?: boolean }): void {
   )
 }
 
+/**
+ * 停止 in Image mode: the pictures still waiting for their turn are not
+ * drawn. The agent's own turn (a question card, a plan that waits) is left
+ * as it is.
+ */
+export function stopQueued(projectId: string): void {
+  const p = findProject(projectId)
+  if (!p) return
+  let queued = 0
+  for (const m of p.messages) {
+    if (m.role !== 'agent') continue
+    for (const part of m.parts) {
+      if (part.type !== 'progress') continue
+      for (const it of part.items) {
+        if (it.status !== 'queued') continue
+        queued++
+        editProgressItem(projectId, part.id, it.id, { status: 'stopped' })
+        editNode(projectId, it.nodeId, (n) => ({ ...n, status: 'stopped' }))
+      }
+    }
+  }
+  if (queued) {
+    toast(
+      t(
+        'Stopped. Pictures that had not started are not drawn and not charged; the ones already drawing will finish.'
+      )
+    )
+  }
+}
+
 /** Answers a question card; 'skip' lets the agent go on with its own defaults. */
 export function answer(
   projectId: string,
@@ -545,6 +590,7 @@ export function editPlanText(
       ...x,
       items,
       adlawFixed: false,
+      adlawUndo: undefined,
       adlaw: items.flatMap((it) =>
         findPromptAdLaw(it.prompt).map((m) => ({
           itemId: it.id,
@@ -559,16 +605,32 @@ export function editPlanText(
 
 /** Replaces the words the advertising law forbids in a waiting plan. */
 export function fixAdLaw(projectId: string, partId: string): void {
-  editPart(projectId, partId, 'plan', (x) => ({
-    ...x,
-    adlawFixed: true,
-    items: x.items.map((it) => {
+  editPart(projectId, partId, 'plan', (x) => {
+    const before: Record<string, string> = {}
+    const items = x.items.map((it) => {
       const hits = x.adlaw.filter((h) => h.itemId === it.id)
-      return hits.length
-        ? { ...it, prompt: applyAdLawFixes(it.prompt, hits) }
-        : it
-    }),
-  }))
+      if (!hits.length) return it
+      before[it.id] = it.prompt
+      return { ...it, prompt: dropSpelling(applyAdLawFixes(it.prompt, hits)) }
+    })
+    return { ...x, adlawFixed: true, adlawUndo: before, items }
+  })
+}
+
+/** 撤销 after 「全部替换」: the replaced prompts come back as they were. */
+export function undoAdLaw(projectId: string, partId: string): void {
+  editPart(projectId, partId, 'plan', (x) => {
+    const before = x.adlawUndo
+    if (!before) return x
+    return {
+      ...x,
+      adlawFixed: false,
+      adlawUndo: undefined,
+      items: x.items.map((it) =>
+        before[it.id] == null ? it : { ...it, prompt: before[it.id] }
+      ),
+    }
+  })
 }
 
 /** Draws a failed or stopped picture again (same description, same place). */

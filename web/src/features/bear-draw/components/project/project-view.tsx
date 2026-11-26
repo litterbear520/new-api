@@ -16,10 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useRef, useState, type CSSProperties } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 
 import { useSplitSiteBar } from '@/components/site-bar/store'
 import { useTheme } from '@/context/theme-provider'
@@ -29,11 +35,11 @@ import { useNightSeaStore } from '@/stores/night-sea-store'
 
 import { NARROW_CARD } from '../../constants'
 import { useBearDrawEnv } from '../../hooks/use-env'
-import { isBusy, send, stop } from '../../lib/engine'
+import { isBusy, send, stop, stopQueued } from '../../lib/engine'
 import type { Project, ProjectLayout } from '../../types'
 import { Composer, type ComposerHandle } from '../composer/composer'
+import { loadCanvasPane, warmCanvas } from '../lazy-views'
 import { PartActionsContext } from '../parts/part-actions'
-import { CanvasPane } from './canvas-pane'
 import { ChatGrip } from './chat-grip'
 import { ChatHeader } from './chat-header'
 import { readChatWidth, saveChatWidth } from './chat-width'
@@ -48,8 +54,23 @@ import { useSidebarRail } from './use-sidebar-rail'
 // only the project page needs these: they load with its chunk
 import '../../css/project.css'
 import '../../css/chat.css'
-import '../../css/canvas.css'
 import '../../css/halftone.css'
+
+const CanvasPane = lazy(() =>
+  loadCanvasPane().then((m) => ({ default: m.CanvasPane }))
+)
+
+/** Loads the canvas code once the page is idle, before anyone asks for it. */
+function useWarmCanvas() {
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warmCanvas, { timeout: 3000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = window.setTimeout(warmCanvas, 1200)
+    return () => window.clearTimeout(id)
+  }, [])
+}
 
 /** True from the first time `on` is true (the canvas stays mounted once shown). */
 function useOnce(on: boolean): boolean {
@@ -82,18 +103,23 @@ function ProjectScreen(props: { project: Project }) {
   // a sheet opened on a narrow card doesn't come back after a wide spell
   if (sheet && cardW > 0 && !narrow) setSheet(false)
   const sheetLayout: ProjectLayout = sheet ? 'canvas' : 'chat'
-  const layout = narrow ? sheetLayout : (p.layout ?? 'split')
+  // The canvas stays closed until the user opens it (the 画布 button, a
+  // picture in the chat); the project remembers what they chose.
+  const layout = narrow ? sheetLayout : (p.layout ?? 'chat')
   const canvasOn = layout !== 'chat'
   // measured first: a narrow card must not flash the canvas
   const mounted = useOnce(cardW > 0 && canvasOn)
   const canvas = useCanvasFocus()
-  useSidebarRail()
+  useWarmCanvas()
+  // measured first, so a narrow card never folds the sidebar for a moment
+  useSidebarRail(cardW > 0 && !narrow && canvasOn)
 
   const act = useProjectActions({
     projectId: pid,
     narrow,
     composerRef,
     focusCanvas: canvas.request,
+    canvasOpening: canvas.opening,
     compareOnCanvas: canvas.compare,
     setSheet,
     balanceUsd: env.balanceUsd,
@@ -126,6 +152,19 @@ function ProjectScreen(props: { project: Project }) {
           dragging && 'is-dragging'
         )}
         style={{ '--chat-w': `${chatW}px` } as CSSProperties}
+        // A picture dropped beside the box (the chat, the header) goes into
+        // the message; without this the browser opens the file and the page
+        // is gone. The box and the canvas take their own drops first.
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes('Files')) e.preventDefault()
+        }}
+        onDrop={(e) => {
+          if (e.defaultPrevented || !e.dataTransfer.types.includes('Files')) {
+            return
+          }
+          e.preventDefault()
+          composerRef.current?.addFiles([...e.dataTransfer.files])
+        }}
       >
         <section
           className='bd-chatp'
@@ -147,13 +186,20 @@ function ProjectScreen(props: { project: Project }) {
                 projectId={pid}
                 busy={busy}
                 onSend={(input) => send(pid, input)}
-                onStop={() => stop(pid)}
+                onStop={() =>
+                  // Image mode has no turn to stop, only pictures in line
+                  useBearDrawStore.getState().prefs.mode === 'image'
+                    ? stopQueued(pid)
+                    : stop(pid)
+                }
               />
-              <p className='bd-chatp-foot'>
-                {t(
-                  'You can visit other pages while it draws, but do not close or reload this page, or the pictures are lost and still charged.'
-                )}
-              </p>
+              {busy && (
+                <p className='bd-chatp-foot' role='status'>
+                  {t(
+                    'You can visit other pages while it draws, but do not close or reload this page, or the pictures are lost and still charged.'
+                  )}
+                </p>
+              )}
             </div>
           </div>
         </section>
@@ -169,24 +215,23 @@ function ProjectScreen(props: { project: Project }) {
           />
         )}
         {mounted && (
-          <CanvasPane
-            project={p}
-            dark={night}
-            hidden={!canvasOn}
-            chatHidden={layout === 'canvas'}
-            canvasRef={canvas.setHandle}
-            onShowChat={() => {
-              act.setLayout('split')
-              focusSoon('.bd-hd-hide')
-            }}
-            onEdit={act.onEdit}
-            onMarked={act.onMarked}
-            onUpload={act.onUpload}
-            onExport={act.parts.exportGroup}
-            onNothingToExport={() =>
-              toast(t('No finished pictures on the canvas yet'))
-            }
-          />
+          <Suspense fallback={null}>
+            <CanvasPane
+              project={p}
+              dark={night}
+              hidden={!canvasOn}
+              chatHidden={layout === 'canvas'}
+              canvasRef={canvas.setHandle}
+              onShowChat={() => {
+                act.setLayout('split')
+                focusSoon('.bd-hd-hide')
+              }}
+              onEdit={act.onEdit}
+              onMarked={act.onMarked}
+              onUpload={act.onUpload}
+              onExport={act.parts.exportGroup}
+            />
+          </Suspense>
         )}
       </div>
     </PartActionsContext.Provider>

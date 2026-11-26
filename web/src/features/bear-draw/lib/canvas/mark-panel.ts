@@ -49,7 +49,8 @@ export function createMarkPanel(c: Ctx) {
       `<button type="button" data-pn="shape" data-shape="${id}" aria-pressed="${c.markShape === id}">${esc(label)}</button>`
     const shapes = `<div class="bd-cv-pn-shapes" role="group" aria-label="${esc(L.markShape)}">${shape('free', L.markFree)}${shape('box', L.markBox)}</div>`
     if (!marks.length) {
-      return `${shapes}<p class="bd-cv-pn-empty">${esc(L.markEmpty)}</p>`
+      const hint = c.markShape === 'box' ? L.markEmptyBox : L.markEmpty
+      return `${shapes}<p class="bd-cv-pn-empty">${esc(hint)}</p>`
     }
     const items = marks.map(
       (m) =>
@@ -58,10 +59,14 @@ export function createMarkPanel(c: Ctx) {
     return `${shapes}<ol class="bd-cv-pn-list bd-cv-scroll">${items.join('')}</ol>`
   }
 
-  function footer(marks: MarkRec[]): string {
+  function footer(n: NodeRec | null, marks: MarkRec[]): string {
     const L = c.L
     const off = marks.length ? '' : ' disabled'
-    return `<div class="bd-cv-pn-ft"><button type="button" data-pn="undo"${off}>${esc(L.markUndo)}</button><button type="button" data-pn="clear"${off}>${esc(L.clear)}</button><button type="button" class="is-primary" data-pn="done"${off}>${ICONS.check}<span>${esc(L.markDone)}</span></button></div>`
+    // right after 「清空」 there is nothing to mark off, but 撤销 still works
+    const canUndo =
+      marks.length > 0 || (n != null && c.markCleared?.id === n.id)
+    const undoOff = canUndo ? '' : ' disabled'
+    return `<div class="bd-cv-pn-ft"><button type="button" data-pn="undo"${undoOff}>${esc(L.markUndo)}</button><button type="button" data-pn="clear"${off}>${esc(L.clear)}</button><button type="button" class="is-primary" data-pn="done"${off}>${ICONS.check}<span>${esc(L.markDone)}</span></button></div>`
   }
 
   function renderPanel() {
@@ -69,6 +74,7 @@ export function createMarkPanel(c: Ctx) {
     panel.hidden = !show
     if (!show) {
       html = ''
+      c.markCleared = null
       return
     }
     if (composing && panel.contains(document.activeElement)) {
@@ -78,7 +84,7 @@ export function createMarkPanel(c: Ctx) {
     const n = markNode(c)
     const marks = n ? n.marks : []
     if (n) c.fx.hideToast()
-    const next = header(n) + body(n, marks) + footer(marks)
+    const next = header(n) + body(n, marks) + footer(n, marks)
     if (next === html) return
     // Keep the caret in the note being typed when the panel is redrawn.
     const active = document.activeElement

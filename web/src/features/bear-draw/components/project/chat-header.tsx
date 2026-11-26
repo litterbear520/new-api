@@ -32,8 +32,6 @@ import { useProjectNav } from './use-project-nav'
 function HeaderButton(props: {
   label: string
   onClick: () => void
-  /** A switch: shown pressed while on (the label says what a click does). */
-  on?: boolean
   className?: string
   children: ReactNode
 }) {
@@ -45,7 +43,6 @@ function HeaderButton(props: {
         size='icon'
         className={cn('bd-hd-btn', props.className)}
         aria-label={props.label}
-        data-on={props.on || undefined}
         onClick={props.onClick}
       >
         {props.children}
@@ -55,10 +52,44 @@ function HeaderButton(props: {
 }
 
 /**
+ * 「画布」 with how many pictures it holds: opens the canvas, and closes it
+ * again while it shows (pressed).
+ */
+function CanvasButton(props: {
+  count: number
+  on: boolean
+  onClick: () => void
+}) {
+  const { t } = useTranslation()
+  const label = props.on ? t('Hide the canvas') : t('Show the canvas')
+  return (
+    <Tip label={label} side='bottom'>
+      <Button
+        type='button'
+        variant='ghost'
+        size='sm'
+        className='bd-hd-canvas'
+        aria-label={label}
+        aria-pressed={props.on}
+        onClick={props.onClick}
+      >
+        <Palette aria-hidden='true' />
+        <span>{t('Canvas')}</span>
+        {props.count > 0 && (
+          <span className='bd-hd-count bd-num' aria-hidden='true'>
+            {props.count}
+          </span>
+        )}
+      </Button>
+    </Tip>
+  )
+}
+
+/**
  * Top of the chat: back to the drawing home, the title menu, what the
- * project has cost (on the canvas instead while it shows), the 画布 switch
- * (the palette, pressed while the canvas shows; off = the chat fills the
- * page) and 收起对话. Narrow cards get the 画布 switch only.
+ * project has cost (on the canvas instead while it shows), the 画布 button
+ * and, next to an open canvas, 收起对话. Narrow cards get the 画布 button
+ * only.
  */
 export function ChatHeader(props: {
   project: Project
@@ -71,6 +102,7 @@ export function ChatHeader(props: {
   const nav = useProjectNav()
   const cost = props.project.cost
   const chatOnly = props.layout === 'chat'
+  const count = props.project.nodes.filter((n) => n.status === 'ready').length
   return (
     <header className='bd-chatp-hd'>
       <HeaderButton label={t('Back to the drawing home')} onClick={nav.home}>
@@ -89,28 +121,27 @@ export function ChatHeader(props: {
           </Tip>
         )}
         {props.narrow ? (
-          <HeaderButton
-            label={t('Show the canvas')}
+          <CanvasButton
+            count={count}
+            on={false}
             onClick={() => props.onLayout('canvas')}
-          >
-            <Palette aria-hidden='true' />
-          </HeaderButton>
+          />
         ) : (
           <>
-            <HeaderButton
-              label={chatOnly ? t('Show the canvas') : t('Hide the canvas')}
+            <CanvasButton
+              count={count}
               on={!chatOnly}
               onClick={() => props.onLayout(chatOnly ? 'split' : 'chat')}
-            >
-              <Palette aria-hidden='true' />
-            </HeaderButton>
-            <HeaderButton
-              label={t('Hide the chat')}
-              className='bd-hd-hide'
-              onClick={() => props.onLayout('canvas')}
-            >
-              <PanelLeftClose aria-hidden='true' />
-            </HeaderButton>
+            />
+            {!chatOnly && (
+              <HeaderButton
+                label={t('Hide the chat')}
+                className='bd-hd-hide'
+                onClick={() => props.onLayout('canvas')}
+              >
+                <PanelLeftClose aria-hidden='true' />
+              </HeaderButton>
+            )}
           </>
         )}
       </div>

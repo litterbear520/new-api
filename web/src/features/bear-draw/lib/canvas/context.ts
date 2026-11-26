@@ -330,6 +330,8 @@ export type Ctx = {
   pick: string | null
   /** 圈选 draws free-hand circles or boxes. */
   markShape: 'free' | 'box'
+  /** The marks 「清空」 just removed and their picture: 撤销 brings them back. */
+  markCleared: { id: string; marks: MarkRec[] } | null
   raf: number
   camAnim: number
   timers: {

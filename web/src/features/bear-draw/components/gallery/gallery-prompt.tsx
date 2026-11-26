@@ -28,7 +28,11 @@ import { altPrompt, langName } from './gallery-item'
 import { hasSlots, parseTemplate, templateText } from './prompt-template'
 
 /** The prompt of a 玩法: 中/EN switch, copy, template slots highlighted. */
-export function GalleryPrompt(props: { item: GalleryItem }) {
+export function GalleryPrompt(props: {
+  item: GalleryItem
+  /** The other language is shown (its text), or the main one again (null). */
+  onAlt?: (text: string | null) => void
+}) {
   const { t } = useTranslation()
   const it = props.item
   const labelId = useId()
@@ -57,7 +61,10 @@ export function GalleryPrompt(props: { item: GalleryItem }) {
                 { value: 'main', label: main },
                 { value: 'alt', label: other },
               ]}
-              onChange={(v) => setWhich(v === 'alt' ? 'alt' : 'main')}
+              onChange={(v) => {
+                setWhich(v === 'alt' ? 'alt' : 'main')
+                props.onAlt?.(v === 'alt' ? alt : null)
+              }}
               aria-label={t('Prompt language')}
             />
           )}

@@ -52,7 +52,12 @@ describe('QuestionsCard', () => {
 
     // a single-choice pick moves on to the next question
     await user.click(screen.getByRole('button', { name: 'Bold' }))
-    expect(screen.getByText('Which platforms?')).toBeInTheDocument()
+    // the pick shows for a moment first
+    expect(screen.getByRole('button', { name: 'Bold' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(await screen.findByText('Which platforms?')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Taobao' }))
     await user.click(screen.getByRole('button', { name: 'Douyin' }))
     await user.type(
@@ -74,7 +79,7 @@ describe('QuestionsCard', () => {
     screen.getByRole('button', { name: 'Clean' }).focus()
     await user.keyboard('2')
 
-    expect(screen.getByText('Which platforms?')).toBeInTheDocument()
+    expect(await screen.findByText('Which platforms?')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Previous question' }))
     expect(screen.getByRole('button', { name: 'Bold' })).toHaveAttribute(
       'aria-pressed',
@@ -87,6 +92,7 @@ describe('QuestionsCard', () => {
     const user = userEvent.setup()
     render(<QuestionsCard projectId='p1' part={card()} status='waiting' />)
     await user.click(screen.getByRole('button', { name: 'Bold' }))
+    await screen.findByText('Which platforms?')
     const other = screen.getByRole('textbox', { name: 'Something else' })
 
     fireEvent.keyDown(other, { key: 'Enter', keyCode: 229 })
@@ -96,13 +102,52 @@ describe('QuestionsCard', () => {
     expect(answer).toHaveBeenCalledTimes(1)
   })
 
-  it('skips the questions when 跳过 is clicked', async () => {
+  it('跳过 on every question skips the questions', async () => {
+    vi.mocked(answer).mockClear()
     const user = userEvent.setup()
     render(<QuestionsCard projectId='p1' part={card()} status='waiting' />)
 
-    await user.click(screen.getByRole('button', { name: 'Skip' }))
+    await user.click(screen.getByRole('button', { name: 'Skip this one' }))
+    expect(answer).not.toHaveBeenCalled()
+    expect(screen.getByText('Which platforms?')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Skip this one' }))
 
     expect(answer).toHaveBeenCalledWith('p1', 'pt1', 'skip')
+  })
+
+  it('跳过 on a later question keeps the answers already given', async () => {
+    vi.mocked(answer).mockClear()
+    const user = userEvent.setup()
+    render(<QuestionsCard projectId='p1' part={card()} status='waiting' />)
+
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    await screen.findByText('Which platforms?')
+    await user.click(screen.getByRole('button', { name: 'Taobao' }))
+    await user.click(screen.getByRole('button', { name: 'Skip this one' }))
+
+    expect(answer).toHaveBeenCalledWith('p1', 'pt1', [
+      { q: 'Which style?', answer: 'Bold' },
+      { q: 'Which platforms?', answer: '' },
+    ])
+  })
+
+  it('typing under 「其他」 takes the place of a single-choice pick', async () => {
+    vi.mocked(answer).mockClear()
+    const user = userEvent.setup()
+    const one = card()
+    one.items = [one.items[0]]
+    render(<QuestionsCard projectId='p1' part={one} status='waiting' />)
+
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Something else' }),
+      'Retro'
+    )
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+    expect(answer).toHaveBeenCalledWith('p1', 'pt1', [
+      { q: 'Which style?', answer: 'Retro' },
+    ])
   })
 
   it('shows the answers as one line once answered, without the form', () => {

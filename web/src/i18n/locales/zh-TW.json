@@ -8604,6 +8604,24 @@
     "Box": "矩形框",
     "Details of “{{label}}”": "「{{label}}」的詳情",
     "Words on the picture": "圖上的字",
-    "Words on the picture, line {{n}}": "圖上的字，第 {{n}} 行"
+    "Words on the picture, line {{n}}": "圖上的字，第 {{n}} 行",
+    "Older models": "舊版模型",
+    "Planning model": "思考模型",
+    "More models": "更多模型",
+    "Model preferences: auto": "模型偏好：自動",
+    "Model preferences: {{image}}": "模型偏好：{{image}}",
+    "Best quality; text and edits come out more exact": "畫質最好，文字和改圖更準",
+    "The lighter model, for everyday pictures": "日常出圖的輕量版",
+    "First one only · about {{cost}}": "先畫第 1 張 · ≈{{cost}}",
+    "Brand kit deleted": "品牌套件已刪除",
+    "Save and use again": "儲存並重新啟用",
+    "Could not load the drawing models": "畫圖模型沒載入出來",
+    "Check the network, then load them again.": "檢查一下網路，再重新載入。",
+    "Keep editing “{{label}}”": "接著改「{{label}}」",
+    "Download “{{label}}”": "下載「{{label}}」",
+    "Redraw “{{label}}”": "重畫「{{label}}」",
+    "Drag a box on the picture around what to change. You can box several places.": "在圖上拖出一個框，框住要改的地方，可以框多處。",
+    "Reload": "重新載入",
+    "Skip this one": "跳過這題"
   }
 }

@@ -16,19 +16,23 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Square, TriangleAlert } from 'lucide-react'
+import { Download, Sparkles, Square, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Tip } from '@/features/draw/components/tip'
 import { useImageUrl } from '@/features/draw/hooks/use-image-url'
 import { useMoney } from '@/features/draw/hooks/use-money'
 import { useNow } from '@/features/draw/hooks/use-now'
+import { downloadImage } from '@/features/draw/lib/images'
 import { cn } from '@/lib/utils'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
 import { retryPicture } from '../../lib/engine'
 import { halftonePhase } from '../../lib/halftone'
 import type { ProgressItem } from '../../types'
+import { blocksDownloads, openSaveSheet } from '../canvas/save-sheet-state'
 import { sizeAspect } from './format'
 import { useHalftone } from './use-halftone'
 
@@ -145,6 +149,60 @@ function TileProblem(props: {
 }
 
 /**
+ * 下载 and 接着改 on a finished picture, so the two things people do most
+ * need no canvas. They show on hover or focus; always on touch screens.
+ * 接着改 needs the picture on the canvas: it goes when the picture was
+ * deleted there.
+ */
+function TileActions(props: {
+  item: ProgressItem
+  onCanvas: boolean
+  onEdit: () => void
+  /** WeChat and QQ ignore downloads: the canvas has the long-press sheet. */
+  onSaveSheet: () => void
+}) {
+  const { t } = useTranslation()
+  const img = props.item.img
+  if (!img) return null
+  const save = () => {
+    if (blocksDownloads(navigator.userAgent)) {
+      openSaveSheet([
+        { id: img.id, label: props.item.label, w: img.w, h: img.h },
+      ])
+      props.onSaveSheet()
+      return
+    }
+    void downloadImage(img.id).catch(() => toast.error(t('Download failed')))
+  }
+  return (
+    <div className='bd-tile-acts'>
+      {props.onCanvas && (
+        <Tip label={t('Keep editing')}>
+          <button
+            type='button'
+            aria-label={t('Keep editing “{{label}}”', {
+              label: props.item.label,
+            })}
+            onClick={props.onEdit}
+          >
+            <Sparkles aria-hidden='true' />
+          </button>
+        </Tip>
+      )}
+      <Tip label={t('Download')}>
+        <button
+          type='button'
+          aria-label={t('Download “{{label}}”', { label: props.item.label })}
+          onClick={save}
+        >
+          <Download aria-hidden='true' />
+        </button>
+      </Tip>
+    </div>
+  )
+}
+
+/**
  * One picture of a set in the chat: the dot screen while it waits or
  * draws, the picture once done (click to see it on the canvas), or why it
  * was not drawn with 重试.
@@ -154,11 +212,19 @@ export function ProgressTile(props: {
   item: ProgressItem
   index: number
   onOpen: (nodeId: string) => void
+  onEdit: (nodeId: string) => void
 }) {
   const { t } = useTranslation()
   const it = props.item
   const aspect = useTileAspect(props.projectId, it)
   const { hostRef, shown } = useHalftone(it, props.index)
+  const onCanvas = useBearDrawStore((st) =>
+    Boolean(
+      st.projects
+        .find((p) => p.id === props.projectId)
+        ?.nodes.some((n) => n.id === it.nodeId && n.status === 'ready')
+    )
+  )
   const url = useImageUrl(shown ? it.img?.id : undefined, 'thumb')
   const problem =
     it.status === 'failed' || it.status === 'lost' || it.status === 'stopped'
@@ -177,6 +243,14 @@ export function ProgressTile(props: {
           <span ref={hostRef} className='bd-tile-ht' aria-hidden='true' />
           {shown && url && <img src={url} alt='' draggable={false} />}
         </button>
+      )}
+      {it.status === 'done' && shown && (
+        <TileActions
+          item={it}
+          onCanvas={onCanvas}
+          onEdit={() => props.onEdit(it.nodeId)}
+          onSaveSheet={() => props.onOpen(it.nodeId)}
+        />
       )}
       <div className='bd-tile-cap'>
         <b>{it.label}</b>

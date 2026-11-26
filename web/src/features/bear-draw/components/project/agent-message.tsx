@@ -40,7 +40,9 @@ function AgentFooter(props: { message: AgentMessageData }) {
     .map((p) => (p.type === 'text' ? p.text.trim() : ''))
     .filter(Boolean)
     .join('\n\n')
-  if (!text && m.cost <= 0) return null
+  // a result card already says what the pictures cost
+  const cost = m.parts.some((p) => p.type === 'result') ? 0 : m.cost
+  if (!text && cost <= 0) return null
   return (
     <div className='bd-a-ft'>
       {text && (
@@ -61,9 +63,9 @@ function AgentFooter(props: { message: AgentMessageData }) {
           </Button>
         </Tip>
       )}
-      {m.cost > 0 && (
+      {cost > 0 && (
         <span className='bd-a-cost bd-num'>
-          {t('This turn {{cost}}', { cost: money.cost(m.cost) })}
+          {t('This turn {{cost}}', { cost: money.cost(cost) })}
         </span>
       )}
     </div>

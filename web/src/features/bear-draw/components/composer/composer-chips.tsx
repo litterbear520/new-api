@@ -32,6 +32,9 @@ export type Preset = {
   needsPhoto: boolean
   /** What photo it wants, from the gallery item. */
   hint: string
+  /** The text it put in the box, and the mode it replaced: undone with it. */
+  prompt: string
+  modeBefore: Mode
 }
 
 type ChipsProps = {

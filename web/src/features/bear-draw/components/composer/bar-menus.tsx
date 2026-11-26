@@ -73,7 +73,7 @@ function MenuRow(props: {
 type PlusMenuProps = {
   /** Where the focus goes when the menu closes (the textarea). */
   finalFocus: RefObject<HTMLTextAreaElement | null>
-  /** In a project: pictures on the canvas can be used with "@". */
+  /** The project has finished pictures: they can be used with "@". */
   canvas: boolean
   onUpload: () => void
   onSkill: () => void
@@ -84,9 +84,11 @@ type PlusMenuProps = {
 export function PlusMenu(props: PlusMenuProps) {
   const { t } = useTranslation()
   const brandKit = useBearDrawStore((s) => s.brandKit)
+  // Image mode draws what is typed: skills and the brand kit are the agent's
+  const agent = useBearDrawStore((s) => s.prefs.mode === 'agent')
   return (
     <DropdownMenu>
-      <Tip label={t('Upload, skills, brand kit')}>
+      <Tip label={agent ? t('Upload, skills, brand kit') : t('Add pictures')}>
         <DropdownMenuTrigger
           render={
             <button
@@ -112,13 +114,15 @@ export function PlusMenu(props: PlusMenuProps) {
           desc={t('Product shots, references or a logo')}
           onClick={props.onUpload}
         />
-        <MenuRow
-          icon={<BookOpen />}
-          label={t('Use a skill…')}
-          desc={t('Or type / in the box')}
-          kbd='/'
-          onClick={props.onSkill}
-        />
+        {agent && (
+          <MenuRow
+            icon={<BookOpen />}
+            label={t('Use a skill…')}
+            desc={t('Or type / in the box')}
+            kbd='/'
+            onClick={props.onSkill}
+          />
+        )}
         {props.canvas && (
           <MenuRow
             icon={<AtSign />}
@@ -127,23 +131,27 @@ export function PlusMenu(props: PlusMenuProps) {
             onClick={props.onCanvas}
           />
         )}
-        <MenuRow
-          icon={<FileUp />}
-          label={t('Import a skill')}
-          desc={t('From a SKILL.md file')}
-          onClick={() => openDialog('import-skill')}
-        />
-        <DropdownMenuSeparator />
-        <MenuRow
-          icon={<SwatchBook />}
-          label={
-            brandKit
-              ? t('Brand kit: {{name}}', { name: brandKit.name })
-              : t('Set up a brand kit')
-          }
-          desc={t('Upload once, and every set stays on brand')}
-          onClick={() => openDialog('brand')}
-        />
+        {agent && (
+          <>
+            <MenuRow
+              icon={<FileUp />}
+              label={t('Import a skill')}
+              desc={t('From a SKILL.md file')}
+              onClick={() => openDialog('import-skill')}
+            />
+            <DropdownMenuSeparator />
+            <MenuRow
+              icon={<SwatchBook />}
+              label={
+                brandKit
+                  ? t('Brand kit: {{name}}', { name: brandKit.name })
+                  : t('Set up a brand kit')
+              }
+              desc={t('Upload once, and every set stays on brand')}
+              onClick={() => openDialog('brand')}
+            />
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

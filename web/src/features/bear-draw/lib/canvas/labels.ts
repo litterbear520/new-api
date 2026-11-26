@@ -63,6 +63,7 @@ export type CanvasLabels = {
   exitMarkTip: string
   markPickFirst: string
   markEmpty: string
+  markEmptyBox: string
   markNote: string
   markNoteLabel: (n: number) => string
   markRemove: string
@@ -84,6 +85,8 @@ export type CanvasLabels = {
   markWhat: string
   compareWith: string
   seconds: (count: number) => string
+  /** The name shown for an image model id. */
+  modelName: (id: string) => string
   fitAll: string
   zoom100: string
   zoomIn: string
@@ -143,6 +146,8 @@ export const DEFAULT_LABELS: CanvasLabels = {
     'Click a finished picture first, then circle what to change with the red pen.',
   markEmpty:
     'Draw a circle on the picture to mark what to change. You can circle several places.',
+  markEmptyBox:
+    'Drag a box on the picture around what to change. You can box several places.',
   markNote: 'How to change this? (optional)',
   markNoteLabel: (n) => `How to change area ${n}`,
   markRemove: 'Remove this one',
@@ -164,6 +169,7 @@ export const DEFAULT_LABELS: CanvasLabels = {
   markWhat: 'Circle what to change',
   compareWith: 'Compare…',
   seconds: (count) => `${count} s`,
+  modelName: (id) => id,
   fitAll: 'Fit all',
   zoom100: 'Zoom to 100%',
   zoomIn: 'Zoom in',

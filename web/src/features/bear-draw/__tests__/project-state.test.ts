@@ -227,6 +227,52 @@ describe('resultFor', () => {
   })
 })
 
+describe('resultFor suggestions', () => {
+  const turn = (suggestions?: string[]): AgentMessage => ({
+    id: 'm',
+    role: 'agent',
+    mode: 'agent',
+    status: 'done',
+    startedAt: 0,
+    endedAt: 1000,
+    cost: 0,
+    suggestions,
+    parts: [
+      {
+        id: 'pg',
+        type: 'progress',
+        groupId: 'g',
+        items: [
+          {
+            id: 'a',
+            nodeId: 'n1',
+            label: '卖点图',
+            model: 'm',
+            prompt: 'p',
+            status: 'failed',
+          },
+        ],
+      },
+    ],
+  })
+
+  it('offers to redraw a failed picture when the planner gave no suggestions', () => {
+    expect(resultFor(turn())?.suggestions).toHaveLength(1)
+  })
+
+  it('offers one redraw for failed pictures of the same name', () => {
+    const m = turn()
+    const part = m.parts[0]
+    if (part.type !== 'progress') throw new Error('no progress')
+    part.items = [part.items[0], { ...part.items[0], id: 'b', nodeId: 'n2' }]
+    expect(resultFor(m)?.suggestions).toHaveLength(1)
+  })
+
+  it('keeps the planner’s own suggestions', () => {
+    expect(resultFor(turn(['换个背景']))?.suggestions).toEqual(['换个背景'])
+  })
+})
+
 describe('resultFor timing', () => {
   it('counts from the first picture starting, not from the plan waiting for 开始画', () => {
     const m: AgentMessage = {

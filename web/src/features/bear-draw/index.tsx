@@ -16,12 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/empty-state'
 import { LoadingState } from '@/components/loading-state'
+import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth-store'
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
@@ -85,11 +87,21 @@ function useEngineEnv(env: BearDrawEnv) {
   useEffect(() => {
     setAgentModels(env.brainModels.map((m) => m.id))
   }, [env.brainModels])
+  // 自动 means a model this account can draw with: when it lacks the
+  // recommended one, the first it has (the list is best first).
+  useEffect(() => {
+    const { prefs } = useBearDrawStore.getState()
+    const ids = env.imageModels.map((m) => m.id)
+    if (prefs.auto && ids.length && !ids.includes(prefs.image)) {
+      useBearDrawStore.setState({ prefs: { ...prefs, image: ids[0] } })
+    }
+  }, [env.imageModels])
 }
 
 export function BearDraw(props: { search: BearDrawSearch }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.auth.user)
   const load = useBearDrawPersistence(user?.id)
   const env = useBearDrawEnv()
@@ -117,6 +129,26 @@ export function BearDraw(props: { search: BearDrawSearch }) {
   let view: ReactNode
   if (load === 'loading') {
     view = <LoadingState className='bd-loading' />
+  } else if (env.failed && !env.imageModels.length) {
+    // the list did not load: that is not "no models"
+    view = (
+      <EmptyState
+        title={t('Could not load the drawing models')}
+        description={t('Check the network, then load them again.')}
+        action={
+          <Button
+            type='button'
+            onClick={() =>
+              void queryClient.invalidateQueries({
+                queryKey: ['bear-draw', 'user-models'],
+              })
+            }
+          >
+            {t('Reload')}
+          </Button>
+        }
+      />
+    )
   } else if (!env.loading && !env.imageModels.length) {
     view = (
       <EmptyState

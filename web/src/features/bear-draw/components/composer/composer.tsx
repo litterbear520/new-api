@@ -23,7 +23,7 @@ import { useTheme } from '@/context/theme-provider'
 import { useGlass, useGlassLight } from '@/features/draw/hooks/use-glass'
 import { useHalo } from '@/features/draw/hooks/use-halo'
 import { cn } from '@/lib/utils'
-import { findProject } from '@/stores/bear-draw-store'
+import { useBearDrawStore } from '@/stores/bear-draw-store'
 import { useNightSeaStore } from '@/stores/night-sea-store'
 
 import { DrawBear } from '../bear/draw-bear'
@@ -75,6 +75,16 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
       () => lastAgent(props.projectId)?.status === 'done'
     )
     const home = props.variant === 'home'
+    // "@" needs a finished picture to point at
+    const hasPictures = useBearDrawStore((s) =>
+      props.projectId
+        ? Boolean(
+            s.projects
+              .find((p) => p.id === props.projectId)
+              ?.nodes.some((n) => n.status === 'ready')
+          )
+        : false
+    )
     const picker = c.picker
     const ta = c.taRef
 
@@ -201,8 +211,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
           </div>
           <ComposerBar
             variant={props.variant}
-            canvas={props.projectId != null}
-            busy={c.busy}
+            canvas={hasPictures}
+            busy={c.canStop}
             ready={c.ready}
             estimate={c.estimate}
             taRef={ta}
@@ -231,9 +241,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
             kind={picker.kind}
             items={picker.items}
             active={picker.active}
-            hasPictures={(findProject(props.projectId)?.nodes ?? []).some(
-              (n) => n.status === 'ready'
-            )}
+            hasPictures={hasPictures}
             onChoose={picker.choose}
             onHover={picker.hover}
           />

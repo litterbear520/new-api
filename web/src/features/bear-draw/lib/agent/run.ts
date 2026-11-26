@@ -173,7 +173,9 @@ async function step(run: Run): Promise<StepOutcome> {
   let swapPart: string | null = null
   for (const [i, model] of chain.entries()) {
     if (run.stopped || ownerLeft(run)) return { kind: 'aborted' }
-    if (i > 0) {
+    // On 自动 the page chose the model: a switch needs no line. A model the
+    // user picked by hand is theirs to know about.
+    if (i > 0 && !store.prefs.auto) {
       // One line that follows the switches, not one line per model.
       const text = {
         key: '{{from}} is busy right now, switched to {{to}}',

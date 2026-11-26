@@ -138,7 +138,7 @@ export function GalleryWall(props: GalleryWallProps) {
   return (
     <>
       <div ref={ref} className='bd-wall'>
-        {columns.map((col) => (
+        {columns.map((col, c) => (
           <div key={col.id} className='bd-wall-col'>
             {col.items.map((it, i) => (
               <GalleryCard
@@ -146,6 +146,7 @@ export function GalleryWall(props: GalleryWallProps) {
                 item={it}
                 sizes={sizes}
                 top={i === 0}
+                lead={i === 0 && c < 2}
                 onTopLoaded={i === 0 ? onTopLoaded : undefined}
                 onOpen={props.onOpen}
                 onUse={props.onUse}

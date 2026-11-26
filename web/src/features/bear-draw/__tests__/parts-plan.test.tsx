@@ -64,7 +64,7 @@ describe('PlanCard', () => {
     render(<PlanCard projectId='p1' part={plan()} status='waiting' />)
 
     await user.click(screen.getByRole('button', { name: /^Start drawing 3/ }))
-    await user.click(screen.getByRole('button', { name: 'Only the first one' }))
+    await user.click(screen.getByRole('button', { name: /^First one only/ }))
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(vi.mocked(decide).mock.calls).toEqual([

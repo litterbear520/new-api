@@ -84,6 +84,10 @@ export function createInput(c: Ctx) {
     } else if (k.toLowerCase() === 'a') {
       e.preventDefault()
       c.fx.setSel([...c.nodes.keys()], true)
+    } else if (k.toLowerCase() === 'z' && !e.shiftKey && c.tool === 'mark') {
+      // the newest circle, or the ones 「清空」 just removed
+      e.preventDefault()
+      c.fx.undoMark()
     }
   }
 

@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 
-import { fixAdLaw } from '../../lib/engine'
+import { fixAdLaw, undoAdLaw } from '../../lib/engine'
 import type { AdLawHit, PlanItem } from '../../types'
 
 /** Flagged words grouped by the picture they would be printed on. */
@@ -43,6 +43,8 @@ export function PlanAdLaw(props: {
   hits: AdLawHit[]
   items: PlanItem[]
   fixed: boolean
+  /** 「全部替换」 can still be taken back. */
+  canUndo: boolean
   /** The plan still waits for 开始画, so the words can be replaced. */
   pending: boolean
 }) {
@@ -53,6 +55,17 @@ export function PlanAdLaw(props: {
         <div className='bd-law-hd'>
           <CircleCheck aria-hidden='true' />
           {t('Replaced the words the advertising law may not allow')}
+          {props.pending && props.canUndo && (
+            <Button
+              type='button'
+              variant='ghost'
+              size='xs'
+              className='bd-law-undo'
+              onClick={() => undoAdLaw(props.projectId, props.partId)}
+            >
+              {t('Undo')}
+            </Button>
+          )}
         </div>
       </div>
     )

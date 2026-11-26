@@ -8604,6 +8604,24 @@
     "Box": "Box",
     "Details of “{{label}}”": "Details of “{{label}}”",
     "Words on the picture": "Words on the picture",
-    "Words on the picture, line {{n}}": "Words on the picture, line {{n}}"
+    "Words on the picture, line {{n}}": "Words on the picture, line {{n}}",
+    "Older models": "Older models",
+    "Planning model": "Planning model",
+    "More models": "More models",
+    "Model preferences: auto": "Model preferences: auto",
+    "Model preferences: {{image}}": "Model preferences: {{image}}",
+    "Best quality; text and edits come out more exact": "Best quality; text and edits come out more exact",
+    "The lighter model, for everyday pictures": "The lighter model, for everyday pictures",
+    "First one only · about {{cost}}": "First one only · about {{cost}}",
+    "Brand kit deleted": "Brand kit deleted",
+    "Save and use again": "Save and use again",
+    "Could not load the drawing models": "Could not load the drawing models",
+    "Check the network, then load them again.": "Check the network, then load them again.",
+    "Keep editing “{{label}}”": "Keep editing “{{label}}”",
+    "Download “{{label}}”": "Download “{{label}}”",
+    "Redraw “{{label}}”": "Redraw “{{label}}”",
+    "Drag a box on the picture around what to change. You can box several places.": "Drag a box on the picture around what to change. You can box several places.",
+    "Reload": "Reload",
+    "Skip this one": "Skip this one"
   }
 }

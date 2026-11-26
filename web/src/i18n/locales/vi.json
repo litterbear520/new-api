@@ -8604,6 +8604,24 @@
     "Box": "Khung chữ nhật",
     "Details of “{{label}}”": "Chi tiết của “{{label}}”",
     "Words on the picture": "Chữ trên ảnh",
-    "Words on the picture, line {{n}}": "Chữ trên ảnh, dòng {{n}}"
+    "Words on the picture, line {{n}}": "Chữ trên ảnh, dòng {{n}}",
+    "Older models": "Mô hình cũ",
+    "Planning model": "Mô hình lập kế hoạch",
+    "More models": "Thêm mô hình",
+    "Model preferences: auto": "Tùy chọn mô hình: tự động",
+    "Model preferences: {{image}}": "Tùy chọn mô hình: {{image}}",
+    "Best quality; text and edits come out more exact": "Chất lượng tốt nhất; chữ và chỉnh sửa chính xác hơn",
+    "The lighter model, for everyday pictures": "Mô hình nhẹ cho ảnh hằng ngày",
+    "First one only · about {{cost}}": "Chỉ ảnh đầu · khoảng {{cost}}",
+    "Brand kit deleted": "Đã xóa bộ thương hiệu",
+    "Save and use again": "Lưu và dùng lại",
+    "Could not load the drawing models": "Không tải được các mô hình vẽ",
+    "Check the network, then load them again.": "Kiểm tra mạng rồi tải lại.",
+    "Keep editing “{{label}}”": "Sửa tiếp “{{label}}”",
+    "Download “{{label}}”": "Tải “{{label}}”",
+    "Redraw “{{label}}”": "Vẽ lại “{{label}}”",
+    "Drag a box on the picture around what to change. You can box several places.": "Kéo một khung trên ảnh quanh chỗ cần sửa. Có thể khoanh nhiều chỗ.",
+    "Reload": "Tải lại",
+    "Skip this one": "Bỏ qua câu này"
   }
 }

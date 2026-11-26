@@ -16,7 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useImperativeHandle, type ForwardedRef, type RefObject } from 'react'
+import {
+  useImperativeHandle,
+  type Dispatch,
+  type ForwardedRef,
+  type RefObject,
+  type SetStateAction,
+} from 'react'
 
 import { useBearDrawStore } from '@/stores/bear-draw-store'
 
@@ -38,6 +44,8 @@ export type ComposerHandle = {
   applyPreset(item: GalleryItem): void
   /** False when the message already holds as many pictures as it can. */
   addRefs(refs: Attachment[]): boolean
+  /** Picture files dropped on the page: stored, then attached. */
+  addFiles(files: File[]): void
 }
 
 const isRatio = (r: unknown): r is Ratio => RATIOS.includes(r as Ratio)
@@ -54,8 +62,9 @@ export function useComposerHandle(
   taRef: RefObject<HTMLTextAreaElement | null>,
   write: (value: string, caret: number) => void,
   setSkillId: (id: string | null) => void,
-  setPreset: (preset: Preset | null) => void,
-  addRefs: (list: Attachment[]) => boolean
+  setPreset: Dispatch<SetStateAction<Preset | null>>,
+  addRefs: (list: Attachment[]) => boolean,
+  addFiles: (files: File[]) => Promise<unknown>
 ) {
   const setPrefs = useBearDrawStore((s) => s.setPrefs)
   useImperativeHandle(
@@ -85,18 +94,24 @@ export function useComposerHandle(
       },
       // a 玩法: Image mode, its ratio, its prompt; maybe a photo first
       applyPreset: (item) => {
+        const modeBefore = useBearDrawStore.getState().prefs.mode
+        // a 玩法 is one opaque picture, whatever the last message used
         setPrefs({
           mode: 'image',
           count: 1,
+          transparent: false,
           ...(isRatio(item.ratio) ? { ratio: item.ratio } : {}),
         })
         setSkillId(null)
-        setPreset({
+        setPreset((earlier) => ({
           id: item.id,
           title: item.title,
           needsPhoto: Boolean(item.needsPhoto),
           hint: cleanHint(item.inputHint),
-        })
+          prompt: item.prompt,
+          // a second 玩法 over the first: still the mode from before both
+          modeBefore: earlier?.modeBefore ?? modeBefore,
+        }))
         write(item.prompt, 0)
         const ta = taRef.current
         if (ta) {
@@ -109,7 +124,11 @@ export function useComposerHandle(
         taRef.current?.focus({ preventScroll: true })
         return added
       },
+      addFiles: (files) => {
+        void addFiles(files)
+        taRef.current?.focus({ preventScroll: true })
+      },
     }),
-    [taRef, write, setSkillId, setPreset, addRefs, setPrefs]
+    [taRef, write, setSkillId, setPreset, addRefs, addFiles, setPrefs]
   )
 }

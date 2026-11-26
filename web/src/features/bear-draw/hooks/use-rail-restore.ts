@@ -23,7 +23,8 @@ import { useSidebar } from '@/components/ui/sidebar'
 import { RAIL_MARK } from '../components/project/use-sidebar-rail'
 
 /*
- * A project folds the console sidebar and unfolds it when left. If the tab
+ * A project with its canvas open folds the console sidebar and unfolds it
+ * when the canvas closes or the project is left. If the tab
  * was closed inside a project, the fold outlives the visit (the sidebar
  * keeps its state in a cookie); the home page and the library undo it.
  */
