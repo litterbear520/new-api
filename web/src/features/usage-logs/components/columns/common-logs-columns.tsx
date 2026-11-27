@@ -865,7 +865,7 @@ export function useCommonLogsColumns(
         },
         meta: {
           description: t(
-            'Measured on the server: from receiving your request to the first streamed data from the model. Your own network time is not included.'
+            "Measured on the server: from receiving your request to the first streamed data from upstream. That is usually a status message, not the model's first token. Your own network time is not included."
           ),
         },
         size: 70,
@@ -892,7 +892,7 @@ export function useCommonLogsColumns(
         },
         meta: {
           description: t(
-            'Output tokens ÷ (duration − first token), measured on the server. Duration is recorded in whole seconds, so this is an estimate. Only streamed requests with at least 100 output tokens and at least 2 seconds after the first token.'
+            "Output tokens ÷ (duration − first token), measured on the server. The clock starts at the first data from upstream, so it includes the wait before the model's first token (often about 2 seconds) and the number reads low. Duration is recorded in whole seconds. Only streamed requests with at least 100 output tokens and at least 10 seconds after the first token."
           ),
         },
         size: 80,

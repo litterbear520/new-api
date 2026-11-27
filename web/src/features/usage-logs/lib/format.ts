@@ -234,16 +234,21 @@ export function getResponseTimeColor(
 }
 
 // Output speed needs at least this many output tokens and this long a
-// generation window. The backend stores use_time in whole seconds (the
-// fraction is cut off), so shorter requests give numbers that are mostly
-// rounding error.
+// generation window. The backend's first-token time is the first streamed
+// event of any kind from upstream (on /v1/responses a status event such as
+// response.created), so the window also holds the upstream's preparation
+// time before the model's first token: about 2 seconds, whatever the output
+// size. Over a 10-second window that makes the number about 20% low at most;
+// over shorter windows it is mostly preparation time, so those are left out.
+// use_time is also stored in whole seconds (the fraction is cut off).
 export const SPEED_MIN_OUTPUT_TOKENS = 100
-export const SPEED_MIN_GENERATION_SECONDS = 2
+export const SPEED_MIN_GENERATION_SECONDS = 10
 
 /**
  * Output speed of one streamed request in tokens per second:
  * output tokens ÷ (duration − first token). Both times are measured on the
- * server, so the result leaves out the client's own network time. Returns
+ * server, so the result leaves out the client's own network time. It reads
+ * low because the window includes the upstream's preparation time. Returns
  * null for non-streamed requests, a missing first-token time, or a request
  * too short to estimate.
  */

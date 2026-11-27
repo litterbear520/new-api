@@ -47,17 +47,28 @@ describe('getOutputTokensPerSecond', () => {
     ).toBeNull()
   })
 
-  it('leaves out generation windows shorter than two seconds', () => {
+  it('leaves out generation windows shorter than ten seconds', () => {
     // use_time is cut to whole seconds, so it can even be below the first token.
-    expect(getOutputTokensPerSecond({ ...streamed, use_time: 3 }, 1500)).toBe(
-      null
-    )
     expect(getOutputTokensPerSecond({ ...streamed, use_time: 1 }, 1500)).toBe(
       null
     )
-    expect(getOutputTokensPerSecond({ ...streamed, use_time: 4 }, 2000)).toBe(
-      500
+    expect(getOutputTokensPerSecond({ ...streamed, use_time: 11 }, 2000)).toBe(
+      null
     )
+    expect(getOutputTokensPerSecond({ ...streamed, use_time: 12 }, 2000)).toBe(
+      100
+    )
+  })
+
+  it('leaves out a short request whose window is mostly upstream preparation', () => {
+    // A real Fast row: 146 tokens, 7 s, first data at 2.1 s. It would read
+    // 30 tok/s on a model that writes about 73 tok/s.
+    expect(
+      getOutputTokensPerSecond(
+        { is_stream: true, use_time: 7, completion_tokens: 146 },
+        2100
+      )
+    ).toBeNull()
   })
 })
 
